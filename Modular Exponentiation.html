@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مسألة Modular Exponentiation | المدرب محمد مجممي</title>
+    
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts (Tajawal for Arabic) -->
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Tajawal', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: '#0891b2', // Cyan 600
+                        secondary: '#0f172a', // Slate 900
+                        accent: '#f59e0b', // Amber 500
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Tajawal', sans-serif; }
+        .lesson-content { display: none; animation: fadeIn 0.4s ease-in-out; }
+        .lesson-content.active { display: block; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .nav-item { transition: all 0.2s ease; border-right: 4px solid transparent; }
+        .nav-item.active { 
+            background-color: #ecfeff; 
+            border-right: 4px solid #0891b2; 
+            color: #164e63; 
+            font-weight: bold;
+        }
+        .nav-item:hover:not(.active) { background-color: #f8fafc; }
+        
+        /* Custom scrollbar */
+        main::-webkit-scrollbar { width: 8px; }
+        main::-webkit-scrollbar-track { background: #f1f1f1; }
+        main::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        main::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .pro-tip { background: linear-gradient(135deg, #ecfeff 0%, #cffafe 100%); border-right: 4px solid #0891b2; }
+        
+        /* Code Highlighting Styles (High Contrast) */
+        .code-line { transition: all 0.3s ease; padding: 0.25rem 0.5rem; margin: 0.1rem 0; border-radius: 0.25rem; border-left: 4px solid transparent; color: #e2e8f0; } 
+        .code-line.active-line { background-color: rgba(8, 145, 178, 0.3); border-left: 4px solid #22d3ee; font-weight: bold; color: #ffffff; } 
+        .var-box { transition: all 0.3s ease; }
+        .var-updated { transform: scale(1.1); background-color: #cffafe; color: #164e63; border-color: #0891b2; }
+        
+        /* Mathematical Equations LTR Fix - STRICT ISOLATION */
+        .math-eq { direction: ltr !important; display: inline-block; font-family: monospace; font-weight: bold; padding: 0.1rem 0.4rem; border-radius: 0.25rem; margin: 0 0.2rem; }
+        .math-block { direction: ltr !important; display: block; font-family: monospace; font-weight: bold; padding: 1rem; border-radius: 0.5rem; text-align: left; }
+    </style>
+</head>
+<body class="flex flex-col md:flex-row h-screen bg-slate-50 text-slate-800 overflow-hidden">
+
+    <!-- Sidebar Navigation -->
+    <aside class="w-full md:w-80 bg-white shadow-xl z-20 flex flex-col flex-shrink-0 md:h-screen">
+        <div class="p-6 bg-secondary text-white">
+            <h1 class="text-2xl font-black mb-2 tracking-wide text-transparent bg-clip-text bg-gradient-to-l from-cyan-400 to-blue-500">
+                مسائل برمجية
+            </h1>
+            <p class="text-slate-300 text-sm">Modular Exponentiation (Codeforces)</p>
+        </div>
+        
+        <nav class="flex-1 overflow-y-auto py-4" id="sidebar-nav">
+            <button onclick="showLesson(1)" id="nav-1" class="nav-item active w-full text-right px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <span>1. تحليل المسألة الرياضية</span>
+                <span class="text-xs bg-cyan-100 text-cyan-700 px-2 py-1 rounded-full">المنطق</span>
+            </button>
+            <button onclick="showLesson(2)" id="nav-2" class="nav-item w-full text-right px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <span>2. فخ تجاوز السعة (Overflow)</span>
+                <span class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">خطر</span>
+            </button>
+            <button onclick="showLesson(3)" id="nav-3" class="nav-item w-full text-right px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <span>3. الخوارزمية المحسنة (الحل)</span>
+            </button>
+            <button onclick="showLesson(4)" id="nav-4" class="nav-item w-full text-right px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <span>4. تفكيك الكود الأساسي</span>
+                <span class="text-xs bg-slate-100 text-slate-700 px-2 py-1 rounded-full shadow-sm">شرح</span>
+            </button>
+            <button onclick="showLesson(5)" id="nav-5" class="nav-item w-full text-right px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <span>5. المشغل التفاعلي للكود</span>
+                <span class="text-xs bg-accent text-white px-2 py-1 rounded-full shadow-md animate-pulse">تفاعلي</span>
+            </button>
+        </nav>
+        
+        <!-- Footer / Signature -->
+        <div class="p-4 bg-slate-100 text-center border-t border-slate-200 mt-auto">
+            <p class="text-sm font-bold text-slate-600">إعداد وتصميم</p>
+            <p class="text-lg font-black text-primary mt-1">المدرب / محمد مجممي</p>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 h-full overflow-y-auto scroll-smooth relative" id="main-content">
+        
+        <div class="max-w-4xl mx-auto p-6 md:p-10 pb-32">
+            
+            <!-- Lesson 1 -->
+            <section id="lesson-1" class="lesson-content active">
+                <header class="mb-8">
+                    <h2 class="text-3xl md:text-4xl font-black text-secondary mb-4">الدرس الأول: تحليل المسألة الرياضية</h2>
+                    <p class="text-lg text-slate-600 leading-relaxed">فهم المطلوب والقواعد الرياضية التي تحكم باقي القسمة.</p>
+                </header>
+
+                <div class="space-y-6">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                        <h3 class="text-xl font-bold text-primary mb-3">المطلوب في المسألة 🎯</h3>
+                        <p class="mb-4 leading-relaxed text-slate-700">
+                            لديك رقمان صحيحان <span class="math-eq bg-slate-100 text-slate-800 border border-slate-200">n</span> و <span class="math-eq bg-slate-100 text-slate-800 border border-slate-200">m</span>. المطلوب هو طباعة ناتج المعادلة التالية:
+                        </p>
+                        <div class="math-block bg-slate-50 text-slate-800 border border-slate-200 text-2xl text-center shadow-inner">
+                            m % (2^n)
+                        </div>
+                        
+                        <div class="bg-cyan-50 border border-cyan-200 p-5 rounded-lg mt-6 shadow-inner">
+                            <h4 class="font-bold text-cyan-900 mb-2">قاعدة رياضية هامة جداً للمسابقات:</h4>
+                            <p class="text-cyan-800 font-medium leading-relaxed mb-3">
+                                بالنسبة لأي رقمين <span class="math-eq bg-white text-cyan-900 border border-cyan-300">x</span> و <span class="math-eq bg-white text-cyan-900 border border-cyan-300">y</span>، إذا كان المقسوم عليه أكبر من المقسوم <span class="math-eq bg-white text-cyan-900 border border-cyan-300">(y &gt; x)</span>، فإن ناتج باقي القسمة هو الرقم الأول نفسه.
+                            </p>
+                            <div class="math-block bg-white text-cyan-900 border border-cyan-300 mt-2">
+                                If (y &gt; x) &rArr; (x % y == x)
+                            </div>
+                            <ul class="list-disc list-inside mt-3 space-y-1 text-cyan-800 text-sm">
+                                <li>مثال 1: <span class="math-eq bg-white border border-cyan-200 text-cyan-900">5 % 10 = 5</span> (لأن الـ 10 لا يمكن أخذها من الـ 5).</li>
+                                <li>مثال 2: <span class="math-eq bg-white border border-cyan-200 text-cyan-900">14 % 100 = 14</span>.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Lesson 2 -->
+            <section id="lesson-2" class="lesson-content">
+                <header class="mb-8">
+                    <h2 class="text-3xl md:text-4xl font-black text-secondary mb-4">الدرس الثاني: فخ تجاوز السعة (Integer Overflow)</h2>
+                    <p class="text-lg text-slate-600 leading-relaxed">لماذا الحل المباشر يؤدي إلى فشل البرنامج (Wrong Answer)؟</p>
+                </header>
+
+                <div class="space-y-6">
+                    <div class="bg-red-50 p-6 rounded-xl shadow-sm border border-red-200">
+                        <h3 class="text-xl font-bold text-red-700 mb-3 flex items-center gap-2">
+                            <span>⚠️</span> لماذا لا نستخدم دالة الأس المباشرة؟
+                        </h3>
+                        <p class="text-slate-800 font-medium leading-relaxed mb-4">
+                            التفكير المبتدئ هو حساب <span class="math-eq bg-white text-red-800 border border-red-300">2^n</span> أولاً، ثم إيجاد باقي القسمة. ولكن في المسابقات البرمجية، قيمة <span class="math-eq bg-white text-red-800 border border-red-300">n</span> قد تكون ضخمة جداً (مثلاً <span class="math-eq bg-white text-red-800 border border-red-300">n = 10^8</span>).
+                        </p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                            <div class="bg-white p-4 rounded border border-red-200">
+                                <h4 class="font-bold text-slate-800 border-b pb-2 mb-2">حدود الـ int في C++</h4>
+                                <p class="text-sm text-slate-600">
+                                    المتغير من نوع <span class="math-eq bg-slate-100 text-slate-700">int</span> لا يمكنه تخزين رقم يتجاوز <span class="math-eq bg-slate-100 text-slate-700">2^31 - 1</span>. أي رقم أكبر من ذلك سيسبب خطأ تقنياً يسمى (Overflow)، وستتحول القيمة إلى أرقام سالبة عشوائية!
+                                </p>
+                            </div>
+                            <div class="bg-white p-4 rounded border border-red-200">
+                                <h4 class="font-bold text-slate-800 border-b pb-2 mb-2">حدود الـ long long</h4>
+                                <p class="text-sm text-slate-600">
+                                    حتى المتغير الأكبر <span class="math-eq bg-slate-100 text-slate-700">long long</span> لا يستطيع استيعاب أرقام مثل <span class="math-eq bg-slate-100 text-slate-700">2^{100000}</span>. حجم هذا الرقم يفوق عدد ذرات الكون، والكمبيوتر سيفشل في تخزينه.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Lesson 3 -->
+            <section id="lesson-3" class="lesson-content">
+                <header class="mb-8">
+                    <h2 class="text-3xl md:text-4xl font-black text-secondary mb-4">الدرس الثالث: الخوارزمية المحسنة (الإنهاء المبكر)</h2>
+                    <p class="text-lg text-slate-600 leading-relaxed">كيف نستغل القاعدة الرياضية للنجاة من الفخ؟</p>
+                </header>
+
+                <div class="space-y-6">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                        <h3 class="text-xl font-bold text-primary mb-4">استراتيجية الحل المتقدمة 💡</h3>
+                        <p class="leading-relaxed mb-4 text-slate-700">
+                            بدلاً من حساب <span class="math-eq bg-slate-100 text-slate-800 border border-slate-200">2^n</span> دفعة واحدة، سنقوم بمضاعفة المتغير خطوة بخطوة داخل حلقة تكرارية (Loop). وأثناء هذه العملية، سنقوم بوضع <strong>نقطة تفتيش (Checkpoint)</strong> لحماية البرنامج.
+                        </p>
+                        
+                        <div class="bg-cyan-50 p-5 rounded-lg border border-cyan-200">
+                            <h4 class="font-bold text-cyan-800 mb-3">آلية الإنهاء المبكر (Early Termination):</h4>
+                            <ul class="list-disc list-inside space-y-3 text-cyan-900 font-medium">
+                                <li>نبدأ بمتغير <span class="math-eq bg-white text-cyan-800 border border-cyan-300">power = 1</span> ونضربه في 2 مع كل دورة.</li>
+                                <li>في كل دورة نسأل: هل أصبحت قيمة <span class="math-eq bg-white text-cyan-800 border border-cyan-300">power &gt; m</span> ؟</li>
+                                <li>إذا كانت الإجابة <strong>نعم</strong>، نتذكر القاعدة التي درسناها: أي رقم يتم قسمته على رقم أكبر منه، الباقي هو الرقم نفسه!</li>
+                                <li>لذا، نطبع <span class="math-eq bg-white text-cyan-800 border border-cyan-300">m</span> فوراً، ونكسر الحلقة باستخدام أمر <span class="math-eq bg-white text-cyan-800 border border-cyan-300">break</span> لنوفر وقت الكمبيوتر ونحميه من الـ Overflow.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Lesson 4 -->
+            <section id="lesson-4" class="lesson-content">
+                <header class="mb-8">
+                    <h2 class="text-3xl md:text-4xl font-black text-secondary mb-4">الدرس الرابع: تفكيك الكود الأساسي</h2>
+                    <p class="text-lg text-slate-600 leading-relaxed">ترجمة الاستراتيجية إلى كود C++ نظيف وفعّال.</p>
+                </header>
+
+                <div class="space-y-6">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                        <p class="leading-relaxed mb-4 text-slate-700">
+                            اضغط على علامة التعجب <span class="bg-amber-100 text-amber-600 w-6 h-6 inline-flex items-center justify-center rounded-full font-black text-sm mx-1">!</span> بجوار الكود لتفهم وظيفة كل كتلة برمجية.
+                        </p>
+
+                        <!-- Code Block with Popover -->
+                        <div class="relative group my-4 shadow-sm rounded-xl overflow-hidden border border-slate-800">
+                            <!-- Fixed Button ID -->
+                            <button onclick="openModal('exp-1')" title="شرح الكود" class="absolute top-3 right-3 bg-accent text-white rounded-full w-8 h-8 flex items-center justify-center font-black shadow-md hover:bg-amber-600 transition-transform transform hover:scale-110 z-10 cursor-pointer">!</button>
+                            
+                            <!-- Hidden explanation content -->
+                            <div id="exp-1" class="hidden">
+                                <ul class="list-disc list-inside space-y-4 text-slate-700 font-medium text-sm">
+                                    <li class="leading-relaxed"><span dir="ltr" class="math-eq bg-slate-100 text-primary border border-slate-200">int power = 1;</span><br> نهيئ المتغير التراكمي بقيمة 1 كبداية للحسابات (لأن 2 أس 0 يساوي 1).</li>
+                                    <li class="leading-relaxed"><span dir="ltr" class="math-eq bg-slate-100 text-blue-600 border border-slate-200">power *= 2;</span><br> داخل الحلقة، نضرب المتغير في 2 في كل دورة لتوليد القوى المتتالية (2، 4، 8، 16...).</li>
+                                    <li class="leading-relaxed"><span dir="ltr" class="math-eq bg-slate-100 text-red-600 border border-slate-200">if (power &gt; m)</span><br> الشرط الحارس! إذا تجاوزت قوة الـ 2 قيمة m، نطبع m مباشرة لأن <span dir="ltr" class="math-eq">m % (رقم أكبر منه) = m</span>، ونخرج من الحلقة بـ <span dir="ltr" class="math-eq text-red-600">break</span>.</li>
+                                    <li class="leading-relaxed"><span dir="ltr" class="math-eq bg-slate-100 text-emerald-600 border border-slate-200">if (power &lt;= m)</span><br> إذا انتهت الحلقة كاملة ولم يتجاوز الرقم قيمة m، فهذا يعني أن الرقم صغير وآمن، ويمكننا إجراء عملية باقي القسمة المباشرة <span dir="ltr" class="math-eq">m % power</span> بأمان.</li>
+                                </ul>
+                            </div>
+
+                            <pre dir="ltr" class="text-left m-0 rounded-none"><code class="language-cpp">#include &lt;iostream&gt;
+using namespace std;
+
+int main() {
+    int n, m;
+    cin &gt;&gt; n &gt;&gt; m;
+    
+    int power = 1; // المتغير التراكمي
+    
+    // حساب القوى بشكل تدريجي
+    for (int i = 0; i &lt; n; i++) {
+        power *= 2;
+        
+        // شرط الإنهاء المبكر لمنع الـ Overflow
+        if (power &gt; m) {
+            cout &lt;&lt; m &lt;&lt; endl;
+            break; 
+        }
+    }
+    
+    // في حال كانت الدورة مكتملة بدون تجاوز m
+    if (power &lt;= m) {
+        cout &lt;&lt; m % power &lt;&lt; endl;
+    }
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Lesson 5 -->
+            <section id="lesson-5" class="lesson-content">
+                <header class="mb-8">
+                    <h2 class="text-3xl md:text-4xl font-black text-secondary mb-4">الدرس الخامس: المشغل التفاعلي للكود</h2>
+                    <p class="text-lg text-slate-600 leading-relaxed">شاهد كيف يقوم البرنامج بحماية نفسه عند إدخال قيم محددة.</p>
+                </header>
+
+                <!-- Interactive Code Stepper -->
+                <div class="bg-secondary rounded-xl shadow-2xl overflow-hidden flex flex-col md:flex-row border border-slate-700">
+                    
+                    <!-- Left Side: Variables & Controls (RTL) -->
+                    <div class="w-full md:w-1/3 bg-slate-800 p-6 flex flex-col border-b md:border-b-0 md:border-l border-slate-700">
+                        <h3 class="text-white font-bold text-lg mb-4 border-b border-slate-600 pb-2">شاشة المراقبة</h3>
+                        
+                        <!-- Variables -->
+                        <div class="space-y-4 mb-6 flex-1">
+                            <div class="flex gap-4">
+                                <div class="flex-1">
+                                    <span class="text-slate-400 text-sm block mb-1">الأس (n)</span>
+                                    <div id="var-n" class="var-box bg-slate-700 text-cyan-300 font-mono text-2xl px-2 py-2 rounded-lg border border-slate-600 font-bold text-center" dir="ltr">4</div>
+                                </div>
+                                <div class="flex-1">
+                                    <span class="text-slate-400 text-sm block mb-1">المقسوم (m)</span>
+                                    <div id="var-m" class="var-box bg-slate-700 text-cyan-300 font-mono text-2xl px-2 py-2 rounded-lg border border-slate-600 font-bold text-center" dir="ltr">10</div>
+                                </div>
+                            </div>
+                            <div class="flex gap-4">
+                                <div class="flex-1">
+                                    <span class="text-slate-400 text-sm block mb-1">الدورة (i)</span>
+                                    <div id="var-i" class="var-box bg-slate-700 text-white font-mono text-xl px-2 py-2 rounded-lg border border-slate-600 font-bold text-center" dir="ltr">-</div>
+                                </div>
+                                <div class="flex-1">
+                                    <span class="text-slate-400 text-sm block mb-1">المتراكم (power)</span>
+                                    <div id="var-power" class="var-box bg-slate-700 text-amber-400 font-mono text-xl px-2 py-2 rounded-lg border border-slate-600 font-bold text-center" dir="ltr">1</div>
+                                </div>
+                            </div>
+                            <div>
+                                <span class="text-slate-400 text-sm block mb-1">النتيجة (الطباعة)</span>
+                                <div id="var-out" class="var-box bg-slate-700 text-emerald-400 font-mono text-2xl px-4 py-2 rounded-lg border border-slate-600 font-bold text-center" dir="ltr">-</div>
+                            </div>
+                        </div>
+
+                        <!-- Controls -->
+                        <div class="space-y-3">
+                            <button onclick="nextStep()" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 rounded-lg transition-colors shadow-lg transform active:scale-95 flex justify-center items-center gap-2">
+                                <span>الخطوة التالية</span>
+                                <span>&darr;</span>
+                            </button>
+                            <button onclick="resetStepper()" class="w-full bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 rounded-lg transition-colors text-sm">
+                                إعادة التشغيل
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Right Side: The Code & Explanation (LTR Code) -->
+                    <div class="w-full md:w-2/3 flex flex-col">
+                        <!-- C++ Code: High Contrast -->
+                        <div class="p-6 bg-[#1e1e1e] text-slate-200 font-mono text-sm md:text-base leading-relaxed" dir="ltr">
+                            <div class="text-slate-500 mb-2">int main() {<br>&nbsp;&nbsp;int n = 4, m = 10;</div>
+                            
+                            <div id="code-line-1" class="code-line"><span class="text-blue-400">int</span> power = <span class="text-yellow-300">1</span>;</div>
+                            <div id="code-line-2" class="code-line mt-2"><span class="text-purple-400">for</span> (<span class="text-blue-400">int</span> i = <span class="text-yellow-300">0</span>; i &lt; n; i++) {</div>
+                            <div id="code-line-3" class="code-line pl-8">power *= <span class="text-yellow-300">2</span>;</div>
+                            <div id="code-line-4" class="code-line pl-8 mt-1"><span class="text-purple-400">if</span> (power &gt; m) {</div>
+                            <div id="code-line-5" class="code-line pl-12"><span class="text-blue-400">cout</span> &lt;&lt; m &lt;&lt; <span class="text-blue-400">endl</span>;</div>
+                            <div id="code-line-6" class="code-line pl-12"><span class="text-purple-400">break</span>;</div>
+                            <div id="code-line-7" class="code-line pl-8">}</div>
+                            <div id="code-line-8" class="code-line">}</div>
+                            <div id="code-line-9" class="code-line mt-2"><span class="text-purple-400">if</span> (power &lt;= m) {</div>
+                            <div id="code-line-10" class="code-line pl-8"><span class="text-blue-400">cout</span> &lt;&lt; m % power &lt;&lt; <span class="text-blue-400">endl</span>;</div>
+                            <div id="code-line-11" class="code-line">}</div>
+                            
+                            <div class="text-slate-500 mt-2">}</div>
+                        </div>
+                        
+                        <!-- Explanation Box -->
+                        <div class="bg-slate-100 p-4 border-t border-slate-300 flex-1 flex flex-col justify-center">
+                            <h4 class="font-bold text-primary mb-1 text-sm">الشرح:</h4>
+                            <p id="step-explanation" class="text-slate-800 font-bold leading-relaxed">
+                                اضغط على "الخطوة التالية" لبدء تتبع السيناريو: <span dir="ltr" class="math-eq bg-slate-200">n=4, m=10</span>.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="pro-tip p-6 rounded-xl shadow-sm mt-8 text-center">
+                    <p class="text-cyan-900 font-bold text-lg mb-2">التعقيد الزمني (Time Complexity)</p>
+                    <p class="text-slate-700">
+                        بفضل تقنية الإنهاء المبكر (Early Exit)، الدورة لن تتجاوز أبداً <span dir="ltr" class="math-eq bg-cyan-100 text-cyan-800">O(log m)</span>. أقصى قيمة لمتغير <span class="math-eq">int</span> تتطلب حوالي 30 دورة فقط حتى يتجاوزها المتراكم. لذا، البرنامج سريع جداً ويعتبر حلاً نموذجياً للمسابقات!
+                    </p>
+                </div>
+            </section>
+
+            <!-- Navigation Buttons -->
+            <div class="flex justify-between items-center mt-12 pt-6 border-t border-slate-200">
+                <button id="prev-btn" onclick="navigate(-1)" class="px-6 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors hidden font-bold shadow-sm">
+                    &rarr; الدرس السابق
+                </button>
+                <div class="flex-1"></div> <!-- Spacer -->
+                <button id="next-btn" onclick="navigate(1)" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-cyan-700 transition-colors font-bold shadow-md">
+                    الدرس التالي &larr;
+                </button>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Modal for Code Explanation (Fixed Display Logic) -->
+    <div id="codeModal" class="fixed inset-0 bg-slate-900 bg-opacity-70 z-50 items-center justify-center hidden opacity-0 transition-opacity duration-300 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-lg w-full mx-4 transform scale-95 transition-transform duration-300" id="modalContentBlock">
+            <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
+                <h3 class="text-xl font-bold text-primary flex items-center gap-2">
+                    <span class="bg-amber-100 text-amber-600 w-8 h-8 rounded-full flex items-center justify-center font-black">!</span>
+                    شرح الكود البرمجي
+                </h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-red-500 text-4xl leading-none">&times;</button>
+            </div>
+            <!-- Modal Body Content -->
+            <div id="modalBody" class="mb-6 overflow-y-auto max-h-96 pr-2">
+                <!-- Dynamic Content Will Be Inserted Here -->
+            </div>
+            <button onclick="closeModal()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-3 rounded-lg transition-colors border border-slate-200">
+                إغلاق النافذة
+            </button>
+        </div>
+    </div>
+
+    <!-- JavaScript for Logic -->
+    <script>
+        // --- Sidebar Navigation Logic ---
+        let currentLesson = 1;
+        const totalLessons = 5;
+
+        function showLesson(lessonNumber) {
+            document.querySelectorAll('.lesson-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+
+            document.getElementById(`lesson-${lessonNumber}`).classList.add('active');
+            document.getElementById(`nav-${lessonNumber}`).classList.add('active');
+            
+            currentLesson = lessonNumber;
+            updateButtons();
+            document.getElementById('main-content').scrollTop = 0;
+            
+            if (window.innerWidth < 768 && document.getElementById('sidebar-nav').style.display === 'block') {
+                toggleSidebar();
+            }
+        }
+
+        function navigate(direction) {
+            const newLesson = currentLesson + direction;
+            if (newLesson >= 1 && newLesson <= totalLessons) {
+                showLesson(newLesson);
+            }
+        }
+
+        function updateButtons() {
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+
+            prevBtn.style.display = currentLesson === 1 ? 'none' : 'block';
+            
+            if (currentLesson === totalLessons) {
+                nextBtn.style.display = 'none';
+            } else {
+                nextBtn.style.display = 'block';
+                nextBtn.innerHTML = currentLesson === totalLessons - 1 ? "المشغل التفاعلي 🔬" : "الدرس التالي &larr;";
+            }
+        }
+
+        // --- Improved Modal Functions ---
+        function openModal(explanationId) {
+            const contentDiv = document.getElementById(explanationId);
+            if(!contentDiv) return;
+            
+            document.getElementById('modalBody').innerHTML = contentDiv.innerHTML;
+            
+            const modal = document.getElementById('codeModal');
+            const modalBox = document.getElementById('modalContentBlock');
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            void modal.offsetWidth;
+            
+            modal.classList.remove('opacity-0');
+            modalBox.classList.remove('scale-95');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('codeModal');
+            const modalBox = document.getElementById('modalContentBlock');
+            
+            modal.classList.add('opacity-0');
+            modalBox.classList.add('scale-95');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        }
+
+        // --- Interactive Stepper Logic (Lesson 5) ---
+        // Scenario: n=4, m=10
+        // Expected outcome: power = 1 -> 2 -> 4 -> 8 -> 16 (Break at 16 > 10). Output: 10
+        
+        const stepsData = [
+            { lines: [1], i: "-", power: 1, out: "-", desc: "1️⃣ نبدأ بتهيئة المتغير التراكمي (power) بقيمة 1 كبداية." },
+            { lines: [2], i: "0", power: 1, out: "-", desc: "2️⃣ تبدأ الدورة الأولى (i=0)." },
+            { lines: [3], i: "0", power: 2, out: "-", desc: "3️⃣ نضرب المتراكم في 2: (1 * 2 = 2)." },
+            { lines: [4], i: "0", power: 2, out: "-", desc: "4️⃣ نفحص شرط الأمان: هل (2 > 10)؟ لا (False)." },
+            
+            { lines: [2], i: "1", power: 2, out: "-", desc: "5️⃣ تبدأ الدورة الثانية (i=1)." },
+            { lines: [3], i: "1", power: 4, out: "-", desc: "6️⃣ نضرب المتراكم في 2: (2 * 2 = 4)." },
+            { lines: [4], i: "1", power: 4, out: "-", desc: "7️⃣ نفحص شرط الأمان: هل (4 > 10)؟ لا (False)." },
+            
+            { lines: [2], i: "2", power: 4, out: "-", desc: "8️⃣ تبدأ الدورة الثالثة (i=2)." },
+            { lines: [3], i: "2", power: 8, out: "-", desc: "9️⃣ نضرب المتراكم في 2: (4 * 2 = 8)." },
+            { lines: [4], i: "2", power: 8, out: "-", desc: "🔟 نفحص شرط الأمان: هل (8 > 10)؟ لا (False)." },
+            
+            { lines: [2], i: "3", power: 8, out: "-", desc: "1️⃣1️⃣ تبدأ الدورة الرابعة (i=3)." },
+            { lines: [3], i: "3", power: 16, out: "-", desc: "1️⃣2️⃣ نضرب المتراكم في 2: (8 * 2 = 16)." },
+            { lines: [4], i: "3", power: 16, out: "-", desc: "1️⃣3️⃣ نفحص شرط الأمان: هل (16 > 10)؟ نعم! (True). لقد تجاوزنا الحد." },
+            { lines: [5, 6], i: "3", power: 16, out: "10", desc: "1️⃣4️⃣ نطبع قيمة (m) وهي 10 مباشرة بفضل القاعدة الرياضية، ونكسر الدورة (break)." },
+            
+            { lines: [9], i: "-", power: 16, out: "10", desc: "1️⃣5️⃣ بعد الخروج من الدورة، يتم فحص الشرط الأخير: هل (16 <= 10)؟ خطأ (False). البرنامج ينتهي بنجاح هنا متجنباً أي انهيار للنظام." }
+        ];
+
+        let currentStepIndex = -1;
+
+        function updateUI(step) {
+            document.getElementById('step-explanation').innerText = step.desc;
+            
+            const updateVar = (id, newVal) => {
+                const el = document.getElementById(id);
+                if (el.innerText != newVal) {
+                    el.innerText = newVal;
+                    el.classList.add('var-updated');
+                    setTimeout(() => el.classList.remove('var-updated'), 300);
+                }
+            };
+
+            updateVar('var-i', step.i);
+            updateVar('var-power', step.power);
+            updateVar('var-out', step.out);
+
+            document.querySelectorAll('.code-line').forEach(el => el.classList.remove('active-line'));
+            step.lines.forEach(lineNum => {
+                const lineEl = document.getElementById(`code-line-${lineNum}`);
+                if (lineEl) lineEl.classList.add('active-line');
+            });
+        }
+
+        function nextStep() {
+            if (currentStepIndex < stepsData.length - 1) {
+                currentStepIndex++;
+                updateUI(stepsData[currentStepIndex]);
+            } else {
+                document.getElementById('step-explanation').innerHTML = "<span class='text-emerald-700 font-bold'>تم الانتهاء من التنفيذ! اضغط إعادة التشغيل للبدء من جديد.</span>";
+            }
+        }
+
+        function resetStepper() {
+            currentStepIndex = -1;
+            document.getElementById('var-i').innerText = "-";
+            document.getElementById('var-power').innerText = "1";
+            document.getElementById('var-out').innerText = "-";
+            document.getElementById('step-explanation').innerText = "اضغط على 'الخطوة التالية' لبدء تتبع السيناريو.";
+            document.querySelectorAll('.code-line').forEach(el => el.classList.remove('active-line'));
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            updateButtons();
+        });
+    </script>
+</body>
+</html>
