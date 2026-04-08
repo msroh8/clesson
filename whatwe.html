@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الرغبات والاحتياجات (Knapsack DP) | المدرب محمد مجممي</title>
+    
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts (Tajawal for Arabic) -->
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Mermaid.js for Flowcharts -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Tajawal', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: '#d97706', // Amber 600
+                        secondary: '#1e293b', // Slate 800
+                        accent: '#f59e0b', // Amber 500
+                    }
+                }
+            }
+        }
+        
+        mermaid.initialize({ startOnLoad: false, theme: 'default', fontFamily: 'Tajawal', securityLevel: 'loose' });
+    </script>
+
+    <style>
+        body { font-family: 'Tajawal', sans-serif; }
+        .lesson-content { display: none; animation: fadeIn 0.4s ease-in-out; }
+        .lesson-content.active { display: block; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .nav-item { transition: all 0.2s ease; border-right: 4px solid transparent; }
+        .nav-item.active { 
+            background-color: #fffbeb; 
+            border-right: 4px solid #d97706; 
+            color: #b45309; 
+            font-weight: bold;
+        }
+        .nav-item:hover:not(.active) { background-color: #f8fafc; }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .pro-tip { background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border-right: 4px solid #d97706; }
+        
+        /* Code Highlighting Styles */
+        .code-line { transition: all 0.3s ease; padding: 0.15rem 0.5rem; margin: 0; border-radius: 0.25rem; border-left: 4px solid transparent; color: #e2e8f0; } 
+        .code-line.active-line { background-color: rgba(245, 158, 11, 0.3); border-left: 4px solid #fcd34d; font-weight: bold; color: #ffffff; } 
+        .var-box { transition: all 0.3s ease; }
+        .var-updated { transform: scale(1.05); background-color: #fef3c7; color: #b45309; border-color: #d97706; }
+        
+        /* Mathematical Equations LTR Fix - STRICT ISOLATION & NO WRAP */
+        .ltr-box { direction: ltr !important; unicode-bidi: isolate; display: inline-block; white-space: nowrap; }
+    </style>
+</head>
+<body class="flex flex-col md:flex-row h-screen bg-slate-50 text-slate-800 overflow-hidden">
+
+    <!-- Sidebar Navigation -->
+    <aside class="w-full md:w-80 bg-white shadow-xl z-20 flex flex-col flex-shrink-0 md:h-screen">
+        <div class="p-6 bg-secondary text-white">
+            <h1 class="text-2xl font-black mb-2 tracking-wide text-transparent bg-clip-text bg-gradient-to-l from-amber-400 to-orange-400">
+                مسائل برمجية
+            </h1>
+            <p class="text-slate-300 text-sm">الرغبات والاحتياجات (DP)</p>
+        </div>
+        
+        <nav class="flex-1 overflow-y-auto py-4" id="sidebar-nav">
+            <button onclick="showLesson(1)" id="nav-1" class="nav-item active w-full text-right px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <span>1. فهم المتجر (التمهيد)</span>
+                <span class="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full">المشكلة</span>
+            </button>
+            <button onclick="showLesson(2)" id="nav-2" class="nav-item w-full text-right px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <span>2. الفخ الجشع (Greedy)</span>
+                <span class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">تحليل</span>
+            </button>
+            <button onclick="showLesson(3)" id="nav-3" class="nav-item w-full text-right px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <span>3. حقيبة الظهر (0-1 Knapsack)</span>
+                <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">الخوارزمية</span>
+            </button>
+            <button onclick="showLesson(4)" id="nav-4" class="nav-item w-full text-right px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <span>4. معادلة حصد النتائج</span>
+                <span class="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full">رياضيات</span>
+            </button>
+            <button onclick="showLesson(5)" id="nav-5" class="nav-item w-full text-right px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <span>5. تفكيك الكود الأساسي</span>
+                <span class="text-xs bg-slate-100 text-slate-700 px-2 py-1 rounded-full shadow-sm">شرح</span>
+            </button>
+            <button onclick="showLesson(6)" id="nav-6" class="nav-item w-full text-right px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <span>6. المشغل التفاعلي للكود</span>
+                <span class="text-xs bg-accent text-white px-2 py-1 rounded-full shadow-md animate-pulse">تتبع حي</span>
+            </button>
+            <button onclick="showLesson(7)" id="nav-7" class="nav-item w-full text-right px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <span>7. عبقرية التعامل مع القيود</span>
+                <span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-bold shadow-sm">متقدم</span>
+            </button>
+            <button onclick="showLesson(8)" id="nav-8" class="nav-item w-full text-right px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <span>8. أخطاء الكود السابق</span>
+                <span class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-bold shadow-sm">تنبيهات</span>
+            </button>
+        </nav>
+        
+        <!-- Footer / Signature -->
+        <div class="p-4 bg-slate-100 text-center border-t border-slate-200 mt-auto">
+            <p class="text-sm font-bold text-slate-600">إعداد وتصميم</p>
+            <p class="text-lg font-black text-primary mt-1">المدرب / محمد مجممي</p>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 h-full overflow-y-auto scroll-smooth relative" id="main-content">
+        
+        <div class="max-w-4xl mx-auto p-6 md:p-10 pb-32">
+            
+            <!-- Lesson 1 -->
+            <section id="lesson-1" class="lesson-content active">
+                <header class="mb-8">
+                    <h2 class="text-3xl md:text-4xl font-black text-secondary mb-4">الدرس الأول: فهم المتجر وقواعد الرضا</h2>
+                    <p class="text-lg text-slate-600 leading-relaxed">تحليل مسألة "الرغبات والاحتياجات" وتبسيط المتغيرات المرفقة.</p>
+                </header>
+
+                <div class="space-y-6">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                        <h3 class="text-xl font-bold text-primary mb-3">قاموس المصطلحات (لنبسطها معاً!) 📖</h3>
+                        <p class="mb-4 leading-relaxed text-slate-700">
+                            أنت في متجر كمبيوتر وتريد ترقية جهازك. هدفك هو جمع عدد معين من نقاط الأداء بأقل عدد من المشتريات. دعونا نترجم رموز المسألة:
+                        </p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                            <div class="bg-slate-50 p-4 rounded border border-slate-200">
+                                <span class="text-primary font-black text-xl mb-1 block ltr-box">K</span>
+                                <span class="font-bold text-slate-800">الهدف من النقاط:</span>
+                                <p class="text-sm text-slate-600 mt-1">مجموع نقاط الأداء الذي يجب أن يصله جهازك كحد أدنى (مثلاً K=5 نقاط).</p>
+                            </div>
+                            <div class="bg-slate-50 p-4 rounded border border-slate-200">
+                                <span class="text-primary font-black text-xl mb-1 block ltr-box">N</span>
+                                <span class="font-bold text-slate-800">أقسام المتجر:</span>
+                                <p class="text-sm text-slate-600 mt-1">كم قسماً مختلفاً متاحاً لك لتشتري منه (منتج 1، منتج 2...).</p>
+                            </div>
+                            <div class="bg-amber-50 p-4 rounded border border-amber-200">
+                                <span class="text-amber-600 font-black text-xl mb-1 block ltr-box">A</span>
+                                <span class="font-bold text-amber-900">القطع العادية (الاحتياجات):</span>
+                                <p class="text-sm text-amber-800 mt-1">القطع الإجبارية التي يجب شراؤها أولاً. كل قطعة عادية تعطيك نقطة أداء واحدة.</p>
+                            </div>
+                            <div class="bg-emerald-50 p-4 rounded border border-emerald-200">
+                                <span class="text-emerald-600 font-black text-xl mb-1 block ltr-box">B</span>
+                                <span class="font-bold text-emerald-900">القطع الخارقة (الرغبات):</span>
+                                <p class="text-sm text-emerald-800 mt-1">بعد تجاوز عدد (A)، كل قطعة إضافية تشتريها ستعطيك <strong>نقطتين مضاعفتين!</strong></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Lesson 2 -->
+            <section id="lesson-2" class="lesson-content">
+                <header class="mb-8">
+                    <h2 class="text-3xl md:text-4xl font-black text-secondary mb-4">الدرس الثاني: الفخ الجشع (Greedy)</h2>
+                    <p class="text-lg text-slate-600 leading-relaxed">لماذا تفشل الحلول المباشرة، وكيف نغير تفكيرنا؟</p>
+                </header>
+
+                <div class="space-y-6">
+                    <div class="bg-red-50 p-6 rounded-xl shadow-sm border border-red-200">
+                        <h3 class="text-xl font-bold text-red-800 mb-3 flex items-center gap-2">
+                            <span>⚠️</span> لماذا يفشل الحل الجشع (Greedy)؟
+                        </h3>
+                        <p class="leading-relaxed mb-4 text-red-900 text-sm font-medium">
+                            التفكير المبتدئ هو: <em>"سأبحث عن العرض الذي يعطيني أكبر عدد من القطع الذهبية وأشتريه فوراً لكي أنتهي بسرعة"</em>.
+                        </p>
+                        <p class="leading-relaxed text-slate-800 text-sm bg-white p-3 rounded border border-red-100">
+                            <strong>تخيل هذا السيناريو المخادع:</strong><br>
+                            تحتاج لجمع <span class="ltr-box font-bold">K = 5</span> نقاط فقط.<br>
+                            العرض الأول: <span class="ltr-box font-bold">A = 1000, B = 1005</span> (يعطيك 5 قطع ذهبية، لكن الرسوم تجبرك على شراء 1000 قطعة عادية أولاً!).<br>
+                            العرض الثاني: <span class="ltr-box font-bold">A = 0, B = 5</span> (رسوم الدخول صفر، والقطع الخمس كلها ذهبية).<br><br>
+                            الخوارزمية الجشعة قد تختار العرض الأول لمجرد أن فرقه كبير، وتورطك بشراء 1003 قطع! بينما الحل الأمثل هو شراء 3 قطع من العرض الثاني.
+                        </p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                        <h3 class="text-xl font-bold text-primary mb-3">نظرية الاستثمار: تحويل المتغيرات 📈</h3>
+                        <p class="text-slate-700 leading-relaxed mb-4">
+                            لتجاوز الفخ، سنقوم بإعادة تسمية المتغيرات ليتعامل الكمبيوتر مع كل قسم كـ <strong>"مشروع استثماري"</strong>:
+                        </p>
+                        <ul class="list-disc list-inside space-y-4 text-slate-800 font-medium">
+                            <li class="bg-slate-50 p-3 rounded border border-slate-200">
+                                <strong class="text-rose-600 text-lg">التكلفة الإجبارية (<span class="ltr-box">w</span>):</strong> تساوي رياضياً <span class="ltr-box font-bold bg-white border border-slate-300 px-1 rounded">A</span>. 
+                                <br><span class="text-sm font-normal text-slate-600 block mt-1">هذا هو الثمن الذي "نجبر" على دفعه. نعرّف متغير <span class="ltr-box font-bold bg-white px-1 rounded">w = A</span>.</span>
+                            </li>
+                            <li class="bg-slate-50 p-3 rounded border border-slate-200">
+                                <strong class="text-emerald-600 text-lg">المكافأة الصافية (<span class="ltr-box">v</span>):</strong> تساوي رياضياً <span class="ltr-box font-bold bg-white border border-slate-300 px-1 rounded">B - A</span>. 
+                                <br><span class="text-sm font-normal text-slate-600 block mt-1">عدد القطع الذهبية التي ستفتح لنا. نعرّف متغير <span class="ltr-box font-bold bg-white px-1 rounded">v = max(0, B - A)</span>. (ملاحظة: نستخدم max لحماية الخوارزمية من المنتجات الخاسرة).</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Lesson 3 -->
+            <section id="lesson-3" class="lesson-content">
+                <header class="mb-8">
+                    <h2 class="text-3xl md:text-4xl font-black text-secondary mb-4">الدرس الثالث: خوارزمية حقيبة الظهر (0-1 Knapsack)</h2>
+                    <p class="text-lg text-slate-600 leading-relaxed">استخدام البرمجة الديناميكية (DP) لتذكر أفضل الاستثمارات.</p>
+                </header>
+
+                <div class="space-y-6">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                        <h3 class="text-xl font-bold text-primary mb-3">حجز الذاكرة (DP Array) 🧠</h3>
+                        <p class="leading-relaxed mb-4 text-slate-700">
+                            سنعرّف مصفوفة في الذاكرة باسم <code class="bg-slate-100 px-1 rounded text-primary ltr-box">dp</code> لحفظ أفضل العروض.
+                            <br><br>
+                            المعادلة الأساسية في الذاكرة:
+                            <br><span class="ltr-box bg-slate-800 text-white font-mono mt-2 p-2 rounded">dp[j] = v</span>
+                            <br><span class="text-sm text-slate-500 mt-2 block">تعني: "إذا دفعت بالضبط <span class="text-rose-600 font-bold ltr-box">j</span> من القطع العادية كرسوم، فإن أقصى عدد من المكافآت الذهبية التي أمتلكها هو <span class="text-emerald-600 font-bold ltr-box">v</span>."</span>
+                        </p>
+                        
+                        <div class="bg-blue-50 border border-blue-200 p-5 rounded-lg mt-6">
+                            <h4 class="font-bold text-blue-900 mb-3">كيف نملأ المصفوفة برمجياً؟ (Loop Logic)</h4>
+                            <ul class="text-sm text-blue-900 space-y-4 list-decimal list-inside font-medium leading-relaxed">
+                                <li>نعرّف مصفوفة بحجم <span class="ltr-box font-bold">K + 1</span> ونملأها بالرقم <span class="ltr-box font-bold">-1</span> (ومعناه: لم أصل لهذا المجموع قط).</li>
+                                <li>نعطي الخانة الأولى قيمة صفر <span class="ltr-box font-bold">dp[0] = 0</span> (دفع 0 يعطي 0 مكافأة).</li>
+                                <li>نقوم بعمل حلقة (Loop) تمر على كل المنتجات واحداً تلو الآخر.</li>
+                                <li>بداخلها، نقوم بعمل حلقة ثانية تمر على الذاكرة <span class="ltr-box text-rose-600 font-bold">j</span> <strong>بشكل عكسي</strong> (من K نزولاً للتكلفة w).</li>
+                                <li>نسأل: هل الخانة السابقة <span class="ltr-box font-bold">j - w</span> تم الوصول إليها؟ (أي ليست -1).</li>
+                                <li>إذا نعم، نحدّث الخانة الحالية <span class="ltr-box font-bold">dp[j]</span> لتأخذ القيمة الأكبر بين: قيمتها السابقة، أو قيمة الخانة السابقة + مكافأة المنتج الجديد.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Lesson 4 -->
+            <section id="lesson-4" class="lesson-content">
+                <header class="mb-8">
+                    <h2 class="text-3xl md:text-4xl font-black text-secondary mb-4">الدرس الرابع: معادلة حصد النتائج</h2>
+                    <p class="text-lg text-slate-600 leading-relaxed">كيف يحسب الكمبيوتر الإجابة النهائية من المصفوفة؟</p>
+                </header>
+
+                <div class="space-y-6">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                        <p class="leading-relaxed mb-6 text-slate-700">
+                            بعد امتلاء مصفوفة الذاكرة <code class="ltr-box">dp</code>، أصبح لدينا في كل خانة <span class="ltr-box bg-slate-100 px-1 rounded text-rose-600 font-bold">w</span> عدد من القطع الذهبية <span class="ltr-box bg-slate-100 px-1 rounded text-emerald-600 font-bold">v</span>. 
+                            <br>بما أننا دفعنا <span class="ltr-box font-bold text-rose-600">w</span> قطعة (حصلنا على w نقطة)، فإن <strong>النقاط المتبقية للوصول للهدف <span class="ltr-box font-bold">K</span> هي: <span class="ltr-box font-bold bg-white border border-slate-300 text-rose-600 px-1 rounded shadow-sm">rem = max(0, K - w)</span></strong>.
+                        </p>
+                        
+                        <div class="bg-emerald-50 border border-emerald-200 p-5 rounded-lg shadow-inner">
+                            <h4 class="font-bold text-emerald-900 mb-4">العمليات الرياضية لحساب عدد القطع:</h4>
+                            
+                            <ul class="space-y-4">
+                                <li class="bg-white p-4 rounded border border-emerald-100 shadow-sm">
+                                    <strong class="text-emerald-700 block mb-2 text-lg">الحالة الأولى: المكافآت (v) تكفينا وأكثر!</strong>
+                                    <p class="text-sm text-slate-600 leading-relaxed mb-2">
+                                        كل قطعة ذهبية تعطي نقطتين. إذن إذا كان <span class="ltr-box font-bold bg-slate-100 px-1 rounded border border-slate-200">v * 2 &ge; rem</span>، فنحن لا نحتاج لشراء كل القطع الذهبية، بل سنشتري فقط ما نحتاجه لنغطي النقاط المتبقية.
+                                    </p>
+                                    <p class="text-sm font-bold text-slate-800 border-t border-slate-100 pt-2">
+                                        القطع الإجمالية = <span class="ltr-box text-rose-600">w</span> + <span class="ltr-box text-emerald-600">(rem + 1) / 2</span>.
+                                    </p>
+                                </li>
+                                <li class="bg-white p-4 rounded border border-emerald-100 shadow-sm">
+                                    <strong class="text-amber-700 block mb-2 text-lg">الحالة الثانية: المكافآت (v) لا تكفي!</strong>
+                                    <p class="text-sm text-slate-600 leading-relaxed mb-2">
+                                        إذا كان <span class="ltr-box font-bold bg-slate-100 px-1 rounded border border-slate-200">v * 2 &lt; rem</span>، نضطر لشراء كل القطع الذهبية (v)، ثم نكمل ما تبقى من النقاط بشراء قطع عادية باهظة (بنقطة واحدة).
+                                    </p>
+                                    <p class="text-sm font-bold text-slate-800 border-t border-slate-100 pt-2">
+                                        القطع الإجمالية بتبسيط رياضي = <span class="ltr-box text-primary">K - v</span>.
+                                    </p>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Lesson 5 -->
+            <section id="lesson-5" class="lesson-content">
+                <header class="mb-8">
+                    <h2 class="text-3xl md:text-4xl font-black text-secondary mb-4">الدرس الخامس: تفكيك الكود الأساسي</h2>
+                    <p class="text-lg text-slate-600 leading-relaxed">كيف نترجم كل هذا الشرح إلى كود C++ نظيف ومنظم؟ (النسخة المعتمدة والمصححة).</p>
+                </header>
+
+                <div class="space-y-6">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                        <p class="leading-relaxed mb-4 text-slate-700">
+                            اضغط على علامة التعجب <span class="bg-amber-100 text-amber-600 w-6 h-6 inline-flex items-center justify-center rounded-full font-black text-sm mx-1">!</span> بجوار الكود لتفهم وظيفة كل كتلة برمجية تم إضافتها لحماية الكود.
+                        </p>
+
+                        <!-- Code Block with Popover -->
+                        <div class="relative group my-4 shadow-sm rounded-xl overflow-hidden border border-slate-800">
+                            <button onclick="openModal('exp-1')" title="شرح الكود" class="absolute top-3 right-3 bg-accent text-white rounded-full w-8 h-8 flex items-center justify-center font-black shadow-md hover:bg-amber-600 transition-transform transform hover:scale-110 z-10 cursor-pointer">!</button>
+                            
+                            <div id="exp-1" class="hidden">
+                                <ul class="list-disc list-inside space-y-4 text-slate-700 font-medium text-sm">
+                                    <li class="leading-relaxed"><span class="ltr-box bg-slate-100 px-1 text-primary border border-slate-200">vector&lt;int&gt; dp(K + 1, -1);</span><br> مصفوفة الذاكرة. حجمها K+1 لأننا لا نحتاج لاستثمار يتجاوز K. بدأت بـ -1 لتدل على عدم الزيارة.</li>
+                                    <li class="leading-relaxed"><span class="ltr-box bg-slate-100 px-1 text-orange-600 border border-slate-200">cin &gt;&gt; A[i] &gt;&gt; B[i];</span><br> الترتيب الصحيح لقراءة التكلفة أولاً ثم الإجمالي.</li>
+                                    <li class="leading-relaxed"><span class="ltr-box bg-slate-100 px-1 text-blue-600 border border-slate-200">int v = max(0, B[i] - A[i]);</span><br> حماية: إذا كان المنتج خاسراً، نتجاهل الخسارة ونجعل المكسب 0 بدلاً من قيمة سالبة تخرب الذاكرة.</li>
+                                    <li class="leading-relaxed"><span class="ltr-box bg-slate-100 px-1 text-emerald-600 border border-slate-200">dp[j] = min(K, max(...))</span><br> 🛡️ <strong>حركة المحترفين لمنع الـ Overflow:</strong> نضع حداً أقصى <code class="ltr-box">min(K, ...)</code> لمنع الأرقام من الانفجار بسبب المكافآت الضخمة.</li>
+                                </ul>
+                            </div>
+
+<pre dir="ltr" class="text-left m-0 rounded-none"><code class="language-cpp">#include &lt;iostream&gt;
+#include &lt;vector&gt;
+#include &lt;algorithm&gt;
+using namespace std;
+
+int main() {
+    // تسريع الإدخال والإخراج لتجنب Time Limit
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    int N, K;
+    if (!(cin &gt;&gt; N &gt;&gt; K)) return 0;
+    
+    vector&lt;int&gt; A(N), B(N);
+    // قراءة A (التكلفة) ثم B (الإجمالي)
+    for (int i = 0; i &lt; N; i++) cin &gt;&gt; A[i] &gt;&gt; B[i];
+
+    // مصفوفة الذاكرة (0-1 Knapsack)
+    vector&lt;int&gt; dp(K + 1, -1);
+    dp[0] = 0;
+
+    for (int i = 0; i &lt; N; i++) {
+        int w = A[i];                // التكلفة (الوزن)
+        int v = max(0, B[i] - A[i]); // المكسب الصافي (محمي من السالب)
+        if (w &gt; K) continue;         // تجاهل الاستثمار الخاسر
+
+        // تحديث الذاكرة من الخلف للأمام
+        for (int j = K; j &gt;= w; j--) {
+            if (dp[j - w] != -1) {
+                // حماية الذواكر من الـ Overflow بوضع الحد K
+                dp[j] = min(K, max(dp[j], dp[j - w] + v));
+            }
+        }
+    }
+
+    int ans = K; // أسوأ سيناريو: شراء K قطعة عادية بدون أي عروض
+    
+    // مرحلة حصد النتائج: نمر على كل عروض الذاكرة
+    for (int w = 0; w &lt;= K; w++) {
+        if (dp[w] != -1) {
+            int v = dp[w];
+            int rem = max(0, K - w); // النقاط المتبقية للهدف
+            int pieces;
+            
+            if (v * 2 &gt;= rem) pieces = w + (rem + 1) / 2; // المكافأة تكفي وتزيد
+            else              pieces = K - v;             // المكافأة نفدت
+            
+            ans = min(ans, pieces); // حفظ أقل عدد ممكن من القطع
+        }
+    }
+    cout &lt;&lt; ans &lt;&lt; "\n";
+    return 0;
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Lesson 6 -->
+            <section id="lesson-6" class="lesson-content">
+                <header class="mb-8">
+                    <h2 class="text-3xl md:text-4xl font-black text-secondary mb-4">الدرس السادس: المشغل التفاعلي للكود</h2>
+                    <p class="text-lg text-slate-600 leading-relaxed">أدخل قيمك الخاصة، وشاهد بعينيك كيف يترجم سطر الكود إلى حركة فعلية في الذاكرة بالتزامن مع المحاكاة!</p>
+                </header>
+
+                <!-- Custom Input Panel -->
+                <div class="bg-slate-700 p-5 rounded-xl border border-slate-600 shadow-inner mb-6 text-white">
+                    <h3 class="font-bold text-lg mb-3 text-amber-400 border-b border-slate-600 pb-2">⚙️ لوحة إعداد البيانات</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="text-slate-300 text-sm font-bold mb-2 block">الهدف المطلوب للوصول إليه K (حد أقصى 15 لتناسب الشاشة):</label>
+                            <input type="number" id="input-k" value="5" min="1" max="15" class="w-full bg-slate-800 text-white px-3 py-2 rounded border border-slate-500 focus:border-amber-500 focus:outline-none text-center font-mono ltr-box text-lg">
+                        </div>
+                        <div>
+                            <label class="text-slate-300 text-sm font-bold mb-2 block">عروض المتجر (أدخل التكلفة A ثم الإجمالي B لكل منتج):</label>
+                            <textarea id="input-items" rows="4" class="w-full bg-slate-800 text-white px-3 py-2 rounded border border-slate-500 focus:border-amber-500 focus:outline-none text-left font-mono ltr-box text-base leading-relaxed" dir="ltr">3 4
+2 3
+2 4</textarea>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex gap-3">
+                        <button onclick="startCustomSim()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded font-bold text-sm transition-colors shadow-md">اعتماد البيانات وبدء المحاكاة ▶️</button>
+                        <button onclick="loadDefaultExample()" class="bg-slate-600 hover:bg-slate-500 text-white px-4 py-2 rounded font-bold text-sm transition-colors">مثال الدرس 🔄</button>
+                    </div>
+                </div>
+
+                <!-- Interactive Code Stepper -->
+                <div class="bg-secondary rounded-xl shadow-2xl overflow-hidden flex flex-col border border-slate-700 mb-8" id="sim-container" style="display: none;">
+                    
+                    <!-- Top Info Bar -->
+                    <div class="bg-slate-800 p-4 border-b border-slate-700 flex flex-wrap gap-4 items-center justify-between">
+                        <div>
+                            <span class="text-slate-400 text-sm font-bold block mb-1">الهدف <span class="ltr-box font-mono">(K)</span>:</span>
+                            <span id="display-k" class="text-white text-xl font-bold bg-slate-900 px-3 py-1 rounded border border-slate-600 ltr-box shadow-inner">5</span>
+                        </div>
+                        <div class="flex gap-2 text-sm text-slate-300 font-mono overflow-x-auto pb-1" dir="ltr" id="display-items">
+                            <!-- Items populated by JS -->
+                        </div>
+                        <div class="flex gap-2 w-full md:w-auto mt-2 md:mt-0">
+                            <button onclick="nextStep()" class="flex-1 md:flex-none bg-primary hover:bg-amber-700 text-white font-bold px-6 py-2 rounded transition-colors shadow-lg active:scale-95 flex justify-center items-center gap-2">
+                                <span>الخطوة التالية</span>
+                                <span>&darr;</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Split View: State & Code -->
+                    <div class="flex flex-col lg:flex-row">
+                        
+                        <!-- Left: Current State -->
+                        <div class="w-full lg:w-1/3 bg-slate-900 p-5 flex flex-col border-b lg:border-b-0 lg:border-l border-slate-700">
+                            <h3 class="text-slate-300 font-bold text-sm mb-4 border-b border-slate-700 pb-2">المتغيرات في الذاكرة الآن</h3>
+                            
+                            <div class="space-y-4 font-mono text-sm" dir="ltr">
+                                <div class="flex justify-between items-center bg-slate-800 p-2 rounded border border-slate-700">
+                                    <span class="text-slate-400">المنتج (i)</span>
+                                    <span id="var-i" class="text-white font-bold var-box px-2">-</span>
+                                </div>
+                                <div class="flex justify-between items-center bg-slate-800 p-2 rounded border border-slate-700">
+                                    <span class="text-slate-400">التكلفة (w)</span>
+                                    <span id="var-w" class="text-rose-400 font-bold var-box px-2">-</span>
+                                </div>
+                                <div class="flex justify-between items-center bg-slate-800 p-2 rounded border border-slate-700">
+                                    <span class="text-slate-400">المكافأة (v)</span>
+                                    <span id="var-v" class="text-emerald-400 font-bold var-box px-2">-</span>
+                                </div>
+                                <div class="flex justify-between items-center bg-slate-800 p-2 rounded border border-slate-700">
+                                    <span class="text-slate-400">المؤشر (j)</span>
+                                    <span id="var-j" class="text-amber-400 font-bold var-box px-2">-</span>
+                                </div>
+                                <div class="flex justify-between items-center bg-slate-800 p-2 rounded border border-slate-700 mt-4">
+                                    <span class="text-slate-400">أقل قطع (ans)</span>
+                                    <span id="var-ans" class="text-white font-bold var-box px-2">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right: Full Code View -->
+                        <div class="w-full lg:w-2/3 bg-[#1e1e1e] p-5 overflow-x-auto text-sm font-mono text-slate-300" dir="ltr">
+                            <div class="text-slate-500 mb-1">#include &lt;iostream&gt;</div>
+                            <div class="text-slate-500 mb-1">#include &lt;vector&gt;</div>
+                            <div class="text-slate-500 mb-2">using namespace std;</div>
+                            <div class="text-slate-400 mb-2">int main() {<br>&nbsp;&nbsp;int N = <span id="code-n">3</span>, K = <span id="code-k">5</span>;<br>&nbsp;&nbsp;vector&lt;int&gt; A, B; // Filled dynamically</div>
+                            
+                            <div id="code-line-init1" class="code-line">&nbsp;&nbsp;<span class="text-blue-400">vector</span>&lt;<span class="text-blue-400">int</span>&gt; dp(K + <span class="text-yellow-300">1</span>, <span class="text-yellow-300">-1</span>);</div>
+                            <div id="code-line-init2" class="code-line">&nbsp;&nbsp;dp[<span class="text-yellow-300">0</span>] = <span class="text-yellow-300">0</span>;</div>
+                            <div class="text-slate-500 my-1">&nbsp;&nbsp;// 0-1 Knapsack DP</div>
+                            <div id="code-line-for1" class="code-line">&nbsp;&nbsp;<span class="text-purple-400">for</span> (<span class="text-blue-400">int</span> i = <span class="text-yellow-300">0</span>; i &lt; N; i++) {</div>
+                            <div id="code-line-vars" class="code-line pl-6">&nbsp;&nbsp;<span class="text-blue-400">int</span> w = A[i], v = <span class="text-emerald-400">max</span>(<span class="text-yellow-300">0</span>, B[i] - A[i]);</div>
+                            <div id="code-line-skip" class="code-line pl-6">&nbsp;&nbsp;<span class="text-purple-400">if</span> (w &gt; K) <span class="text-purple-400">continue</span>;</div>
+                            <div id="code-line-for2" class="code-line pl-6">&nbsp;&nbsp;<span class="text-purple-400">for</span> (<span class="text-blue-400">int</span> j = K; j &gt;= w; j--) {</div>
+                            <div id="code-line-check" class="code-line pl-10">&nbsp;&nbsp;<span class="text-purple-400">if</span> (dp[j - w] != <span class="text-yellow-300">-1</span>) {</div>
+                            <div id="code-line-update" class="code-line pl-14">&nbsp;&nbsp;dp[j] = <span class="text-emerald-400">min</span>(K, <span class="text-emerald-400">max</span>(dp[j], dp[j - w] + v));</div>
+                            <div class="code-line pl-10">&nbsp;&nbsp;}</div>
+                            <div class="code-line pl-6">&nbsp;&nbsp;}</div>
+                            <div class="code-line">&nbsp;&nbsp;}</div>
+                            
+                            <div class="text-slate-500 mt-2 mb-1">&nbsp;&nbsp;// Calculate minimum pieces</div>
+                            <div id="code-line-ans1" class="code-line">&nbsp;&nbsp;<span class="text-blue-400">int</span> ans = K;</div>
+                            <div id="code-line-ans2" class="code-line">&nbsp;&nbsp;<span class="text-purple-400">for</span> (<span class="text-blue-400">int</span> w = <span class="text-yellow-300">0</span>; w &lt;= K; w++) {</div>
+                            <div id="code-line-ans3" class="code-line pl-6">&nbsp;&nbsp;<span class="text-purple-400">if</span> (dp[w] != <span class="text-yellow-300">-1</span>) {</div>
+                            <div id="code-line-ans4" class="code-line pl-10">&nbsp;&nbsp;<span class="text-blue-400">int</span> rem = <span class="text-emerald-400">max</span>(<span class="text-yellow-300">0</span>, K - w), pieces;</div>
+                            <div id="code-line-ans5" class="code-line pl-10">&nbsp;&nbsp;<span class="text-purple-400">if</span> (dp[w] * <span class="text-yellow-300">2</span> &gt;= rem) pieces = w + (rem+<span class="text-yellow-300">1</span>)/<span class="text-yellow-300">2</span>;</div>
+                            <div id="code-line-ans6" class="code-line pl-10">&nbsp;&nbsp;<span class="text-purple-400">else</span> pieces = K - dp[w];</div>
+                            <div id="code-line-ans7" class="code-line pl-10">&nbsp;&nbsp;ans = <span class="text-emerald-400">min</span>(ans, pieces);</div>
+                            <div class="code-line pl-6">&nbsp;&nbsp;}</div>
+                            <div class="code-line">&nbsp;&nbsp;}</div>
+                            <div id="code-line-print" class="code-line">&nbsp;&nbsp;<span class="text-blue-400">cout</span> &lt;&lt; ans;</div>
+                            <div class="text-slate-400 mt-1">}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Explanation Box (Mental Trace) -->
+                <div class="bg-indigo-50 border border-indigo-200 rounded-xl shadow-sm overflow-hidden mb-8" id="explanation-container" style="display: none;">
+                    <div class="bg-indigo-100 p-3 border-b border-indigo-200">
+                        <h3 class="font-bold text-indigo-900 flex items-center gap-2">
+                            <span>🧠</span> التتبع الذهني للسطر المُظلل
+                        </h3>
+                    </div>
+                    <div class="p-5">
+                        <div id="step-explanation" class="text-slate-800 leading-relaxed text-[15px] font-medium">
+                            <!-- Injected by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DP Array Visual Container -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col" id="dp-container" style="display: none;">
+                    <h3 class="text-xl font-bold text-primary mb-4 flex items-center gap-2">
+                        <span>🗄️</span> الذاكرة الفعلية (مصفوفة dp)
+                    </h3>
+                    <p class="text-sm text-slate-600 mb-4">كل خانة تمثل التكلفة المدفوعة <span class="ltr-box font-bold bg-slate-100 px-1 rounded">(j)</span>. الرقم بداخلها هو المكافأة المفتوحة <span class="ltr-box font-bold bg-slate-100 px-1 rounded">(v)</span>. القيمة <span class="ltr-box font-bold">-1</span> تعني مساراً مستحيلاً.</p>
+                    
+                    <div id="dp-array-visual" class="flex gap-2 font-mono text-center overflow-x-auto pb-2 pt-2" dir="ltr">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Lesson 7 -->
+            <section id="lesson-7" class="lesson-content">
+                <header class="mb-8">
+                    <h2 class="text-3xl md:text-4xl font-black text-secondary mb-4">الدرس السابع: عبقرية التعامل مع القيود ⚠️</h2>
+                    <p class="text-lg text-slate-600 leading-relaxed">كيف تمكن كودنا من اختراق جميع القيود الصعبة وحصد 100 نقطة؟</p>
+                </header>
+
+                <div class="space-y-6">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                        <p class="text-slate-700 leading-relaxed mb-6">
+                            القيود المرفقة في المسألة تضع المبرمج أمام تحديات ضخمة. دعونا نرى كيف نجونا منها:
+                        </p>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            
+                            <!-- Analysis 1 -->
+                            <div class="bg-purple-50 p-5 rounded-lg border border-purple-200 shadow-sm">
+                                <h4 class="font-bold text-purple-800 mb-2 text-lg">1. قيد الوقت <span class="ltr-box font-normal text-base">(N, K &le; 5000)</span></h4>
+                                <p class="text-sm text-slate-700 leading-relaxed mb-3">
+                                    التعقيد الزمني لخوارزميتنا هو <span class="ltr-box bg-white border border-purple-300 px-1 rounded">O(N &times; K)</span>. 
+                                    لو ضربنا 5000 في 5000، الناتج هو 25 مليون عملية فقط. الكمبيوتر ينفذ هذا العدد في حوالي <strong>0.05 ثانية</strong>. نمر من قيد الـ 1 ثانية بسهولة تامة!
+                                </p>
+                            </div>
+
+                            <!-- Analysis 2 -->
+                            <div class="bg-red-50 p-5 rounded-lg border border-red-200 shadow-sm">
+                                <h4 class="font-bold text-red-800 mb-2 text-lg">2. فخ الذاكرة الخبيث <span class="ltr-box bg-white text-red-800 border border-red-300 px-1 rounded font-normal text-base">A &le; 10^6</span></h4>
+                                <p class="text-sm text-slate-700 leading-relaxed mb-3">
+                                    لو أنشأنا مصفوفة <code class="ltr-box">dp</code> بحجم A (مليون)، لانفجرت الذاكرة وحصلنا على (Memory Limit). 
+                                    <strong>العبقرية:</strong> نحن نعلم أننا لا نحتاج لاستثمار يتجاوز K (لأن K=5000 كحد أقصى). السطر <code class="ltr-box bg-white px-1 border border-red-300 rounded text-red-700 font-mono">if (w &gt; K) continue;</code> يحمينا من حجز مصفوفات عملاقة، ويبقي حجم مصفوفتنا صغيراً جداً (5000 خانة فقط)!
+                                </p>
+                            </div>
+
+                            <!-- Analysis 3 -->
+                            <div class="bg-emerald-50 p-5 rounded-lg border border-emerald-200 shadow-sm md:col-span-2">
+                                <h4 class="font-bold text-emerald-800 mb-2 text-lg">3. فخ انفجار الأرقام (Integer Overflow)</h4>
+                                <p class="text-sm text-slate-700 leading-relaxed mb-3">
+                                    المكافآت (v) قد تصل لمليون أيضاً وتتراكم وتتخطى سعة متغير الـ int!
+                                    <strong>العبقرية:</strong> السطر <code class="ltr-box bg-white px-1 border border-emerald-300 rounded text-emerald-700 font-mono">min(K, max(...))</code>. نحن لا يهمنا تخزين أرقام أكبر من K. إذا تجاوزت المكافأة قيمة K المطلوبة، فإن الدالة <code class="ltr-box">min</code> تقصها وتثبتها عند K. حماية 100% للذاكرة.
+                                </p>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Lesson 8: Errors -->
+            <section id="lesson-8" class="lesson-content">
+                <header class="mb-8">
+                    <h2 class="text-3xl md:text-4xl font-black text-secondary mb-4">الدرس الثامن: أخطاء تجعل كودك لا يعمل 🛑</h2>
+                    <p class="text-lg text-slate-600 leading-relaxed">لماذا حصل الكود السابق على 0 نقطة في التقييم؟ وكيف تنجو من فخوخ المنصات التنافسية؟</p>
+                </header>
+
+                <div class="space-y-6">
+                    <!-- Error 1 -->
+                    <div class="bg-red-50 p-6 rounded-xl border border-red-200 shadow-sm relative overflow-hidden">
+                        <div class="absolute top-0 right-0 bg-red-500 text-white px-4 py-1 rounded-bl-lg font-bold text-sm">الخطأ الأول</div>
+                        <h3 class="text-xl font-bold text-red-800 mt-2 mb-3 flex items-center gap-2">
+                            <span>1.</span> القاتل الصامت: ترتيب الإدخال المعكوس
+                        </h3>
+                        <p class="text-slate-700 mb-4 leading-relaxed">في الشروحات النظرية أحياناً يتم ذكر الإجمالي <code class="ltr-box font-mono bg-red-100 px-1 rounded">B</code> ثم التكلفة <code class="ltr-box font-mono bg-red-100 px-1 rounded">A</code>. ولكن في المنصات التنافسية، دائماً ما تعطى التكلفة أولاً ثم الإجمالي. الكود القديم قرأها بالعكس مما جعل حسابات التكلفة والعائد خاطئة تماماً!</p>
+                        <div class="bg-slate-900 rounded p-4 font-mono text-sm ltr-box text-left">
+                            <div class="text-red-400 line-through">cin &gt;&gt; B[i] &gt;&gt; A[i]; <span class="text-slate-500 ml-2">// خطأ: يعكس القيم</span></div>
+                            <div class="text-emerald-400 mt-2">cin &gt;&gt; A[i] &gt;&gt; B[i]; <span class="text-slate-500 ml-2">// الصح: قراءة التكلفة ثم الإجمالي</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Error 2 -->
+                    <div class="bg-orange-50 p-6 rounded-xl border border-orange-200 shadow-sm relative overflow-hidden">
+                        <div class="absolute top-0 right-0 bg-orange-500 text-white px-4 py-1 rounded-bl-lg font-bold text-sm">الخطأ الثاني</div>
+                        <h3 class="text-xl font-bold text-orange-800 mt-2 mb-3 flex items-center gap-2">
+                            <span>2.</span> فخ المنتجات الخاسرة (القيم السالبة)
+                        </h3>
+                        <p class="text-slate-700 mb-4 leading-relaxed">بعض الاختبارات الخبيثة تضع منتجات تكلفتها أعلى من عائدها الإجمالي، مما يجعل الطرح <code class="ltr-box font-mono bg-orange-100 px-1 rounded">B - A</code> يعطي قيمة سالبة. القيم السالبة تدمر مصفوفة الـ DP وتجعلها تبحث عن مسارات وهمية. يجب وضع حد أدنى للصفر.</p>
+                        <div class="bg-slate-900 rounded p-4 font-mono text-sm ltr-box text-left">
+                            <div class="text-red-400 line-through">int v = B[i] - A[i];</div>
+                            <div class="text-emerald-400 mt-2">int v = max(0, B[i] - A[i]); <span class="text-slate-500 ml-2">// الصح: تصفير الخسارة</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Error 3 -->
+                    <div class="bg-amber-50 p-6 rounded-xl border border-amber-200 shadow-sm relative overflow-hidden">
+                        <div class="absolute top-0 right-0 bg-amber-500 text-white px-4 py-1 rounded-bl-lg font-bold text-sm">الخطأ الثالث</div>
+                        <h3 class="text-xl font-bold text-amber-800 mt-2 mb-3 flex items-center gap-2">
+                            <span>3.</span> تجاوز سقف الذاكرة (Memory Overflow)
+                        </h3>
+                        <p class="text-slate-700 mb-4 leading-relaxed">ماذا لو كان أحد العروض يعطي مليون نقطة مكافأة، وأنت تحتاج لـ 5 نقاط فقط؟ تراكم الأرقام الضخمة في الذاكرة قد يسبب Overflow. نحن لا نحتاج لمكافآت تتجاوز هدفنا الأساسي <code class="ltr-box font-mono">K</code>، لذا يجب قصها ووضع سقف لها.</p>
+                        <div class="bg-slate-900 rounded p-4 font-mono text-sm ltr-box text-left">
+                            <div class="text-red-400 line-through">dp[j] = max(dp[j], dp[j - w] + v);</div>
+                            <div class="text-emerald-400 mt-2">dp[j] = min(K, max(dp[j], dp[j - w] + v)); <span class="text-slate-500 ml-2">// الصح: السقف هو K</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Error 4 -->
+                    <div class="bg-blue-50 p-6 rounded-xl border border-blue-200 shadow-sm relative overflow-hidden">
+                        <div class="absolute top-0 right-0 bg-blue-500 text-white px-4 py-1 rounded-bl-lg font-bold text-sm">الخطأ الرابع</div>
+                        <h3 class="text-xl font-bold text-blue-800 mt-2 mb-3 flex items-center gap-2">
+                            <span>4.</span> بطء أداء الإدخال والإخراج (Time Limit)
+                        </h3>
+                        <p class="text-slate-700 mb-4 leading-relaxed">عندما تحتوي المسألة على مئات أو آلاف الاختبارات، فإن أوامر <code class="ltr-box font-mono bg-blue-100 px-1 rounded">cin, cout</code> الافتراضية في C++ تكون بطيئة جداً وتتسبب في رسالة Time Limit Exceeded. يجب دائماً إيقاف المزامنة لتسريع الأداء.</p>
+                        <div class="bg-slate-900 rounded p-4 font-mono text-sm ltr-box text-left text-emerald-400">
+                            ios_base::sync_with_stdio(false);<br>
+                            cin.tie(NULL);
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Navigation Buttons -->
+            <div class="flex justify-between items-center mt-12 pt-6 border-t border-slate-200">
+                <button id="prev-btn" onclick="navigate(-1)" class="px-6 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors hidden font-bold shadow-sm">
+                    &rarr; الدرس السابق
+                </button>
+                <div class="flex-1"></div> <!-- Spacer -->
+                <button id="next-btn" onclick="navigate(1)" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-amber-700 transition-colors font-bold shadow-md hidden">
+                    الدرس التالي &larr;
+                </button>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Modal for Code Explanation -->
+    <div id="codeModal" class="fixed inset-0 bg-slate-900 bg-opacity-70 z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-lg w-full mx-4 transform scale-95 transition-transform duration-300" id="modalContentBlock">
+            <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
+                <h3 class="text-xl font-bold text-primary flex items-center gap-2">
+                    <span class="bg-amber-100 text-amber-600 w-8 h-8 rounded-full flex items-center justify-center font-black">!</span>
+                    شرح الكود البرمجي
+                </h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-red-500 text-4xl leading-none">&times;</button>
+            </div>
+            <!-- Modal Body Content -->
+            <div id="modalBody" class="mb-6 overflow-y-auto max-h-96 pr-2">
+                <!-- Dynamic Content Will Be Inserted Here -->
+            </div>
+            <button onclick="closeModal()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-3 rounded-lg transition-colors border border-slate-200">
+                إغلاق النافذة
+            </button>
+        </div>
+    </div>
+
+    <!-- JavaScript for Logic and Dynamic Simulation -->
+    <script>
+        // --- Sidebar Navigation Logic ---
+        let currentLesson = 1;
+        const totalLessons = 8; // Updated to 8 lessons
+
+        function showLesson(lessonNumber) {
+            document.querySelectorAll('.lesson-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+
+            document.getElementById(`lesson-${lessonNumber}`).classList.add('active');
+            document.getElementById(`nav-${lessonNumber}`).classList.add('active');
+            
+            currentLesson = lessonNumber;
+            updateButtons();
+            document.getElementById('main-content').scrollTop = 0;
+            
+            if (window.innerWidth < 768 && document.getElementById('sidebar-nav').style.display === 'block') {
+                toggleSidebar();
+            }
+        }
+
+        function navigate(direction) {
+            const newLesson = currentLesson + direction;
+            if (newLesson >= 1 && newLesson <= totalLessons) {
+                showLesson(newLesson);
+            }
+        }
+
+        function updateButtons() {
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+
+            prevBtn.style.display = currentLesson === 1 ? 'none' : 'block';
+            nextBtn.style.display = currentLesson === totalLessons ? 'none' : 'block';
+        }
+
+        // --- Modal Functions ---
+        function openModal(explanationId) {
+            const contentDiv = document.getElementById(explanationId);
+            if(!contentDiv) return;
+            
+            document.getElementById('modalBody').innerHTML = contentDiv.innerHTML;
+            
+            const modal = document.getElementById('codeModal');
+            const modalBox = document.getElementById('modalContentBlock');
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            void modal.offsetWidth;
+            
+            modal.classList.remove('opacity-0');
+            modalBox.classList.remove('scale-95');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('codeModal');
+            const modalBox = document.getElementById('modalContentBlock');
+            
+            modal.classList.add('opacity-0');
+            modalBox.classList.add('scale-95');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        }
+
+        // --- Dynamic DP Simulation Engine (Lesson 6) ---
+        let dpState = [];
+        let stepsData = [];
+        let currentStepIndex = -1;
+        let simK = 5;
+        let simN = 3;
+        let simItems = []; // {A, B, w, v}
+
+        function loadDefaultExample() {
+            document.getElementById('input-k').value = 5;
+            document.getElementById('input-items').value = "3 4\n2 3\n2 4"; // A then B
+            startCustomSim();
+        }
+
+        function startCustomSim() {
+            // Show the simulator panels
+            document.getElementById('sim-container').style.display = 'flex';
+            document.getElementById('explanation-container').style.display = 'flex';
+            document.getElementById('dp-container').style.display = 'flex';
+
+            // Parse K
+            let kInput = parseInt(document.getElementById('input-k').value);
+            if (isNaN(kInput) || kInput < 1) kInput = 1;
+            if (kInput > 15) { 
+                alert("عذراً! للمحاكاة البصرية يجب ألا يتجاوز الهدف (K) 15 حتى لا تخرج المصفوفة عن حدود الشاشة."); 
+                kInput = 15; 
+            }
+            document.getElementById('input-k').value = kInput;
+            simK = kInput;
+            document.getElementById('display-k').innerText = simK;
+            document.getElementById('code-k').innerText = simK;
+
+            // Parse Items (A then B)
+            let text = document.getElementById('input-items').value.trim();
+            let lines = text.split('\n');
+            simItems = [];
+            
+            for(let line of lines) {
+                let parts = line.trim().split(/\s+/);
+                if(parts.length >= 2) {
+                    let a = parseInt(parts[0]);
+                    let b = parseInt(parts[1]);
+                    if(!isNaN(a) && !isNaN(b)) {
+                        simItems.push({A: a, B: b, w: a, v: Math.max(0, b - a)}); // Fix: Math.max to prevent negatives
+                    }
+                }
+            }
+            
+            if(simItems.length === 0) {
+                simItems = [{A:3, B:4, w:3, v:1}, {A:2, B:3, w:2, v:1}, {A:2, B:4, w:2, v:2}];
+                document.getElementById('input-items').value = "3 4\n2 3\n2 4";
+            }
+            simN = simItems.length;
+            document.getElementById('code-n').innerText = simN;
+
+            // Render top items badges
+            let itemsHtml = '';
+            simItems.forEach((it, idx) => {
+                itemsHtml += `
+                <div class="bg-slate-700 p-2 rounded border border-slate-600 flex flex-col text-center min-w-[70px]">
+                    <span class="text-[10px] text-amber-400 font-bold mb-1">Product ${idx}</span>
+                    <span>w=${it.w}, v=${it.v}</span>
+                </div>`;
+            });
+            document.getElementById('display-items').innerHTML = itemsHtml;
+
+            // Reset DP and Build Steps
+            dpState = new Array(simK + 1).fill(-1);
+            buildDynamicSteps();
+            
+            currentStepIndex = -1;
+            
+            // Reset UI Values
+            document.getElementById('var-i').innerText = "-";
+            document.getElementById('var-w').innerText = "-";
+            document.getElementById('var-v').innerText = "-";
+            document.getElementById('var-j').innerText = "-";
+            document.getElementById('var-ans').innerText = "-";
+            
+            document.getElementById('step-explanation').innerHTML = `<strong class="text-primary text-lg block mb-2">✅ تم اعتماد البيانات!</strong>قمنا بتجهيز المتجر بالبيانات التي أدخلتها.<br>الهدف المطلوب: <span class="ltr-box font-mono font-bold">${simK}</span>، وعدد المنتجات المتاحة: <span class="ltr-box font-mono font-bold">${simN}</span>.<br>اضغط <span class="font-bold text-amber-600">"الخطوة التالية"</span> لبدء المحاكاة.`;
+            
+            renderDPArray(dpState);
+            document.querySelectorAll('.code-line').forEach(el => el.classList.remove('active-line'));
+        }
+
+        function renderDPArray(state, highlightJ = -1, highlightSource = -1) {
+            let html = '';
+            for(let idx=0; idx<=simK; idx++) {
+                let val = state[idx] === -1 ? "-1" : state[idx];
+                let colorClass = state[idx] === -1 ? "bg-slate-100 text-slate-400" : "bg-emerald-50 text-emerald-800 border-emerald-300 shadow-sm";
+                
+                if (idx === highlightJ) {
+                    colorClass = "bg-amber-100 text-amber-900 border-amber-500 border-2 scale-110 shadow-lg transform z-20 relative ring-2 ring-amber-400 ring-opacity-50";
+                } else if (idx === highlightSource) {
+                    colorClass = "bg-blue-100 text-blue-900 border-blue-400 border-2 scale-105 shadow-md transform z-10 relative border-dashed";
+                }
+
+                let label = `dp[${idx}]`;
+                if(idx === highlightJ) label = `🎯 dp[${idx}]`;
+                if(idx === highlightSource) label = `👁️ dp[${idx}]`;
+
+                html += `
+                <div class="flex-1 min-w-[50px] md:min-w-[60px] border border-slate-300 rounded flex flex-col transition-all duration-300 ${colorClass}">
+                    <span class="text-[10px] md:text-xs bg-slate-800 text-white rounded-t mb-1 opacity-90 p-1 truncate ltr-box w-full text-center">${label}</span>
+                    <span class="font-bold text-lg md:text-xl pt-1 pb-2 ltr-box w-full text-center">${val}</span>
+                </div>`;
+            }
+            document.getElementById('dp-array-visual').innerHTML = html;
+        }
+
+        function buildDynamicSteps() {
+            stepsData = [];
+            
+            // Initialization
+            stepsData.push({
+                lines: ['init1', 'init2'], dp: [...dpState], i: "-", w: "-", v: "-", j: "-", ans: "-", hlJ: -1, hlS: -1,
+                desc: `<strong class="text-blue-700 block mb-2 text-lg">تهيئة الذاكرة (دفتر الملاحظات)</strong>
+                       عرّفنا مصفوفة في الذاكرة باسم <span class="ltr-box font-mono text-primary font-bold">dp</span>. جعلنا حجمها <span class="ltr-box font-mono font-bold">${simK + 1}</span> خانات.<br><br>
+                       وضعنا في الخانة الأولى القيمة 0 <span class="ltr-box font-mono bg-white px-1 border rounded text-sm">(dp[0] = 0)</span> لأنه إذا لم ندفع أي قطعة فلن نحصل على مكافآت.<br>
+                       باقي الخانات ملأناها بالرقم <span class="ltr-box font-mono text-rose-600 font-bold">-1</span> ليدل على مسار مستحيل حالياً.`
+            });
+            
+            // Set dp[0] = 0 for internal tracking
+            let internalDp = new Array(simK + 1).fill(-1);
+            internalDp[0] = 0;
+
+            for (let i = 0; i < simN; i++) {
+                let w = simItems[i].w;
+                let v = simItems[i].v;
+
+                stepsData.push({
+                    lines: ['for1', 'vars'], dp: [...internalDp], i: i.toString(), w: w.toString(), v: v.toString(), j: "-", ans: "-", hlJ: -1, hlS: -1,
+                    desc: `<strong class="text-primary block mb-2 text-lg">زيارة المنتج رقم ${i}</strong>
+                           الكمبيوتر يقرأ المنتج الحالي.<br>
+                           تم تسجيل التكلفة <span class="ltr-box font-mono text-rose-600 font-bold">w = ${w}</span>، وتسجيل المكافأة <span class="ltr-box font-mono text-emerald-600 font-bold">v = ${v}</span>.`
+                });
+
+                if (w > simK) {
+                    stepsData.push({
+                        lines: ['skip'], dp: [...internalDp], i: i.toString(), w: w.toString(), v: v.toString(), j: "-", ans: "-", hlJ: -1, hlS: -1,
+                        desc: `<strong class="text-red-600 block mb-2 text-lg">تخطي المنتج (حماية الذاكرة)</strong>
+                               الكمبيوتر لاحظ أن تكلفة هذا المنتج (<span class="ltr-box font-mono">${w}</span>) أكبر من هدفنا الأقصى (<span class="ltr-box font-mono">${simK}</span>).<br>
+                               لذا يتجاهله فوراً بأمر <span class="ltr-box font-mono text-red-600 font-bold">continue</span> ليوفر الوقت ومساحة الذاكرة.`
+                    });
+                    continue;
+                }
+
+                stepsData.push({
+                    lines: ['for2'], dp: [...internalDp], i: i.toString(), w: w.toString(), v: v.toString(), j: simK.toString(), ans: "-", hlJ: -1, hlS: -1,
+                    desc: `<strong class="text-purple-700 block mb-2 text-lg">بدء المسح العكسي للذاكرة</strong>
+                           أنشأنا حلقة تكرار داخلية بمؤشر اسمه <span class="ltr-box font-mono text-amber-600 font-bold">j</span>. ستبدأ بالمشي <strong>عكسياً</strong> من الخانة الأخيرة (${simK}) نزولاً إلى التكلفة (${w}).`
+                });
+
+                for (let j = simK; j >= w; j--) {
+                    let sourceJ = j - w;
+                    let sourceVal = internalDp[sourceJ];
+                    
+                    stepsData.push({
+                        lines: ['check'], dp: [...internalDp], i: i.toString(), w: w.toString(), v: v.toString(), j: j.toString(), ans: "-", hlJ: j, hlS: sourceJ,
+                        desc: `<strong class="text-amber-700 block mb-2 text-lg">فحص صلاحية المسار</strong>
+                               نحن نقف عند الخانة <span class="ltr-box font-mono font-bold">j = ${j}</span> 🎯. ننظر للخلف بمقدار التكلفة لـ <span class="ltr-box font-mono font-bold">dp[${sourceJ}]</span> 👁️.<br><br>
+                               يسأل الكمبيوتر: هل الخانة السابقة صالحة (لا تساوي -1)؟<br>
+                               الجواب: ${sourceVal === -1 ? '<strong class="text-red-600">لا، قيمتها -1 (مسار مغلق). سنتجاهلها.</strong>' : `<strong class="text-emerald-600">نعم! قيمتها ${sourceVal}.</strong> سندخل لعملية التحديث.`}`
+                    });
+
+                    if (sourceVal !== -1) {
+                        let potentialVal = sourceVal + v;
+                        let newVal = Math.min(simK, potentialVal); // Prevent overflow limit
+                        let currentVal = internalDp[j];
+                        let isBetter = newVal > currentVal;
+                        
+                        internalDp[j] = Math.max(currentVal, newVal);
+                        
+                        let updateDesc = `<strong class="text-emerald-700 block mb-2 text-lg">تحديث الذاكرة (تسجيل استثمار)</strong>
+                                          نقوم بتحديث الخانة 🎯 <span class="ltr-box font-mono font-bold">dp[${j}]</span>.<br>
+                                          المعادلة: الأكبر بين قيمتها القديمة (<span class="ltr-box font-mono">${currentVal}</span>) والجديدة (<span class="ltr-box font-mono">${sourceVal} + ${v} = ${potentialVal}</span>).`;
+                        if(potentialVal > simK) updateDesc += `<br><span class="text-xs text-rose-600 mt-1 block">ملاحظة: تم قص القيمة إلى ${simK} لمنع تجاوز الحد الأقصى (Overflow).</span>`;
+                        updateDesc += `<br><br>النتيجة: أصبحت قيمة <span class="ltr-box font-mono font-bold">dp[${j}]</span> هي <strong>${internalDp[j]}</strong>.`;
+
+                        stepsData.push({
+                            lines: ['update'], dp: [...internalDp], i: i.toString(), w: w.toString(), v: v.toString(), j: j.toString(), ans: "-", hlJ: j, hlS: sourceJ,
+                            desc: updateDesc
+                        });
+                    }
+                }
+            }
+
+            // Answer Phase
+            stepsData.push({
+                lines: ['ans1', 'ans2'], dp: [...internalDp], i: "-", w: "-", v: "-", j: "-", ans: simK.toString(), hlJ: -1, hlS: -1,
+                desc: `<strong class="text-blue-700 block mb-2 text-lg">مرحلة حصد النتائج</strong>
+                       انتهينا من بناء الذاكرة! عرّفنا متغيراً اسمه <span class="ltr-box font-mono text-white font-bold bg-slate-700 px-1 rounded">ans = ${simK}</span> كبداية (السيناريو الأسوأ: شراء ${simK} قطع عادية).<br>
+                       الآن أنشأنا حلقة جديدة تمر على مصفوفة الذاكرة لحساب أفضل إجابة.`
+            });
+
+            let bestAns = simK;
+            for (let w = 0; w <= simK; w++) {
+                if (internalDp[w] !== -1) {
+                    let v = internalDp[w];
+                    let rem = Math.max(0, simK - w);
+                    let pieces;
+                    
+                    let calcDesc = `<strong class="text-emerald-700 block mb-2 text-lg">فحص العرض 🎯 <span class="ltr-box">dp[${w}]</span></strong>
+                                    الخانة صالحة. التكلفة المدفوعة: <span class="ltr-box font-mono font-bold">${w}</span> قطع.<br>
+                                    يتبقى للهدف <span class="ltr-box font-mono font-bold">${rem}</span> نقاط. والمكافآت المتاحة هنا <span class="ltr-box font-mono font-bold">${v}</span> قطع (تعطي ${v*2} نقاط).<br><br>`;
+                    
+                    if (v * 2 >= rem) {
+                        pieces = w + Math.floor((rem + 1) / 2);
+                        calcDesc += `المكافأة تكفي! نشتري ${Math.floor((rem+1)/2)} قطعة ذهبية لتغطية المتبقي.<br>
+                                     الإجمالي: ${w} + ${Math.floor((rem+1)/2)} = <strong>${pieces} قطع</strong>.`;
+                    } else {
+                        pieces = simK - v;
+                        calcDesc += `المكافأة <strong>لا تكفي</strong>. نشتريها كلها ونكمل بقطع عادية.<br>
+                                     الرياضيات تخبرنا أن الإجمالي سيكون: ${simK} - ${v} = <strong>${pieces} قطع</strong>.`;
+                    }
+                    
+                    if (pieces < bestAns) {
+                        bestAns = pieces;
+                        calcDesc += `<br><span class="text-primary font-bold mt-2 block">رقم قياسي جديد! نحدث أفضل إجابة (ans) لتصبح ${bestAns}.</span>`;
+                    } else {
+                        calcDesc += `<br><span class="text-slate-500 font-bold mt-2 block">هذا الرقم ليس أفضل من الإجابة الحالية (${bestAns}). نتجاهله.</span>`;
+                    }
+
+                    stepsData.push({
+                        lines: ['ans3', 'ans4', 'ans5', 'ans6', 'ans7'], dp: [...internalDp], i: "-", w: "-", v: "-", j: "-", ans: bestAns.toString(), hlJ: w, hlS: -1,
+                        desc: calcDesc
+                    });
+                }
+            }
+
+            // Print
+            stepsData.push({
+                lines: ['print'], dp: [...internalDp], i: "-", w: "-", v: "-", j: "-", ans: bestAns.toString(), hlJ: -1, hlS: -1,
+                desc: `<strong class="text-accent block mb-2 text-xl font-black">النهاية السعيدة 🏆</strong>
+                       تنتهي الحلقة ويتم طباعة الرقم <strong class="text-2xl">${bestAns}</strong> على الشاشة.<br>
+                       الخوارزمية اتخذت القرار الصحيح بفضل البرمجة الديناميكية.`
+            });
+        }
+
+        function updateUI(step) {
+            const expDiv = document.getElementById('step-explanation');
+            if (expDiv.innerHTML !== step.desc) {
+                expDiv.style.opacity = 0;
+                setTimeout(() => {
+                    expDiv.innerHTML = step.desc;
+                    expDiv.style.opacity = 1;
+                }, 150);
+            }
+            
+            renderDPArray(step.dp, step.hlJ, step.hlS);
+
+            // Update local memory boxes safely
+            const updateVar = (id, newVal) => {
+                const el = document.getElementById(id);
+                if (el && el.innerText !== newVal) {
+                    el.innerText = newVal;
+                    el.classList.add('var-updated');
+                    setTimeout(() => el.classList.remove('var-updated'), 300);
+                }
+            };
+            updateVar('var-i', step.i);
+            updateVar('var-w', step.w);
+            updateVar('var-v', step.v);
+            updateVar('var-j', step.j);
+            updateVar('var-ans', step.ans);
+
+            document.querySelectorAll('.code-line').forEach(el => el.classList.remove('active-line'));
+            step.lines.forEach(lineId => {
+                const lineEl = document.getElementById(`code-line-${lineId}`);
+                if (lineEl) lineEl.classList.add('active-line');
+            });
+        }
+
+        function nextStep() {
+            if (currentStepIndex < stepsData.length - 1) {
+                currentStepIndex++;
+                updateUI(stepsData[currentStepIndex]);
+            } else {
+                document.getElementById('step-explanation').innerHTML = "<span class='text-emerald-700 font-bold text-lg text-center block w-full mt-4'>تمت المحاكاة بنجاح! الخوارزمية هزمت الفخ الجشع بذكاء.<br>عدّل الأرقام في اللوحة بالأعلى وجرب سيناريوهات مختلفة!</span>";
+            }
+        }
+
+        // Initialize with default Example on load
+        document.addEventListener('DOMContentLoaded', () => {
+            updateButtons();
+            loadDefaultExample();
+        });
+    </script>
+</body>
+</html>
