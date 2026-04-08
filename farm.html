@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الزراعة (2D Prefix Sums) | المدرب محمد مجممي</title>
+    
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts (Tajawal for Arabic) -->
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Tajawal', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: '#16a34a', // Green 600
+                        secondary: '#1e293b', // Slate 800
+                        accent: '#22c55e', // Green 500
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Tajawal', sans-serif; }
+        .lesson-content { display: none; animation: fadeIn 0.4s ease-in-out; }
+        .lesson-content.active { display: block; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .nav-item { transition: all 0.2s ease; border-right: 4px solid transparent; }
+        .nav-item.active { 
+            background-color: #f0fdf4; 
+            border-right: 4px solid #16a34a; 
+            color: #15803d; 
+            font-weight: bold;
+        }
+        .nav-item:hover:not(.active) { background-color: #f8fafc; }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* Code Highlighting Styles */
+        .code-line { transition: all 0.3s ease; padding: 0.15rem 0.5rem; margin: 0; border-radius: 0.25rem; border-left: 4px solid transparent; color: #e2e8f0; } 
+        .code-line.active-line { background-color: rgba(34, 197, 94, 0.3); border-left: 4px solid #4ade80; font-weight: bold; color: #ffffff; } 
+        
+        /* Mathematical Equations LTR Fix */
+        .ltr-box { direction: ltr !important; unicode-bidi: isolate; display: inline-block; white-space: nowrap; }
+
+        /* Grid visualizer styles */
+        .grid-cell { transition: all 0.3s; }
+        .cell-highlight-1 { background-color: rgba(59, 130, 246, 0.3); border-color: #3b82f6; border-width: 2px;} /* Blue for square 1 */
+        .cell-highlight-2 { background-color: rgba(234, 179, 8, 0.3); border-color: #eab308; border-width: 2px;} /* Yellow for square 2 */
+        .split-line-h { border-bottom: 4px dashed #ef4444; }
+        .split-line-v { border-left: 4px dashed #ef4444; }
+    </style>
+</head>
+<body class="flex flex-col md:flex-row h-screen bg-slate-50 text-slate-800 overflow-hidden">
+
+    <!-- Sidebar Navigation -->
+    <aside class="w-full md:w-80 bg-white shadow-xl z-20 flex flex-col flex-shrink-0 md:h-screen">
+        <div class="p-6 bg-secondary text-white">
+            <h1 class="text-2xl font-black mb-2 tracking-wide text-transparent bg-clip-text bg-gradient-to-l from-green-400 to-emerald-400">
+                مسائل برمجية
+            </h1>
+            <p class="text-slate-300 text-sm">الزراعة (Farming) - 2D Grid</p>
+        </div>
+        
+        <nav class="flex-1 overflow-y-auto py-4" id="sidebar-nav">
+            <button onclick="showLesson(1)" id="nav-1" class="nav-item active w-full text-right px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <span>1. فهم المزرعة (التمهيد)</span>
+                <span class="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full">المشكلة</span>
+            </button>
+            <button onclick="showLesson(2)" id="nav-2" class="nav-item w-full text-right px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <span>2. الفخ البطيء (Brute Force)</span>
+                <span class="text-xs bg-slate-100 text-slate-700 px-2 py-1 rounded-full">تحليل</span>
+            </button>
+            <button onclick="showLesson(3)" id="nav-3" class="nav-item w-full text-right px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <span>3. سرعة البرق (Prefix Sum)</span>
+                <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">الخوارزمية</span>
+            </button>
+            <button onclick="showLesson(4)" id="nav-4" class="nav-item w-full text-right px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <span>4. خط الفصل السحري</span>
+                <span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">التقسيم</span>
+            </button>
+            <button onclick="showLesson(5)" id="nav-5" class="nav-item w-full text-right px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <span>5. الكود الأساسي للمحترفين</span>
+                <span class="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full shadow-sm">الكود</span>
+            </button>
+            <button onclick="showLesson(6)" id="nav-6" class="nav-item w-full text-right px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <span>6. المشغل التفاعلي للكود</span>
+                <span class="text-xs bg-accent text-white px-2 py-1 rounded-full shadow-md animate-pulse">تتبع حي</span>
+            </button>
+            <button onclick="showLesson(7)" id="nav-7" class="nav-item w-full text-right px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <span>7. عبقرية التعامل مع القيود</span>
+                <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full font-bold shadow-sm">متقدم</span>
+            </button>
+            <button onclick="showLesson(8)" id="nav-8" class="nav-item w-full text-right px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <span>8. أخطاء تجعل كودك لا يعمل</span>
+                <span class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-bold shadow-sm">تنبيهات</span>
+            </button>
+        </nav>
+        
+        <!-- Footer / Signature -->
+        <div class="p-4 bg-slate-100 text-center border-t border-slate-200 mt-auto">
+            <p class="text-sm font-bold text-slate-600">إعداد وتصميم</p>
+            <p class="text-lg font-black text-primary mt-1">المدرب / محمد مجممي</p>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 h-full overflow-y-auto scroll-smooth relative" id="main-content">
+        
+        <div class="max-w-4xl mx-auto p-6 md:p-10 pb-32">
+            
+            <!-- Lesson 1 -->
+            <section id="lesson-1" class="lesson-content active">
+                <header class="mb-8">
+                    <h2 class="text-3xl md:text-4xl font-black text-secondary mb-4">الدرس الأول: فهم المزرعة والهدف المطلوب</h2>
+                    <p class="text-lg text-slate-600 leading-relaxed">تحليل مسألة "الزراعة (Farming)" وفك شفرة المتغيرات.</p>
+                </header>
+
+                <div class="space-y-6">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                        <h3 class="text-xl font-bold text-primary mb-3">قاموس المصطلحات 📖</h3>
+                        <p class="mb-4 leading-relaxed text-slate-700">
+                            لدينا مزرعة كبيرة مقسمة إلى شبكة مربعة. يريد صديقان اختيار "مربعين" من هذه المزرعة لحصادهما. الشرط الأساسي ألا يتقاطع المربعان. لنتعرف على المتغيرات:
+                        </p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                            <div class="bg-slate-50 p-4 rounded border border-slate-200">
+                                <span class="text-primary font-black text-xl mb-1 block ltr-box">N</span>
+                                <span class="font-bold text-slate-800">حجم المزرعة الكلية:</span>
+                                <p class="text-sm text-slate-600 mt-1">المزرعة عبارة عن شبكة أبعادها <span class="ltr-box font-mono">N &times; N</span>. الخلية الواحدة تحتوي على قيمة المحصول.</p>
+                            </div>
+                            <div class="bg-slate-50 p-4 rounded border border-slate-200">
+                                <span class="text-primary font-black text-xl mb-1 block ltr-box">K</span>
+                                <span class="font-bold text-slate-800">حجم المربع المطلوب:</span>
+                                <p class="text-sm text-slate-600 mt-1">كل صديق يريد حصاد مربع فرعي أبعاده <span class="ltr-box font-mono">K &times; K</span> בדיוק.</p>
+                            </div>
+                            <div class="bg-emerald-50 p-4 rounded border border-emerald-200 md:col-span-2">
+                                <span class="text-emerald-600 font-black text-xl mb-1 block ltr-box">G<sub>i,j</sub></span>
+                                <span class="font-bold text-emerald-900">قيمة المحصول (موجب أو سالب!):</span>
+                                <p class="text-sm text-emerald-800 mt-1">كل خلية لها قيمة، إذا كانت موجبة فهي أرباح، وإذا كانت <strong class="text-red-600">سالبة</strong> فهي محاصيل فاسدة تسبب خسارة. هدفنا هو إيجاد مربعين غير متقاطعين يكون مجموع خلاياهما <strong>أكبر ما يمكن</strong>.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Lesson 2 -->
+            <section id="lesson-2" class="lesson-content">
+                <header class="mb-8">
+                    <h2 class="text-3xl md:text-4xl font-black text-secondary mb-4">الدرس الثاني: الفخ البطيء (Brute Force)</h2>
+                    <p class="text-lg text-slate-600 leading-relaxed">كيف يفكر المبتدئون؟ ولماذا يتسبب هذا التفكير في تجاوز الوقت (Time Limit)؟</p>
+                </header>
+
+                <div class="space-y-6">
+                    <div class="bg-slate-50 p-6 rounded-xl shadow-sm border border-slate-200">
+                        <h3 class="text-xl font-bold text-slate-800 mb-3 flex items-center gap-2">
+                            <span>🐢</span> الحل التقليدي البطيء جداً
+                        </h3>
+                        <p class="leading-relaxed mb-4 text-slate-700 text-sm font-medium">
+                            التفكير البديهي هو تجربة كل الاحتمالات الممكنة:
+                        </p>
+                        <ul class="list-disc list-inside space-y-2 text-slate-600 text-sm mb-4">
+                            <li>نختار المربع الأول (يحتاج لتحديد نقطة البداية <span class="ltr-box">x1, y1</span>).</li>
+                            <li>نختار المربع الثاني (يحتاج لتحديد نقطة البداية <span class="ltr-box">x2, y2</span>).</li>
+                            <li>نتأكد أنهما لا يتقاطعان.</li>
+                            <li>نقوم بجمع القيم داخل المربعين بمرور (Loop) على جميع خلاياهما.</li>
+                        </ul>
+                        
+                        <div class="bg-red-50 p-4 rounded border border-red-200">
+                            <strong class="text-red-700 block mb-2">لماذا هذا كارثة برمجية؟</strong>
+                            <p class="text-sm text-red-900 leading-relaxed">
+                                حجم المزرعة <span class="ltr-box font-bold">N</span> يصل إلى 500. لاختيار المربعين وحساب المجموع، سيقوم الكمبيوتر بعمليات تقارب <span class="ltr-box font-bold">O(N<sup>6</sup>)</span>. <br>
+                                <span class="ltr-box">500<sup>6</sup> = 15,625,000,000,000,000</span> عملية! <br>
+                                الكمبيوتر يحتاج إلى <strong>سنين</strong> لحل هذه المسألة، بينما الوقت المسموح هو <strong>1 ثانية فقط!</strong>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Lesson 3 -->
+            <section id="lesson-3" class="lesson-content">
+                <header class="mb-8">
+                    <h2 class="text-3xl md:text-4xl font-black text-secondary mb-4">الدرس الثالث: سرعة البرق (2D Prefix Sum)</h2>
+                    <p class="text-lg text-slate-600 leading-relaxed">التقنية الأولى: كيف نحسب مجموع أي مربع في لحظة واحدة O(1)؟</p>
+                </header>
+
+                <div class="space-y-6">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                        <h3 class="text-xl font-bold text-blue-600 mb-3 flex items-center gap-2">
+                            <span>⚡</span> مصفوفة المجاميع التراكمية ثنائية الأبعاد
+                        </h3>
+                        <p class="leading-relaxed mb-4 text-slate-700">
+                            للتخلص من بطء حساب المجموع في كل مرة، نقوم بتجهيز مصفوفة مسبقة اسمها <code class="bg-slate-100 px-1 rounded ltr-box text-blue-600">pref</code>. 
+                            كل خلية فيها تحفظ مجموع <strong>المستطيل الممتد من أعلى اليسار (0,0) إلى هذه الخلية</strong>.
+                        </p>
+                        
+                        <div class="bg-blue-50 border border-blue-200 p-5 rounded-lg mt-4">
+                            <h4 class="font-bold text-blue-900 mb-2">معادلة البناء السحرية:</h4>
+                            <p class="ltr-box bg-white p-2 rounded border border-blue-100 text-sm font-mono text-slate-800 w-full text-left overflow-x-auto">
+                                pref[i][j] = G[i][j] + pref[i-1][j] + pref[i][j-1] - pref[i-1][j-1]
+                            </p>
+                            <p class="text-xs text-blue-800 mt-2">نطرح الجزء المتقاطع <span class="ltr-box">pref[i-1][j-1]</span> لأننا جمعناه مرتين.</p>
+                        </div>
+
+                        <div class="bg-emerald-50 border border-emerald-200 p-5 rounded-lg mt-4">
+                            <h4 class="font-bold text-emerald-900 mb-2">معادلة الاستخراج في O(1):</h4>
+                            <p class="text-sm text-slate-700 mb-2">الآن، إذا أردنا مجموع مربع حجمه <span class="ltr-box">K &times; K</span> ينتهي عند الزاوية السفلية اليمنى <span class="ltr-box">(i, j)</span>، نستخدم هذه المعادلة الفورية:</p>
+                            <p class="ltr-box bg-white p-2 rounded border border-emerald-100 text-sm font-mono text-slate-800 w-full text-left overflow-x-auto">
+                                sum = pref[i][j] - pref[i-K][j] - pref[i][j-K] + pref[i-K][j-K]
+                            </p>
+                            <p class="text-xs text-emerald-800 mt-2">بهذه المعادلة، أصبحنا نعرف مجموع أي مربع فوراً بدون أي Loops!</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Lesson 4 -->
+            <section id="lesson-4" class="lesson-content">
+                <header class="mb-8">
+                    <h2 class="text-3xl md:text-4xl font-black text-secondary mb-4">الدرس الرابع: خط الفصل السحري</h2>
+                    <p class="text-lg text-slate-600 leading-relaxed">التقنية الثانية: كيف نضمن عدم تقاطع المربعين بذكاء؟</p>
+                </header>
+
+                <div class="space-y-6">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                        <p class="leading-relaxed mb-6 text-slate-700">
+                            هناك قاعدة هندسية ثابتة: <strong>أي مستطيلين/مربعين لا يتقاطعان في شبكة، يمكن دائماً الفصل بينهما بخط مستقيم (إما خط أُفقي أو خط عمودي) يمر من أول الشبكة لآخرها.</strong>
+                        </p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="bg-purple-50 p-4 rounded-xl border border-purple-200 shadow-sm text-center">
+                                <h4 class="font-bold text-purple-800 mb-2 border-b border-purple-200 pb-2">الفصل الأُفقي (Horizontal Split)</h4>
+                                <div class="w-full h-32 bg-white border-2 border-slate-800 relative my-3">
+                                    <!-- Top Square -->
+                                    <div class="absolute top-2 right-4 w-10 h-10 bg-blue-300 border border-blue-500"></div>
+                                    <!-- Split Line -->
+                                    <div class="absolute top-1/2 left-0 w-full border-t-2 border-dashed border-red-500"></div>
+                                    <!-- Bottom Square -->
+                                    <div class="absolute bottom-2 left-6 w-10 h-10 bg-amber-300 border border-amber-500"></div>
+                                </div>
+                                <p class="text-xs text-slate-600 text-justify">نمرر خطاً أفقياً ونبحث عن: أفضل مربع في المنطقة العلوية + أفضل مربع في المنطقة السفلية.</p>
+                            </div>
+
+                            <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm text-center">
+                                <h4 class="font-bold text-indigo-800 mb-2 border-b border-indigo-200 pb-2">الفصل العمودي (Vertical Split)</h4>
+                                <div class="w-full h-32 bg-white border-2 border-slate-800 relative my-3">
+                                    <!-- Left Square (Arabic layout: right is start, but let's just show visual) -->
+                                    <div class="absolute top-6 left-2 w-10 h-10 bg-blue-300 border border-blue-500"></div>
+                                    <!-- Split Line -->
+                                    <div class="absolute top-0 left-1/2 h-full border-l-2 border-dashed border-red-500"></div>
+                                    <!-- Right Square -->
+                                    <div class="absolute bottom-4 right-2 w-10 h-10 bg-amber-300 border border-amber-500"></div>
+                                </div>
+                                <p class="text-xs text-slate-600 text-justify">نمرر خطاً عمودياً ونبحث عن: أفضل مربع في المنطقة اليمنى + أفضل مربع في المنطقة اليسرى.</p>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 bg-slate-800 text-white p-5 rounded-lg shadow-inner">
+                            <h4 class="font-bold text-amber-400 mb-3">الخطة البرمجية للتقسيم:</h4>
+                            <ul class="space-y-3 text-sm">
+                                <li>1. نجهز 4 مصفوفات تحفظ أفضل مجموع للمربعات في الاتجاهات الأربعة: <code class="text-emerald-300 ltr-box">top_max</code>, <code class="text-emerald-300 ltr-box">bottom_max</code>, <code class="text-emerald-300 ltr-box">left_max</code>, <code class="text-emerald-300 ltr-box">right_max</code>.</li>
+                                <li>2. نجرّب كل خطوط القص الأفقية الممكنة، ونحسب: <br><code class="text-amber-200 block mt-1 ltr-box">ans = max(ans, top_max[i] + bottom_max[i+1])</code></li>
+                                <li>3. نجرّب كل خطوط القص العمودية الممكنة، ونحسب: <br><code class="text-amber-200 block mt-1 ltr-box">ans = max(ans, left_max[j] + right_max[j+1])</code></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Lesson 5 -->
+            <section id="lesson-5" class="lesson-content">
+                <header class="mb-8">
+                    <h2 class="text-3xl md:text-4xl font-black text-secondary mb-4">الدرس الخامس: الكود الأساسي للمحترفين</h2>
+                    <p class="text-lg text-slate-600 leading-relaxed">النسخة المعتمدة والمحمية ضد التجاوزات باستخدام C++.</p>
+                </header>
+
+                <div class="space-y-6">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                        <p class="leading-relaxed mb-4 text-slate-700">
+                            اضغط على علامة التعجب <span class="bg-amber-100 text-amber-600 w-6 h-6 inline-flex items-center justify-center rounded-full font-black text-sm mx-1">!</span> بجوار الكود لتفهم وظيفة كل كتلة برمجية. (استخدمنا 1-based indexing لتسهيل الحسابات).
+                        </p>
+
+                        <!-- Code Block with Popover -->
+                        <div class="relative group my-4 shadow-sm rounded-xl overflow-hidden border border-slate-800">
+                            <button onclick="openModal('exp-1')" title="شرح الكود" class="absolute top-3 right-3 bg-accent text-white rounded-full w-8 h-8 flex items-center justify-center font-black shadow-md hover:bg-green-600 transition-transform transform hover:scale-110 z-10 cursor-pointer">!</button>
+                            
+                            <div id="exp-1" class="hidden">
+                                <ul class="list-disc list-inside space-y-4 text-slate-700 font-medium text-sm">
+                                    <li class="leading-relaxed"><strong class="text-red-600">long long:</strong> استخدمناها لأن القيم تصل إلى $10^9$، والمجموع قد يصل لـ $2.5 \times 10^{14}$ مما يكسر الـ int.</li>
+                                    <li class="leading-relaxed"><strong class="text-purple-600">-1e18 (-INF):</strong> القيمة الابتدائية. لا تستخدم صفر أبداً! لأن أفضل مزرعة قد تكون كلها قيم سالبة.</li>
+                                    <li class="leading-relaxed"><strong class="text-blue-600">auto get_sum:</strong> دالة سريعة (Lambda) تستخدم مصفوفة pref لجلب مجموع أي مربع KxK في لحظة واحدة O(1).</li>
+                                    <li class="leading-relaxed"><strong class="text-emerald-600">الفصل (Split):</strong> في نهاية الكود، اللوب الأول يفصل الشبكة أفقياً (top + bottom)، واللوب الثاني يفصل عمودياً (left + right).</li>
+                                </ul>
+                            </div>
+
+<pre dir="ltr" class="text-left m-0 rounded-none"><code class="language-cpp">#include &lt;iostream&gt;
+#include &lt;vector&gt;
+#include &lt;algorithm&gt;
+
+using namespace std;
+
+// حماية من القيم السالبة الضخمة
+const long long INF = 1e18; 
+
+int main() {
+    // تسريع القراءة لتخطي Time Limit
+    ios_base::sync_with_stdio(false); cin.tie(NULL);
+    
+    int N, K;
+    if (!(cin &gt;&gt; N &gt;&gt; K)) return 0;
+
+    // مصفوفة البيانات ومصفوفة التراكم (1-based indexing)
+    vector&lt;vector&lt;long long&gt;&gt; grid(N + 1, vector&lt;long long&gt;(N + 1, 0));
+    vector&lt;vector&lt;long long&gt;&gt; pref(N + 1, vector&lt;long long&gt;(N + 1, 0));
+
+    // قراءة البيانات وبناء مصفوفة المجاميع التراكمية
+    for (int i = 1; i &lt;= N; i++) {
+        for (int j = 1; j &lt;= N; j++) {
+            cin &gt;&gt; grid[i][j];
+            pref[i][j] = grid[i][j] + pref[i - 1][j] + pref[i][j - 1] - pref[i - 1][j - 1];
+        }
+    }
+
+    // دالة لاستخراج مجموع مربع KxK ينتهي عند (i, j) في O(1)
+    auto get_sum = [&](int i, int j) {
+        return pref[i][j] - pref[i - K][j] - pref[i][j - K] + pref[i - K][j - K];
+    };
+
+    // مصفوفات لحفظ أفضل المربعات من الاتجاهات الأربعة
+    vector&lt;long long&gt; top_max(N + 2, -INF), bottom_max(N + 2, -INF);
+    vector&lt;long long&gt; left_max(N + 2, -INF), right_max(N + 2, -INF);
+
+    // 1. حساب أفضل مربع من الأعلى
+    long long cur_max_top = -INF;
+    for (int i = K; i &lt;= N; i++) {
+        for (int j = K; j &lt;= N; j++) {
+            cur_max_top = max(cur_max_top, get_sum(i, j));
+        }
+        top_max[i] = cur_max_top;
+    }
+
+    // 2. حساب أفضل مربع من اليسار
+    long long cur_max_left = -INF;
+    for (int j = K; j &lt;= N; j++) {
+        for (int i = K; i &lt;= N; i++) {
+            cur_max_left = max(cur_max_left, get_sum(i, j));
+        }
+        left_max[j] = cur_max_left;
+    }
+
+    // 3. حساب أفضل مربع من الأسفل
+    long long cur_max_bottom = -INF;
+    for (int i = N - K + 1; i &gt;= 1; i--) {
+        for (int j = K; j &lt;= N; j++) {
+            cur_max_bottom = max(cur_max_bottom, get_sum(i + K - 1, j));
+        }
+        bottom_max[i] = cur_max_bottom;
+    }
+
+    // 4. حساب أفضل مربع من اليمين
+    long long cur_max_right = -INF;
+    for (int j = N - K + 1; j &gt;= 1; j--) {
+        for (int i = K; i &lt;= N; i++) {
+            cur_max_right = max(cur_max_right, get_sum(i, j + K - 1));
+        }
+        right_max[j] = cur_max_right;
+    }
+
+    long long ans = -INF; // الجواب النهائي
+    
+    // التقسيم الأفقي (نجرب كل خطوط القص الأفقية)
+    for (int i = K; i &lt;= N - K; i++) {
+        ans = max(ans, top_max[i] + bottom_max[i + 1]);
+    }
+    
+    // التقسيم العمودي (نجرب كل خطوط القص العمودية)
+    for (int j = K; j &lt;= N - K; j++) {
+        ans = max(ans, left_max[j] + right_max[j + 1]);
+    }
+
+    cout &lt;&lt; ans &lt;&lt; "\n";
+    return 0;
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Lesson 6: Interactive Simulator -->
+            <section id="lesson-6" class="lesson-content">
+                <header class="mb-8">
+                    <h2 class="text-3xl md:text-4xl font-black text-secondary mb-4">الدرس السادس: المشغل التفاعلي للكود</h2>
+                    <p class="text-lg text-slate-600 leading-relaxed">محاكاة حية توضح كيف يعمل "خط الفصل" لضمان عدم تقاطع المربعات.</p>
+                </header>
+
+                <!-- Input Panel -->
+                <div class="bg-slate-700 p-5 rounded-xl border border-slate-600 shadow-inner mb-6 text-white">
+                    <h3 class="font-bold text-lg mb-3 text-amber-400 border-b border-slate-600 pb-2">⚙️ لوحة إعداد المزرعة</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="text-slate-300 text-sm font-bold mb-2 block">حجم المزرعة N و المربع K:</label>
+                            <div class="flex gap-4">
+                                <div class="flex-1">
+                                    <span class="text-xs text-slate-400">N (حد أقصى 5):</span>
+                                    <input type="number" id="sim-n" value="3" min="2" max="5" class="w-full bg-slate-800 text-white px-3 py-1 rounded border border-slate-500 focus:outline-none text-center ltr-box mt-1">
+                                </div>
+                                <div class="flex-1">
+                                    <span class="text-xs text-slate-400">K:</span>
+                                    <input type="number" id="sim-k" value="1" min="1" max="2" class="w-full bg-slate-800 text-white px-3 py-1 rounded border border-slate-500 focus:outline-none text-center ltr-box mt-1">
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-slate-300 text-sm font-bold mb-2 block">قيم المحاصيل (N أسطر، N أرقام مسافة):</label>
+                            <textarea id="sim-grid" rows="3" class="w-full bg-slate-800 text-white px-3 py-1 rounded border border-slate-500 focus:outline-none text-left font-mono ltr-box text-sm leading-relaxed" dir="ltr">3 1 2
+4 5 4
+1 3 2</textarea>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex gap-3">
+                        <button onclick="startVisualizer()" class="flex-1 bg-green-600 hover:bg-green-500 text-white py-2 rounded font-bold text-sm transition-colors shadow-md">اعتماد وبدء المحاكاة ▶️</button>
+                    </div>
+                </div>
+
+                <!-- Visualizer View -->
+                <div class="bg-secondary rounded-xl shadow-2xl overflow-hidden flex flex-col border border-slate-700 mb-8" id="visualizer-container" style="display: none;">
+                    
+                    <!-- Controls -->
+                    <div class="bg-slate-800 p-4 border-b border-slate-700 flex flex-wrap gap-4 items-center justify-between">
+                        <div class="flex gap-2">
+                            <span class="text-slate-400 text-sm font-bold block mb-1">التقسيم الحالي:</span>
+                            <span id="split-type" class="text-amber-400 text-sm font-bold bg-slate-900 px-3 py-1 rounded border border-slate-600 shadow-inner">-</span>
+                        </div>
+                        <div class="flex gap-2 items-center text-white font-bold bg-slate-900 px-3 py-1 rounded border border-emerald-600">
+                            <span>المجموع الكلي: </span>
+                            <span id="total-sum" class="text-emerald-400 text-xl ltr-box ml-2">-</span>
+                        </div>
+                        <div class="flex gap-2 w-full md:w-auto">
+                            <button onclick="prevVizStep()" id="btn-prev-viz" disabled class="bg-slate-600 text-white px-4 py-2 rounded disabled:opacity-50">السابق</button>
+                            <button onclick="nextVizStep()" id="btn-next-viz" class="bg-primary hover:bg-green-500 text-white font-bold px-6 py-2 rounded transition-colors shadow-lg">الخطوة التالية</button>
+                        </div>
+                    </div>
+
+                    <!-- Split View: Grid & Explanation -->
+                    <div class="flex flex-col lg:flex-row">
+                        <!-- Left: Visual Grid -->
+                        <div class="w-full lg:w-1/2 bg-slate-900 p-8 flex flex-col items-center justify-center border-b lg:border-b-0 lg:border-l border-slate-700 min-h-[300px] relative">
+                            <div id="grid-wrapper" class="relative">
+                                <!-- Grid cells injected by JS -->
+                            </div>
+                        </div>
+
+                        <!-- Right: Explanation -->
+                        <div class="w-full lg:w-1/2 bg-slate-800 p-6 flex flex-col justify-center">
+                            <h3 class="text-amber-400 font-bold text-xl mb-4 border-b border-slate-600 pb-2">🧠 ماذا يحدث الآن؟</h3>
+                            <div id="viz-explanation" class="text-slate-300 leading-relaxed space-y-4 text-base">
+                                <!-- Explanation injected by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Lesson 7 -->
+            <section id="lesson-7" class="lesson-content">
+                <header class="mb-8">
+                    <h2 class="text-3xl md:text-4xl font-black text-secondary mb-4">الدرس السابع: عبقرية التعامل مع القيود ⚠️</h2>
+                    <p class="text-lg text-slate-600 leading-relaxed">كيف تمكن كودنا من اختراق قيود الـ Time Limit بسلام؟</p>
+                </header>
+
+                <div class="space-y-6">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            
+                            <!-- Analysis 1 -->
+                            <div class="bg-purple-50 p-5 rounded-lg border border-purple-200 shadow-sm">
+                                <h4 class="font-bold text-purple-800 mb-2 text-lg">1. قيد الوقت <span class="ltr-box font-normal text-base">(N &le; 500)</span></h4>
+                                <p class="text-sm text-slate-700 leading-relaxed mb-3">
+                                    الطريقة التقليدية تأخذ <span class="ltr-box font-mono">O(N<sup>6</sup>)</span>. يعني $1.5 \times 10^{16}$ عملية (بطيء جداً).
+                                    <br>أما الكود الخاص بنا (باستخدام Prefix Sums وتقسيم المزرعة)، فهو يمر على المزرعة بـ Loops متداخلة مرتين فقط لبناء المصفوفات. 
+                                    التعقيد الزمني هو <span class="ltr-box bg-white border border-purple-300 px-1 rounded">O(N<sup>2</sup>)</span>. 
+                                    <br>العمليات هي $500 \times 500 = 250,000$ عملية. الكمبيوتر ينهيها في <strong class="text-emerald-600">0.005 ثانية!</strong> متجاوزاً قيد الـ 1 ثانية باكتساح.
+                                </p>
+                            </div>
+
+                            <!-- Analysis 2 -->
+                            <div class="bg-blue-50 p-5 rounded-lg border border-blue-200 shadow-sm">
+                                <h4 class="font-bold text-blue-800 mb-2 text-lg">2. حساب المجموع في لحظة</h4>
+                                <p class="text-sm text-slate-700 leading-relaxed mb-3">
+                                    المشكلة الكبرى كانت في حساب مجموع مربع $K \times K$ في كل مرة، وهذا كان يستهلك $O(K^2)$. 
+                                    باستخدام مصفوفة المجاميع التراكمية <code class="ltr-box">pref</code>، تقلص الوقت من مرور ممل على مئات الخلايا إلى <strong>4 عمليات حسابية بسيطة</strong> <code class="ltr-box">(a - b - c + d)</code>. هذا سرّع الأداء بشكل خرافي.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Lesson 8: Errors -->
+            <section id="lesson-8" class="lesson-content">
+                <header class="mb-8">
+                    <h2 class="text-3xl md:text-4xl font-black text-secondary mb-4">الدرس الثامن: أخطاء تجعل كودك لا يعمل 🛑</h2>
+                    <p class="text-lg text-slate-600 leading-relaxed">الفخوخ القاتلة في هذه المسألة تحديداً والتي تجلب (Wrong Answer) أو (Time Limit).</p>
+                </header>
+
+                <div class="space-y-6">
+                    <!-- Error 1 -->
+                    <div class="bg-red-50 p-6 rounded-xl border border-red-200 shadow-sm relative overflow-hidden">
+                        <div class="absolute top-0 right-0 bg-red-500 text-white px-4 py-1 rounded-bl-lg font-bold text-sm">الفخ الأول</div>
+                        <h3 class="text-xl font-bold text-red-800 mt-2 mb-3 flex items-center gap-2">
+                            <span>💣</span> فخ السعة وتدمير الأرقام (Integer Overflow)
+                        </h3>
+                        <p class="text-slate-700 mb-4 leading-relaxed">
+                            لاحظ القيود: قيمة المحصول الواحد تصل إلى <span class="ltr-box">$10^9$</span>. إذا كان المربع بحجم <span class="ltr-box">$500 \times 500$</span> وكل القيم موجبة، فالمجموع سيصل إلى <span class="ltr-box">$250,000 \times 10^9 = 2.5 \times 10^{14}$</span>. 
+                            المتغير العادي <code class="ltr-box">int</code> ينكسر وينفجر عند <span class="ltr-box">$2 \times 10^9$</span>! إذا استخدمت <code class="ltr-box">int</code> ستحصل على أرقام سالبة غريبة وتفشل في التقييم.
+                        </p>
+                        <div class="bg-slate-900 rounded p-4 font-mono text-sm ltr-box text-left">
+                            <div class="text-red-400 line-through">int sum = 0; <span class="text-slate-500 ml-2">// خطأ كارثي</span></div>
+                            <div class="text-emerald-400 mt-2">long long sum = 0; <span class="text-slate-500 ml-2">// الحل الصحيح (سعة تصل لـ 10^18)</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Error 2 -->
+                    <div class="bg-orange-50 p-6 rounded-xl border border-orange-200 shadow-sm relative overflow-hidden">
+                        <div class="absolute top-0 right-0 bg-orange-500 text-white px-4 py-1 rounded-bl-lg font-bold text-sm">الفخ الثاني</div>
+                        <h3 class="text-xl font-bold text-orange-800 mt-2 mb-3 flex items-center gap-2">
+                            <span>☠️</span> التهيئة الخاطئة للقيم السالبة
+                        </h3>
+                        <p class="text-slate-700 mb-4 leading-relaxed">
+                            قد تكون المزرعة <strong>كلها محاصيل فاسدة (قيم سالبة)</strong>، والجواب الأفضل هو أقل خسارة ممكنة (مثلاً -50). 
+                            إذا قمت بتعريف المتغيرات للبحث عن الـ Max بوضع قيمتها الابتدائية <code class="ltr-box">0</code>، فإن الكود سيختار الصفر ويعتبره الجواب الأكبر، وهذا خطأ!
+                        </p>
+                        <div class="bg-slate-900 rounded p-4 font-mono text-sm ltr-box text-left">
+                            <div class="text-red-400 line-through">long long ans = 0; <span class="text-slate-500 ml-2">// خطأ: الجواب قد يكون سالب</span></div>
+                            <div class="text-emerald-400 mt-2">long long ans = -1e18; <span class="text-slate-500 ml-2">// الصح: نبدأ من سالب ما لا نهاية</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Error 3 -->
+                    <div class="bg-amber-50 p-6 rounded-xl border border-amber-200 shadow-sm relative overflow-hidden">
+                        <div class="absolute top-0 right-0 bg-amber-500 text-white px-4 py-1 rounded-bl-lg font-bold text-sm">الفخ الثالث</div>
+                        <h3 class="text-xl font-bold text-amber-800 mt-2 mb-3 flex items-center gap-2">
+                            <span>🕸️</span> الفوضى في المؤشرات (0-Based vs 1-Based)
+                        </h3>
+                        <p class="text-slate-700 mb-4 leading-relaxed">
+                            في خوارزمية Prefix Sums، استخدام مؤشرات تبدأ من 0 يضطرك لكتابة شروط <code class="ltr-box">if</code> مزعجة لمنع الكود من الخروج عن حدود المصفوفة السالبة (Out of Bounds). 
+                            أفضل طريقة لتجنب الأخطاء والمخالفات المزعجة هي جعل حجم المصفوفة <code class="ltr-box">N+1</code> وبدء الحلقات من <code class="ltr-box">1</code>، ليكون الصفر مجرد هامش آمن.
+                        </p>
+                    </div>
+
+                    <!-- Error 4 -->
+                    <div class="bg-blue-50 p-6 rounded-xl border border-blue-200 shadow-sm relative overflow-hidden">
+                        <div class="absolute top-0 right-0 bg-blue-500 text-white px-4 py-1 rounded-bl-lg font-bold text-sm">الفخ الرابع</div>
+                        <h3 class="text-xl font-bold text-blue-800 mt-2 mb-3 flex items-center gap-2">
+                            <span>⏱️</span> عدم تسريع الإدخال
+                        </h3>
+                        <p class="text-slate-700 mb-4 leading-relaxed">
+                            عندما يكون <span class="ltr-box">N = 500</span>، لدينا <span class="ltr-box">250,000</span> قيمة للطباعة والقراءة. دوال <code class="ltr-box">cin</code> العادية بطيئة جداً وتتسبب في Time Limit.
+                        </p>
+                        <div class="bg-slate-900 rounded p-4 font-mono text-sm ltr-box text-left text-emerald-400">
+                            ios_base::sync_with_stdio(false);<br>
+                            cin.tie(NULL);
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Navigation Buttons -->
+            <div class="flex justify-between items-center mt-12 pt-6 border-t border-slate-200">
+                <button id="prev-btn" onclick="navigate(-1)" class="px-6 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors hidden font-bold shadow-sm">
+                    &rarr; الدرس السابق
+                </button>
+                <div class="flex-1"></div> <!-- Spacer -->
+                <button id="next-btn" onclick="navigate(1)" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-green-700 transition-colors font-bold shadow-md hidden">
+                    الدرس التالي &larr;
+                </button>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Modal for Code Explanation -->
+    <div id="codeModal" class="fixed inset-0 bg-slate-900 bg-opacity-70 z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-lg w-full mx-4 transform scale-95 transition-transform duration-300" id="modalContentBlock">
+            <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
+                <h3 class="text-xl font-bold text-primary flex items-center gap-2">
+                    <span class="bg-amber-100 text-amber-600 w-8 h-8 rounded-full flex items-center justify-center font-black">!</span>
+                    شرح الكود البرمجي
+                </h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-red-500 text-4xl leading-none">&times;</button>
+            </div>
+            <!-- Modal Body Content -->
+            <div id="modalBody" class="mb-6 overflow-y-auto max-h-96 pr-2">
+                <!-- Dynamic Content Will Be Inserted Here -->
+            </div>
+            <button onclick="closeModal()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-3 rounded-lg transition-colors border border-slate-200">
+                إغلاق النافذة
+            </button>
+        </div>
+    </div>
+
+    <!-- JavaScript for Logic and Dynamic Simulation -->
+    <script>
+        // --- Sidebar Navigation Logic ---
+        let currentLesson = 1;
+        const totalLessons = 8;
+
+        function showLesson(lessonNumber) {
+            document.querySelectorAll('.lesson-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+
+            document.getElementById(`lesson-${lessonNumber}`).classList.add('active');
+            document.getElementById(`nav-${lessonNumber}`).classList.add('active');
+            
+            currentLesson = lessonNumber;
+            updateButtons();
+            document.getElementById('main-content').scrollTop = 0;
+            
+            if (window.innerWidth < 768 && document.getElementById('sidebar-nav').style.display === 'block') {
+                // Mobile behavior (assuming an external toggle function, but skipped here for standalone simplicity)
+            }
+        }
+
+        function navigate(direction) {
+            const newLesson = currentLesson + direction;
+            if (newLesson >= 1 && newLesson <= totalLessons) {
+                showLesson(newLesson);
+            }
+        }
+
+        function updateButtons() {
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+
+            prevBtn.style.display = currentLesson === 1 ? 'none' : 'block';
+            nextBtn.style.display = currentLesson === totalLessons ? 'none' : 'block';
+        }
+
+        // --- Modal Functions ---
+        function openModal(explanationId) {
+            const contentDiv = document.getElementById(explanationId);
+            if(!contentDiv) return;
+            
+            document.getElementById('modalBody').innerHTML = contentDiv.innerHTML;
+            
+            const modal = document.getElementById('codeModal');
+            const modalBox = document.getElementById('modalContentBlock');
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            void modal.offsetWidth;
+            
+            modal.classList.remove('opacity-0');
+            modalBox.classList.remove('scale-95');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('codeModal');
+            const modalBox = document.getElementById('modalContentBlock');
+            
+            modal.classList.add('opacity-0');
+            modalBox.classList.add('scale-95');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        }
+
+        // --- Grid Visualizer Engine (Lesson 6) ---
+        let vN = 3, vK = 1;
+        let vGrid = [];
+        let vizSteps = [];
+        let currentVizStep = -1;
+
+        function startVisualizer() {
+            let nInput = parseInt(document.getElementById('sim-n').value);
+            let kInput = parseInt(document.getElementById('sim-k').value);
+            let text = document.getElementById('sim-grid').value.trim();
+
+            if(isNaN(nInput) || nInput < 2) nInput = 3;
+            if(nInput > 5) nInput = 5; // Limiting for UI rendering
+            if(isNaN(kInput) || kInput < 1) kInput = 1;
+            if(kInput * 2 > nInput) {
+                alert(`قيمة K=${kInput} كبيرة جداً! يجب أن يكون ${kInput} × 2 أصغر من أو يساوي N=${nInput} لتتمكن من وضع مربعين بدون تقاطع.`);
+                kInput = Math.floor(nInput / 2);
+                document.getElementById('sim-k').value = kInput;
+            }
+            
+            document.getElementById('sim-n').value = nInput;
+            vN = nInput;
+            vK = kInput;
+
+            let lines = text.split('\n');
+            vGrid = [];
+            for(let i = 0; i < vN; i++) {
+                let row = [];
+                if(i < lines.length) {
+                    let parts = lines[i].trim().split(/\s+/);
+                    for(let j = 0; j < vN; j++) {
+                        let val = j < parts.length ? parseInt(parts[j]) : 0;
+                        row.push(isNaN(val) ? 0 : val);
+                    }
+                } else {
+                    for(let j=0; j<vN; j++) row.push(0);
+                }
+                vGrid.push(row);
+            }
+
+            document.getElementById('visualizer-container').style.display = 'flex';
+            buildVisualizerSteps();
+            currentVizStep = 0;
+            renderVizStep(currentVizStep);
+        }
+
+        function getGridSum(r, c) {
+            let s = 0;
+            for(let i=r; i<r+vK; i++) {
+                for(let j=c; j<c+vK; j++) {
+                    s += vGrid[i][j];
+                }
+            }
+            return s;
+        }
+
+        function buildVisualizerSteps() {
+            vizSteps = [];
+            
+            // Generate all valid squares
+            let squares = []; // {r, c, sum}
+            for(let i=0; i<=vN-vK; i++) {
+                for(let j=0; j<=vN-vK; j++) {
+                    squares.push({r: i, c: j, sum: getGridSum(i, j)});
+                }
+            }
+
+            let bestAns = -1e9;
+            let bestSplitType = '';
+
+            // 1. Horizontal Splits
+            for(let splitRow = vK; splitRow <= vN - vK; splitRow++) {
+                let topBest = {sum: -1e9, r:-1, c:-1};
+                let bottomBest = {sum: -1e9, r:-1, c:-1};
+
+                // Find best top
+                squares.forEach(sq => {
+                    if (sq.r + vK <= splitRow && sq.sum > topBest.sum) topBest = sq;
+                });
+                
+                // Find best bottom
+                squares.forEach(sq => {
+                    if (sq.r >= splitRow && sq.sum > bottomBest.sum) bottomBest = sq;
+                });
+
+                let total = topBest.sum + bottomBest.sum;
+                if(total > bestAns) bestAns = total;
+
+                vizSteps.push({
+                    type: 'horizontal',
+                    splitIndex: splitRow,
+                    sq1: topBest,
+                    sq2: bottomBest,
+                    total: total,
+                    desc: `<strong class="text-amber-400 block mb-2">نجرب القص الأُفقي عند الصف ${splitRow}</strong>
+                           قمنا بتمرير خط أفقي (باللون الأحمر). 
+                           <br><br>
+                           <span class="text-blue-300 border-r-2 border-blue-400 pr-2 block mb-2">أفضل مربع في النصف العلوي: مجموع خلاياه = <b class="text-white">${topBest.sum}</b></span>
+                           <span class="text-yellow-300 border-r-2 border-yellow-400 pr-2 block">أفضل مربع في النصف السفلي: مجموع خلاياه = <b class="text-white">${bottomBest.sum}</b></span>
+                           <br>
+                           المجموع لهذا الاحتمال = <strong class="text-emerald-400 text-xl">${total}</strong>`
+                });
+            }
+
+            // 2. Vertical Splits
+            for(let splitCol = vK; splitCol <= vN - vK; splitCol++) {
+                let leftBest = {sum: -1e9, r:-1, c:-1};
+                let rightBest = {sum: -1e9, r:-1, c:-1};
+
+                // Find best left (since it's LTR logic visually, we'll keep indices as they are)
+                squares.forEach(sq => {
+                    if (sq.c + vK <= splitCol && sq.sum > leftBest.sum) leftBest = sq;
+                });
+                
+                // Find best right
+                squares.forEach(sq => {
+                    if (sq.c >= splitCol && sq.sum > rightBest.sum) rightBest = sq;
+                });
+
+                let total = leftBest.sum + rightBest.sum;
+                if(total > bestAns) bestAns = total;
+
+                vizSteps.push({
+                    type: 'vertical',
+                    splitIndex: splitCol,
+                    sq1: leftBest,
+                    sq2: rightBest,
+                    total: total,
+                    desc: `<strong class="text-purple-400 block mb-2">نجرب القص العمودي عند العمود ${splitCol}</strong>
+                           قمنا بتمرير خط عمودي (باللون الأحمر). 
+                           <br><br>
+                           <span class="text-blue-300 border-r-2 border-blue-400 pr-2 block mb-2">أفضل مربع في النصف الأيسر: مجموع خلاياه = <b class="text-white">${leftBest.sum}</b></span>
+                           <span class="text-yellow-300 border-r-2 border-yellow-400 pr-2 block">أفضل مربع في النصف الأيمن: مجموع خلاياه = <b class="text-white">${rightBest.sum}</b></span>
+                           <br>
+                           المجموع لهذا الاحتمال = <strong class="text-emerald-400 text-xl">${total}</strong>`
+                });
+            }
+
+            // Final Step
+            vizSteps.push({
+                type: 'final',
+                total: bestAns,
+                desc: `<strong class="text-green-400 block mb-2 text-xl font-bold">النتيجة النهائية! 🏆</strong>
+                       بعد تجربة جميع خطوط القص الممكنة أفقياً وعمودياً (حتى لا تتقاطع المربعات)، وجدنا أن أفضل مجموع يمكن تحقيقه هو: <br><br>
+                       <span class="text-4xl font-bold text-white">${bestAns}</span>`
+            });
+        }
+
+        function renderVizStep(idx) {
+            let step = vizSteps[idx];
+            document.getElementById('viz-explanation').innerHTML = step.desc;
+            
+            document.getElementById('btn-prev-viz').disabled = (idx === 0);
+            document.getElementById('btn-next-viz').disabled = (idx === vizSteps.length - 1);
+            
+            if(step.type === 'final') {
+                document.getElementById('split-type').innerText = "تم الانتهاء";
+                document.getElementById('total-sum').innerText = step.total;
+                document.getElementById('grid-wrapper').innerHTML = `<div class="text-6xl animate-bounce">🏁</div>`;
+                return;
+            }
+
+            document.getElementById('split-type').innerText = step.type === 'horizontal' ? `قص أفقي (الصف ${step.splitIndex})` : `قص عمودي (العمود ${step.splitIndex})`;
+            document.getElementById('total-sum').innerText = step.total;
+
+            // Build visual grid
+            let wrapper = document.getElementById('grid-wrapper');
+            wrapper.innerHTML = '';
+            
+            // Standardize cell size
+            let cellSize = 50; 
+            if(window.innerWidth < 600) cellSize = 40;
+
+            wrapper.style.width = `${vN * cellSize}px`;
+            wrapper.style.height = `${vN * cellSize}px`;
+            wrapper.style.display = 'grid';
+            wrapper.style.gridTemplateColumns = `repeat(${vN}, ${cellSize}px)`;
+            wrapper.style.gridTemplateRows = `repeat(${vN}, ${cellSize}px)`;
+            wrapper.style.gap = '2px';
+            wrapper.style.backgroundColor = '#334155'; // gap color
+            wrapper.style.border = '2px solid #475569';
+
+            // Draw cells
+            for(let r=0; r<vN; r++) {
+                for(let c=0; c<vN; c++) {
+                    let cell = document.createElement('div');
+                    cell.className = 'bg-slate-800 text-white flex items-center justify-center font-bold text-sm ltr-box grid-cell';
+                    cell.innerText = vGrid[r][c];
+
+                    // Check if part of sq1 (Blue)
+                    if(r >= step.sq1.r && r < step.sq1.r + vK && c >= step.sq1.c && c < step.sq1.c + vK) {
+                        cell.classList.add('cell-highlight-1');
+                        cell.classList.remove('bg-slate-800');
+                    }
+                    // Check if part of sq2 (Yellow)
+                    else if(r >= step.sq2.r && r < step.sq2.r + vK && c >= step.sq2.c && c < step.sq2.c + vK) {
+                        cell.classList.add('cell-highlight-2');
+                        cell.classList.remove('bg-slate-800');
+                    }
+
+                    wrapper.appendChild(cell);
+                }
+            }
+
+            // Draw Split Line
+            let splitLine = document.createElement('div');
+            splitLine.style.position = 'absolute';
+            splitLine.style.zIndex = '10';
+            
+            if(step.type === 'horizontal') {
+                splitLine.className = 'split-line-h';
+                splitLine.style.top = `${step.splitIndex * cellSize + (step.splitIndex * 2)}px`; // approx pos with gaps
+                splitLine.style.left = '-10px';
+                splitLine.style.right = '-10px';
+                splitLine.style.height = '0';
+            } else {
+                splitLine.className = 'split-line-v';
+                splitLine.style.left = `${step.splitIndex * cellSize + (step.splitIndex * 2)}px`;
+                splitLine.style.top = '-10px';
+                splitLine.style.bottom = '-10px';
+                splitLine.style.width = '0';
+            }
+            wrapper.appendChild(splitLine);
+        }
+
+        function nextVizStep() {
+            if(currentVizStep < vizSteps.length - 1) {
+                currentVizStep++;
+                renderVizStep(currentVizStep);
+            }
+        }
+
+        function prevVizStep() {
+            if(currentVizStep > 0) {
+                currentVizStep--;
+                renderVizStep(currentVizStep);
+            }
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', () => {
+            updateButtons();
+        });
+    </script>
+</body>
+</html>
