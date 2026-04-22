@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>العمليات على مستوى البِت - الدرس الشامل</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #f1f5f9;
+        }
+        
+        /* القاعدة الصارمة لفصل اللغة الإنجليزية في سطر مستقل */
+        .en-line {
+            display: block; 
+            direction: ltr !important;
+            text-align: left !important;
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #e0f2fe;
+            color: #0369a1;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            border-left: 4px solid #0ea5e9;
+            margin-top: 0.75rem;
+            margin-bottom: 0.75rem;
+            width: max-content;
+            max-width: 100%;
+            overflow-x: auto;
+            font-weight: 700;
+            font-size: 1.1rem;
+            clear: both;
+            unicode-bidi: isolate;
+        }
+
+        /* حاوية الأكواد البرمجية مع الحفاظ على المسافات بدقة */
+        .en-code-block {
+            display: block;
+            direction: ltr !important;
+            text-align: left !important;
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #0f172a;
+            color: #4ade80;
+            padding: 1.25rem;
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+            overflow-x: auto;
+            clear: both;
+            white-space: pre !important; /* يحافظ على الفراغات والتنسيق كما هو في النص الأصلي */
+            unicode-bidi: isolate;
+        }
+
+        /* إجبار حقول الإدخال على عرض أرقام إنجليزية في سطرها الخاص */
+        .en-num-input {
+            direction: ltr !important;
+            text-align: center;
+            font-family: 'Courier New', Courier, monospace !important;
+            unicode-bidi: plaintext;
+        }
+
+        .code-line { cursor: pointer; transition: all 0.2s; border-left: 4px solid transparent; }
+        .code-line:hover { background-color: #334155; }
+        .code-line.active { background-color: #1e293b; border-left: 4px solid #3b82f6; }
+        
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: #e2e8f0; }
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 5px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        
+        /* تنسيقات أقسام الدرس */
+        .box-intro { background: #ffffff; border: 2px solid #e2e8f0; border-right: 6px solid #8b5cf6; padding: 1.5rem; border-radius: 0.75rem; margin-bottom: 2rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .box-original { background: #f8fafc; border: 2px dashed #cbd5e1; border-right: 6px solid #3b82f6; padding: 1.5rem; border-radius: 0.75rem; margin-bottom: 2rem; }
+        .box-explain { background: #fffbeb; border: 2px solid #fde68a; border-right: 6px solid #f59e0b; padding: 1.5rem; border-radius: 0.75rem; margin-bottom: 2rem; }
+        .box-summary { background: #f0fdf4; border: 2px solid #bbf7d0; border-right: 6px solid #22c55e; padding: 1.5rem; border-radius: 0.75rem; margin-bottom: 2rem; }
+        
+        .section-title { font-size: 2rem; font-weight: 900; color: #1e293b; border-bottom: 3px solid #e2e8f0; padding-bottom: 0.75rem; margin-bottom: 2rem; }
+        .box-heading { font-size: 1.3rem; font-weight: 800; margin-bottom: 1rem; display: flex; align-items: center; }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden text-slate-800">
+
+    <!-- شريط التبويبات الجانبي -->
+    <aside class="w-80 bg-slate-900 text-white flex flex-col shadow-2xl z-10 hidden lg:flex shrink-0">
+        <div class="p-6 text-center border-b border-slate-700 bg-slate-950">
+            <h1 class="text-3xl font-black text-blue-400">الدرس الشامل</h1>
+            <div class="en-line text-sm mx-auto mt-2 !bg-transparent !border-0 !text-slate-400 !p-0 text-center !w-full">Bitwise Operations</div>
+        </div>
+        <nav class="flex-1 overflow-y-auto py-3 space-y-2 text-base font-bold">
+            <button onclick="openTab('tab-1')" id="btn-tab-1" class="tab-btn w-full flex items-center px-6 py-4 text-right hover:bg-slate-800 transition-colors bg-slate-800 border-r-4 border-blue-500">
+                <span>1. المفاهيم والأهداف</span>
+            </button>
+            <button onclick="openTab('tab-2')" id="btn-tab-2" class="tab-btn w-full flex items-center px-6 py-4 text-right hover:bg-slate-800 transition-colors border-r-4 border-transparent">
+                <span>2. الأعداد الثنائية وأساسها</span>
+            </button>
+            <button onclick="openTab('tab-3')" id="btn-tab-3" class="tab-btn w-full flex items-center px-6 py-4 text-right hover:bg-slate-800 transition-colors border-r-4 border-transparent">
+                <span>3. المتمّم الثنائي والأعداد الموجبة</span>
+            </button>
+            <button onclick="openTab('tab-4')" id="btn-tab-4" class="tab-btn w-full flex items-center px-6 py-4 text-right hover:bg-slate-800 transition-colors border-r-4 border-transparent">
+                <span>4. طريقة تخزين الأعداد السالبة</span>
+            </button>
+            <button onclick="openTab('tab-5')" id="btn-tab-5" class="tab-btn w-full flex items-center px-6 py-4 text-right hover:bg-slate-800 transition-colors border-r-4 border-transparent">
+                <span>5. الإزاحة لليمين للأعداد السالبة</span>
+            </button>
+            <button onclick="openTab('tab-6')" id="btn-tab-6" class="tab-btn w-full flex items-center px-6 py-4 text-right hover:bg-slate-800 transition-colors border-r-4 border-transparent">
+                <span>6. العوامل المنطقية الأساسية</span>
+            </button>
+            <button onclick="openTab('tab-7')" id="btn-tab-7" class="tab-btn w-full flex items-center px-6 py-4 text-right hover:bg-slate-800 transition-colors border-r-4 border-transparent">
+                <span>7. ترتيب العمليات الثنائية</span>
+            </button>
+            <button onclick="openTab('tab-8')" id="btn-tab-8" class="tab-btn w-full flex items-center px-6 py-4 text-right hover:bg-slate-800 transition-colors border-r-4 border-transparent">
+                <span>8. الشرح التفاعلي للكود</span>
+            </button>
+            <button onclick="openTab('tab-9')" id="btn-tab-9" class="tab-btn w-full flex items-center px-6 py-4 text-right hover:bg-slate-800 transition-colors border-r-4 border-transparent">
+                <span>9. تطبيقات في مسابقات البرمجة</span>
+            </button>
+            <button onclick="openTab('tab-10')" id="btn-tab-10" class="tab-btn w-full flex items-center px-6 py-4 text-right hover:bg-slate-800 transition-colors border-r-4 border-transparent">
+                <span class="text-emerald-400">10. التلخيص والحاسبة التعليمية</span>
+            </button>
+        </nav>
+        <div class="p-4 border-t border-slate-800 text-center text-sm text-slate-400 bg-slate-950">
+            فكرة وتصميم<br>
+            <span class="font-black text-white text-base">محمد مجممي</span>
+        </div>
+    </aside>
+
+    <!-- القائمة العلوية للجوال -->
+    <div class="lg:hidden fixed top-0 left-0 right-0 bg-slate-900 text-white z-20 flex justify-between items-center p-4 shadow-md">
+        <div class="en-line !mt-0 !mb-0 !bg-transparent !border-0 !text-blue-400 !p-0">Bitwise</div>
+        <select id="mobile-nav" onchange="openTab(this.value)" class="bg-slate-800 text-white border border-slate-700 rounded p-2 text-base font-bold max-w-[60%]">
+            <option value="tab-1">1. المفاهيم</option>
+            <option value="tab-2">2. الأعداد الثنائية</option>
+            <option value="tab-3">3. المتمّم الثنائي</option>
+            <option value="tab-4">4. الأعداد السالبة</option>
+            <option value="tab-5">5. الإزاحة</option>
+            <option value="tab-6">6. العوامل المنطقية</option>
+            <option value="tab-7">7. ترتيب العمليات</option>
+            <option value="tab-8">8. شرح الكود</option>
+            <option value="tab-9">9. تطبيقات برمجية</option>
+            <option value="tab-10">10. التلخيص والحاسبة</option>
+        </select>
+    </div>
+
+    <!-- منطقة المحتوى الرئيسي -->
+    <main class="flex-1 overflow-y-auto p-6 lg:p-12 mt-16 lg:mt-0 relative pb-24 scroll-smooth">
+        
+        <!-- ================= الجزء 1 ================= -->
+        <section id="tab-1" class="tab-content max-w-5xl mx-auto block fade-in">
+            <h2 class="section-title">1. العمليات على مستوى البِت</h2>
+            
+            <div class="box-intro">
+                <h3 class="box-heading text-purple-700"><span class="ml-2 text-3xl">🎯</span> التمهيد والمفاهيم</h3>
+                <p class="text-lg leading-loose">تتعامل لغات البرمجة مع الأرقام كقيم كاملة، لكن العمليات على مستوى البت تسمح للمبرمج بالوصول إلى أصغر وحدة تخزين في الذاكرة (البت) والتحكم بها بشكل مباشر.</p>
+                <div class="en-line">Bit = Binary Digit</div>
+            </div>
+
+            <div class="box-original">
+                <h3 class="box-heading text-blue-700"><span class="ml-2 text-3xl">📄</span> النص المرجعي الأصلي</h3>
+                <div class="text-lg leading-loose font-medium">
+                    <p>العمليات على مستوى البِت</p>
+                    <div class="en-line">Bitwise Operations</div>
+                    <p>تسمح لك العمليات على مستوى البِت بالعمل مع البِتّات الفردية داخل العدد الصحيح. هذه العمليات قوية جدًّا في التعامل مع البِتّات، وحيل التحسين</p>
+                    <div class="en-line">optimization</div>
+                    <p>، وأشياء مثل توليد جميع المجموعات الجزئية لمجموعة معيّنة.</p>
+                </div>
+            </div>
+
+            <div class="box-explain">
+                <h3 class="box-heading text-amber-700"><span class="ml-2 text-3xl">💡</span> الإيضاحات والمبررات</h3>
+                <p class="text-lg leading-loose"><strong>أهداف استخدام العمليات على مستوى البت:</strong></p>
+                <ul class="list-disc list-inside space-y-3 mt-4 text-lg">
+                    <li><strong>سرعة المعالجة:</strong> يتم تنفيذ هذه العمليات بشكل مباشر في وحدة الحساب والمنطق، مما يجعلها أسرع من العمليات الحسابية التقليدية.</li>
+                    <li><strong>كفاءة الذاكرة:</strong> يمكن تخزين عدة معلومات (حالات منطقية) داخل متغير واحد لتقليل مساحة الذاكرة المستخدمة.</li>
+                    <li><strong>التطبيقات المتقدمة:</strong> تُستخدم بكثرة في الخوارزميات الرياضية، والتشفير، وتوليد المجموعات الجزئية بطرق فعالة.</li>
+                </ul>
+            </div>
+            
+            <div class="box-summary">
+                <h3 class="box-heading text-green-700"><span class="ml-2 text-3xl">📌</span> خلاصة الجزء</h3>
+                <p class="text-lg leading-loose font-bold">تعلم هذه العمليات يعزز من كفاءة المبرمج في كتابة أكواد محسنة تتعامل مع بنية العتاد مباشرة.</p>
+            </div>
+        </section>
+
+        <!-- ================= الجزء 2 ================= -->
+        <section id="tab-2" class="tab-content max-w-5xl mx-auto hidden fade-in">
+            <h2 class="section-title">2. الأعداد الثنائية وأساسها</h2>
+            
+            <div class="box-intro">
+                <h3 class="box-heading text-purple-700"><span class="ml-2 text-3xl">🎯</span> التمهيد والمفاهيم</h3>
+                <p class="text-lg leading-loose">تعتمد الحواسيب النظام الثنائي لتمثيل البيانات، حيث يرمز الرقم (1) إلى وجود إشارة، والرقم (0) إلى غيابها.</p>
+            </div>
+
+            <div class="box-original">
+                <h3 class="box-heading text-blue-700"><span class="ml-2 text-3xl">📄</span> النص المرجعي الأصلي</h3>
+                <div class="text-lg leading-loose font-medium">
+                    <p>الأعداد الثنائية</p>
+                    <div class="en-line">Binary Numbers</div>
+                    <p>تقوم الحواسيب بتخزين الأعداد الصحيحة في صورة ثنائية — باستخدام 0 و1 فقط. نقول إن البِت مُعيَّن</p>
+                    <div class="en-line">set</div>
+                    <p>إذا كانت قيمته 1. كل موضع (بِت) يمثّل قوة من قوى العدد 2:</p>
+                    
+                    <pre class="en-code-block">Bit position:  7  6  5  4  3  2  1  0
+Value:       128 64 32 16  8  4  2  1</pre>
+                    
+                    <p>للحصول على قيمة عدد ثنائي، نقوم بجمع قوى العدد 2 في الأماكن التي يكون فيها البِت مساويًا لـ1.</p>
+                    <p class="font-bold mt-4">أمثلة</p>
+                    
+                    <pre class="en-code-block">00000110  =  4 + 2       = 6
+00001010  =  8 + 2       = 10
+00001100  =  8 + 4       = 12
+00000001  =  1           = 1
+00000000  =  0           = 0</pre>
+                    
+                    <p>إذًا عندما نجري عمليات على مستوى البِت</p>
+                    <div class="en-line">&, |, ^</div>
+                    <p>، إلخ)، فنحن في الواقع ندمج أو نعدّل هذه البِتّات الفردية.</p>
+                </div>
+            </div>
+
+            <div class="box-explain">
+                <h3 class="box-heading text-amber-700"><span class="ml-2 text-3xl">💡</span> الإيضاحات والمبررات</h3>
+                <p class="text-lg leading-loose"><strong>آلية حساب النظام الثنائي:</strong></p>
+                <p class="text-lg leading-loose mt-2">في هذا النظام، يمثل كل موقع في العدد الثنائي إحدى قوى الرقم 2. لحساب القيمة العشرية، نقوم بجمع القيم المرتبطة بالمواقع التي تحتوي على الرقم 1 فقط، ويتم تجاهل المواقع التي تحتوي على الرقم 0.</p>
+            </div>
+            
+            <div class="box-summary">
+                <h3 class="box-heading text-green-700"><span class="ml-2 text-3xl">📌</span> خلاصة الجزء</h3>
+                <p class="text-lg leading-loose font-bold">النظام الثنائي هو الأساس الذي تُبنى عليه جميع العمليات المنطقية، ومن خلاله يتم تعديل القيم البرمجية بكفاءة عالية.</p>
+            </div>
+        </section>
+
+        <!-- ================= الجزء 3 ================= -->
+        <section id="tab-3" class="tab-content max-w-5xl mx-auto hidden fade-in">
+            <h2 class="section-title">3. المتمّم الثنائي والأعداد الموجبة</h2>
+            
+            <div class="box-intro">
+                <h3 class="box-heading text-purple-700"><span class="ml-2 text-3xl">🎯</span> التمهيد والمفاهيم</h3>
+                <p class="text-lg leading-loose">لتمثيل الأعداد السالبة، تستخدم الحواسيب نظام المتمم الثنائي، والذي يخصص بتاً للإشارة لتحديد ما إذا كان الرقم موجباً أم سالباً ضمن المساحة المتوفرة.</p>
+            </div>
+
+            <div class="box-original">
+                <h3 class="box-heading text-blue-700"><span class="ml-2 text-3xl">📄</span> النص المرجعي الأصلي</h3>
+                <div class="text-lg leading-loose font-medium">
+                    <p>المتمّم الثنائي والأعداد السالبة</p>
+                    <div class="en-line">Two’s Complement</div>
+                    <p>حتى الآن تحدّثنا فقط عن الأعداد غير السالبة. لكن في</p>
+                    <div class="en-line">C++</div>
+                    <p>(وفي معظم المعالجات الحديثة)، تُخزَّن الأعداد الصحيحة ذات الإشارة في صيغة تُسمّى المتمّم الثنائي.</p>
+                    
+                    <p class="font-bold mt-4">الفكرة:</p>
+                    <p>استخدام البِت الأعلى (أكثر بِت أهمية) كبِت إشارة.</p>
+                    <p>لنفرض أن لدينا أعدادًا صحيحة موقّعة مكوّنة من 8 بِتّات:</p>
+                    
+                    <pre class="en-code-block">Bit position:  7  6  5  4   3  2  1  0
+Value:       -128 64 32 16  8  4  2  1</pre>
+                    
+                    <p>مدى الأعداد ذات الإشارة على 8 بِتّات هو:</p>
+                    <div class="en-line">-128 ... +127</div>
+                    
+                    <p class="font-bold mt-4">شكل الأعداد الموجبة</p>
+                    <p>الأعداد الموجبة (والصفر) تكون كما هي في النظام الثنائي العادي:</p>
+                    
+                    <pre class="en-code-block">00000101 = 5
+00000000 = 0
+00001010 = 10</pre>
+                </div>
+            </div>
+
+            <div class="box-explain">
+                <h3 class="box-heading text-amber-700"><span class="ml-2 text-3xl">💡</span> الإيضاحات والمبررات</h3>
+                <p class="text-lg leading-loose"><strong>دور بت الإشارة:</strong></p>
+                <p class="text-lg leading-loose mt-2">يتم تخصيص البت الموجود في أقصى اليسار ليكون بت الإشارة. إذا كان 0 فالرقم موجب، وإذا كان 1 فالرقم سالب. تخصيص هذا البت للإشارة يقلل من المساحة المتبقية لتمثيل القيمة، مما يحدد الحد الأقصى للرقم الموجب (في 8 بتات يصبح الحد الأقصى 127 بدلاً من 255).</p>
+            </div>
+            
+            <div class="box-summary">
+                <h3 class="box-heading text-green-700"><span class="ml-2 text-3xl">📌</span> خلاصة الجزء</h3>
+                <p class="text-lg leading-loose font-bold">تبقى الأعداد الموجبة كما هي في النظام الثنائي، بينما يُعد البت الأعلى هو المؤشر الأساسي لتحديد الإشارة.</p>
+            </div>
+        </section>
+
+        <!-- ================= الجزء 4 ================= -->
+        <section id="tab-4" class="tab-content max-w-5xl mx-auto hidden fade-in">
+            <h2 class="section-title">4. طريقة تخزين الأعداد السالبة</h2>
+            
+            <div class="box-intro">
+                <h3 class="box-heading text-purple-700"><span class="ml-2 text-3xl">🎯</span> التمهيد والمفاهيم</h3>
+                <p class="text-lg leading-loose">تتبع المعالجات خوارزمية محددة لتحويل الرقم الموجب إلى صورته السالبة في نظام المتمم الثنائي، وتتكون من ثلاث خطوات رياضية ثابتة.</p>
+            </div>
+
+            <div class="box-original">
+                <h3 class="box-heading text-blue-700"><span class="ml-2 text-3xl">📄</span> النص المرجعي الأصلي</h3>
+                <div class="text-lg leading-loose font-medium">
+                    <p class="font-bold">كيف تُخزَّن الأعداد السالبة (متمّم ثنائي)</p>
+                    <p>للحصول على</p>
+                    <div class="en-line">-x</div>
+                    <p>في نظام المتمّم الثنائي:</p>
+                    <ul class="list-none space-y-2 my-4 bg-white p-4 rounded border border-slate-200">
+                        <li>1. نكتب</li>
+                        <div class="en-line">x</div>
+                        <li>بالثنائي.</li>
+                        <li class="mt-4">2. نقلب كل البِتّات</li>
+                        <div class="en-line">(0 -> 1, 1 -> 0)</div>
+                        <li class="mt-4">3. نضيف 1.</li>
+                    </ul>
+                    
+                    <p class="font-bold mt-4">مثال: تمثيل -5 على 8 بِتّات:</p>
+                    <pre class="en-code-block">+5        = 00000101
+flip      = 11111010
++ 1       = 11111011  = -5</pre>
+
+                    <p class="font-bold mt-4">فحص -1:</p>
+                    <pre class="en-code-block">+1        = 00000001
+flip      = 11111110
++ 1       = 11111111  = -1</pre>
+
+                    <p class="font-bold mt-4">إذًا:</p>
+                    <pre class="en-code-block">11111111 = -1
+11111011 = -5
+10000000 = -128</pre>
+
+                    <p class="font-bold mt-6 text-xl">لماذا هذه الطريقة مفيدة؟</p>
+                    <p>باستخدام المتمّم الثنائي:</p>
+                    <ul class="list-disc list-inside space-y-2 mt-2">
+                        <li>جمع الأعداد الثنائية العادي يعمل أيضًا مع الأعداد السالبة دون تغيير.</li>
+                        <li>لا يوجد سوى تمثيل واحد للصفر.</li>
+                        <li>عملية الطرح يمكن تنفيذها كـ</li>
+                        <div class="en-line">a + (-b)</div>
+                        <li>فقط.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="box-explain">
+                <h3 class="box-heading text-amber-700"><span class="ml-2 text-3xl">💡</span> الإيضاحات والمبررات</h3>
+                <p class="text-lg leading-loose"><strong>الهدف من خطوات التحويل:</strong></p>
+                <p class="text-lg leading-loose mt-2">السبب الرياضي لاستخدام هذه الطريقة هو تمكين وحدة الحساب والمنطق (ALU) في المعالج من إجراء عمليات الطرح باستخدام دارات الجمع نفسها. هذا النهج يوحد العمليات الحسابية ويحسن من سرعة المعالجة مع تقليل تعقيد العتاد.</p>
+            </div>
+            
+            <div class="box-summary">
+                <h3 class="box-heading text-green-700"><span class="ml-2 text-3xl">📌</span> خلاصة الجزء</h3>
+                <p class="text-lg leading-loose font-bold">خطوات التحويل (التمثيل الثنائي، ثم العكس، ثم إضافة 1) توفر تمثيلاً وحيداً للصفر وتسمح للمعالج بإنجاز الجمع والطرح بآلية واحدة.</p>
+            </div>
+        </section>
+
+        <!-- ================= الجزء 5 ================= -->
+        <section id="tab-5" class="tab-content max-w-5xl mx-auto hidden fade-in">
+            <h2 class="section-title">5. الإزاحة لليمين للأعداد السالبة</h2>
+            
+            <div class="box-intro">
+                <h3 class="box-heading text-purple-700"><span class="ml-2 text-3xl">🎯</span> التمهيد والمفاهيم</h3>
+                <p class="text-lg leading-loose">عند إجراء عملية الإزاحة لليمين على عدد سالب، يبرز تساؤل برمجي حول كيفية تعبئة الخانات التي تصبح فارغة في أقصى اليسار لضمان بقاء قيمة الإشارة صحيحة.</p>
+            </div>
+
+            <div class="box-original">
+                <h3 class="box-heading text-blue-700"><span class="ml-2 text-3xl">📄</span> النص المرجعي الأصلي</h3>
+                <div class="text-lg leading-loose font-medium">
+                    <p class="font-bold text-xl">الإزاحة لليمين مع الأعداد السالبة</p>
+                    <p>بالنسبة للأنواع غير الموقّعة</p>
+                    <div class="en-line">unsigned</div>
+                    <p>، فإن</p>
+                    <div class="en-line">>></div>
+                    <p>يقوم دائمًا بإزاحة البِتّات لليمين مع إدخال بِتّات 0 من اليسار.</p>
+                    <p class="mt-4">أما للأنواع الموقّعة، فمعظم المترجمات تقوم بإزاحة حسابية لليمين</p>
+                    <div class="en-line">arithmetic right shift</div>
+                    <p>حيث يتم نسخ بِت الإشارة (أعلى بِت)، وبالتالي تظل الأعداد السالبة سالبة أثناء الإزاحة.</p>
+                    
+                    <p class="mt-4 font-bold">مثال (مع افتراض الإزاحة الحسابية):</p>
+                    <pre class="en-code-block">x  = -4   -> 11111100 (8-bit view)
+x >> 1    -> 11111110 (still negative: -2)</pre>
+                    
+                    <p class="mt-4">لهذا السبب، عندما نهتم بالبِتّات الخام فقط، يكون من الأكثر أمانًا غالبًا استخدام الأنواع غير الموقّعة مثل</p>
+                    <div class="en-line">uint32_t</div>
+                    <p>و</p>
+                    <div class="en-line">unsigned long long</div>
+                    <p>، إلخ.</p>
+                </div>
+            </div>
+
+            <div class="box-explain">
+                <h3 class="box-heading text-amber-700"><span class="ml-2 text-3xl">💡</span> الإيضاحات والمبررات</h3>
+                <p class="text-lg leading-loose"><strong>آلية ملء الخانات أثناء الإزاحة:</strong></p>
+                <p class="text-lg leading-loose mt-2">تقوم الإزاحة الحسابية بنسخ بت الإشارة لملء الخانات الفارغة، مما يضمن بقاء العدد السالب سالباً. أما إذا تم استخدام المتغيرات غير الموقعة، فإن الخانات تُملأ بأصفار تلقائياً، وهو الخيار الأنسب برمجياً عند معالجة البتات كبيانات خام غير رياضية.</p>
+            </div>
+            
+            <div class="box-summary">
+                <h3 class="box-heading text-green-700"><span class="ml-2 text-3xl">📌</span> خلاصة الجزء</h3>
+                <p class="text-lg leading-loose font-bold">تختلف نتيجة الإزاحة لليمين باختلاف نوع المتغير؛ ولضمان دقة العمليات المنطقية على البيانات الخام، يُنصح باستخدام المتغيرات غير الموقعة.</p>
+            </div>
+        </section>
+
+        <!-- ================= الجزء 6 ================= -->
+        <section id="tab-6" class="tab-content max-w-5xl mx-auto hidden fade-in">
+            <h2 class="section-title">6. العوامل المنطقية الأساسية</h2>
+            
+            <div class="box-intro">
+                <h3 class="box-heading text-purple-700"><span class="ml-2 text-3xl">🎯</span> التمهيد والمفاهيم</h3>
+                <p class="text-lg leading-loose">توفر لغات البرمجة مجموعة من العوامل المنطقية الأساسية للتعامل مع البتات، وتعمل هذه العوامل بقواعد صارمة لتحديد مخرجات كل عملية.</p>
+            </div>
+
+            <div class="box-original">
+                <h3 class="box-heading text-blue-700"><span class="ml-2 text-3xl">📄</span> النص المرجعي الأصلي</h3>
+                <div class="text-lg leading-loose font-medium">
+                    <p class="font-bold text-xl">أهم العوامل على مستوى البِت</p>
+                    <div class="en-line">operators</div>
+                    <p>كل هذه العوامل تعمل على الأنواع الصحيحة</p>
+                    <div class="en-line">int, long long</div>
+                    <p>، إلخ:</p>
+
+                    <div class="overflow-x-auto my-6 border-2 border-slate-300 rounded-lg">
+                        <table class="min-w-full bg-white text-right text-base border-collapse">
+                            <thead class="bg-slate-900 text-white">
+                                <tr>
+                                    <th class="py-4 px-6 text-center border-b border-slate-600 w-1/4">العامل</th>
+                                    <th class="py-4 px-6 border-b border-slate-600 w-1/4">الاسم</th>
+                                    <th class="py-4 px-6 border-b border-slate-600 w-2/4">ما يفعله على مستوى البِتّات</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-200 text-slate-800 font-bold">
+                                <tr class="hover:bg-slate-50">
+                                    <td class="py-4 px-6 text-center"><div class="en-line mx-auto !my-0">&</div></td>
+                                    <td class="py-4 px-6"><div class="en-line !my-0 !bg-transparent">AND</div></td>
+                                    <td class="py-4 px-6 text-lg">يساوي 1 إذا كان كلا البِتّين 1، وإلا 0</td>
+                                </tr>
+                                <tr class="hover:bg-slate-50 bg-slate-50">
+                                    <td class="py-4 px-6 text-center"><div class="en-line mx-auto !my-0">|</div></td>
+                                    <td class="py-4 px-6"><div class="en-line !my-0 !bg-transparent">OR</div></td>
+                                    <td class="py-4 px-6 text-lg">يساوي 1 إذا كان على الأقل أحد البِتّين 1، وإلا 0</td>
+                                </tr>
+                                <tr class="hover:bg-slate-50">
+                                    <td class="py-4 px-6 text-center"><div class="en-line mx-auto !my-0">^</div></td>
+                                    <td class="py-4 px-6"><div class="en-line !my-0 !bg-transparent">XOR</div></td>
+                                    <td class="py-4 px-6 text-lg">يساوي 1 إذا كان البِتّان مختلفين، وإلا 0</td>
+                                </tr>
+                                <tr class="hover:bg-slate-50 bg-slate-50">
+                                    <td class="py-4 px-6 text-center"><div class="en-line mx-auto !my-0">~</div></td>
+                                    <td class="py-4 px-6"><div class="en-line !my-0 !bg-transparent">NOT / complement</div></td>
+                                    <td class="py-4 px-6 text-lg">يقلب كل البِتّات (1 → 0، 0 → 1)</td>
+                                </tr>
+                                <tr class="hover:bg-slate-50">
+                                    <td class="py-4 px-6 text-center"><div class="en-line mx-auto !my-0"><<</div></td>
+                                    <td class="py-4 px-6">إزاحة لليسار</td>
+                                    <td class="py-4 px-6 text-lg">يزيح البِتّات لليسار (يشبه الضرب بقوى العدد 2)</td>
+                                </tr>
+                                <tr class="hover:bg-slate-50 bg-slate-50">
+                                    <td class="py-4 px-6 text-center"><div class="en-line mx-auto !my-0">>></div></td>
+                                    <td class="py-4 px-6">إزاحة لليمين</td>
+                                    <td class="py-4 px-6 text-lg">يزيح البِتّات لليمين (يشبه القسمة على قوى العدد 2)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="box-explain">
+                <h3 class="box-heading text-amber-700"><span class="ml-2 text-3xl">💡</span> الإيضاحات والمبررات</h3>
+                <p class="text-lg leading-loose"><strong>آلية عمل العوامل:</strong></p>
+                <p class="text-lg leading-loose mt-2">تعمل هذه العوامل على مقارنة البتات: العامل AND يشترط توافر الرقم 1 في كلتا الخانتين ليعطي 1، بينما يكتفي العامل OR بوجوده في إحداهما. أما العامل XOR فيتطلب الاختلاف، والعامل NOT يعكس الحالة تماماً.</p>
+            </div>
+            
+            <div class="box-summary">
+                <h3 class="box-heading text-green-700"><span class="ml-2 text-3xl">📌</span> خلاصة الجزء</h3>
+                <p class="text-lg leading-loose font-bold">هذه العوامل الستة تمثل حجر الأساس لإجراء التعديلات والعمليات المتقدمة على هيكلية البيانات.</p>
+            </div>
+        </section>
+
+        <!-- ================= الجزء 7 ================= -->
+        <section id="tab-7" class="tab-content max-w-5xl mx-auto hidden fade-in">
+            <h2 class="section-title">7. ترتيب العمليات الثنائية</h2>
+            
+            <div class="box-intro">
+                <h3 class="box-heading text-purple-700"><span class="ml-2 text-3xl">🎯</span> التمهيد والمفاهيم</h3>
+                <p class="text-lg leading-loose">لتوضيح كيفية عمل العوامل المنطقية عملياً، يتم ترتيب الأعداد الثنائية بصورة عمودية لتطبيق القواعد على كل بت ومقابله.</p>
+            </div>
+
+            <div class="box-original">
+                <h3 class="box-heading text-blue-700"><span class="ml-2 text-3xl">📄</span> النص المرجعي الأصلي</h3>
+                <div class="text-lg leading-loose font-medium">
+                    <p class="font-bold text-xl">رؤية العمليات على مستوى البِت في صورة ثنائية</p>
+                    <p>لنستخدم أعدادًا صغيرة ونفترض أنها مكوّنة من 8 بِتّات لزيادة الوضوح:</p>
+                    <pre class="en-code-block">a = 6   -> 00000110
+b = 10  -> 00001010</pre>
+                    
+                    <p class="font-bold mt-6">عامل AND</p>
+                    <div class="en-line">&</div>
+                    <pre class="en-code-block">a & b   -> 00000110
+           00001010
+           --------
+           00000010  = 2</pre>
+
+                    <p class="font-bold mt-6">عامل OR</p>
+                    <div class="en-line">|</div>
+                    <pre class="en-code-block">a | b   -> 00000110
+           00001010
+           --------
+           00001110  = 14</pre>
+
+                    <p class="font-bold mt-6">عامل XOR</p>
+                    <div class="en-line">^</div>
+                    <pre class="en-code-block">a ^ b   -> 00000110
+           00001010
+           --------
+           00001100  = 12   (bits that are different become 1)</pre>
+
+                    <p class="font-bold mt-6">عامل NOT</p>
+                    <div class="en-line">~</div>
+                    <pre class="en-code-block">~a      -> 11111001 </pre>
+                    <p>(على 8 بِتّات، لكن في</p>
+                    <div class="en-line">C++</div>
+                    <p>الحقيقية تُطبَّق العملية على عرض النوع الكامل للعدد)</p>
+
+                    <p class="font-bold mt-6">الإزاحات</p>
+                    <div class="en-line">Shifts</div>
+                    <pre class="en-code-block">a << 1  -> 00001100  = 12   (6 * 2)
+a << 2  -> 00011000  = 24   (6 * 4)
+
+b >> 1  -> 00000101  = 5    (10 / 2)
+b >> 2  -> 00000010  = 2    (10 / 4, integer division)</pre>
+                </div>
+            </div>
+
+            <div class="box-explain">
+                <h3 class="box-heading text-amber-700"><span class="ml-2 text-3xl">💡</span> الإيضاحات والمبررات</h3>
+                <p class="text-lg leading-loose"><strong>أهمية الإزاحة كبديل رياضي:</strong></p>
+                <p class="text-lg leading-loose mt-2">من أهم المزايا البرمجية في معالجة البتات هو استخدام الإزاحة كبديل فعال لعمليات الضرب والقسمة، حيث تمثل الإزاحة لليسار عملية ضرب في 2، وتمثل الإزاحة لليمين عملية قسمة على 2 وتنفذ بشكل أسرع.</p>
+            </div>
+            
+            <div class="box-summary">
+                <h3 class="box-heading text-green-700"><span class="ml-2 text-3xl">📌</span> خلاصة الجزء</h3>
+                <p class="text-lg leading-loose font-bold">الترتيب العمودي يسهل تتبع النتائج المنطقية بدقة، وعمليات الإزاحة توفر تحسيناً ملحوظاً في زمن المعالجة.</p>
+            </div>
+        </section>
+
+        <!-- ================= الجزء 8 ================= -->
+        <section id="tab-8" class="tab-content max-w-6xl mx-auto hidden fade-in h-auto lg:h-full flex-col">
+            <h2 class="section-title shrink-0">8. الشرح التفاعلي للكود</h2>
+            
+            <div class="box-intro shrink-0 !mb-4">
+                <h3 class="box-heading text-purple-700"><span class="ml-2 text-3xl">🎯</span> التمهيد والمفاهيم</h3>
+                <p class="text-lg leading-loose">يعرض هذا التطبيق البرمجي طريقة دمج العمليات المنطقية وعمليات الإزاحة بلغة البرمجة لتحليل وتوضيح البتات. يمكن استعراض تفاصيل كل سطر بالنقر عليه.</p>
+            </div>
+
+            <div class="box-original shrink-0 !mb-6 !p-4">
+                <h3 class="box-heading text-blue-700"><span class="ml-2 text-2xl">📄</span> النص المرجعي الأساسي</h3>
+                <div class="text-base leading-relaxed font-medium">
+                    <p>مثال بسيط في</p>
+                    <div class="en-line !my-1">C++</div>
+                    <p>تقوم الدالة</p>
+                    <div class="en-line !my-1">printBits</div>
+                    <p>بالمرور على جميع مواضع البِتّات</p>
+                    <div class="en-line !my-1">i</div>
+                    <p>(من 7 إلى 0)، وتنفّذ</p>
+                    <div class="en-line !my-1">x >> i</div>
+                    <p>، أي تُزِيح قيمة</p>
+                    <div class="en-line !my-1">x</div>
+                    <p>بمقدار</p>
+                    <div class="en-line !my-1">i</div>
+                    <p>خانة إلى اليمين. هذا يجعل البِت الموجود في الموضع</p>
+                    <div class="en-line !my-1">i</div>
+                    <p>ينتقل إلى أقصى اليمين. بعدها نأخذ:</p>
+                    <div class="en-line !my-1">& 1</div>
+                    <p>أي نُجري عملية AND مع</p>
+                    <div class="en-line !my-1">00000001</div>
+                    <p>، والتي تؤدي إلى الإبقاء على البِت الأيمن فقط وإلغاء باقي البِتّات. إذًا مجموع العمليتين</p>
+                    <div class="en-line !my-1">(x >> i) & 1</div>
+                    <p>هو استخراج البِت الموجود في الموضع</p>
+                    <div class="en-line !my-1">i</div>
+                    <p>وعرضه على الشاشة.</p>
+                </div>
+            </div>
+            
+            <div class="flex flex-col lg:flex-row gap-8 flex-1 min-h-[550px]">
+                <!-- مربع الشرح التفاعلي -->
+                <div class="w-full lg:w-1/3 flex flex-col">
+                    <div id="explanation-box" class="flex flex-col gap-4 w-full sticky top-0">
+                        <div class="flex items-center justify-center h-48 bg-slate-100 border-2 border-dashed border-slate-300 rounded-xl text-slate-500 text-xl shadow-inner text-center font-bold px-4">
+                            👈 يرجى تحديد السطر البرمجي لعرض التفاصيل
+                        </div>
+                    </div>
+                </div>
+
+                <!-- مساحة الكود: حاوية صارمة لحل مشكلة الاتجاهات -->
+                <div class="w-full lg:w-2/3 bg-slate-950 rounded-xl shadow-2xl overflow-hidden flex flex-col relative border-2 border-slate-700" style="direction: ltr;">
+                    <div class="overflow-y-auto flex-1 py-6" id="code-container" dir="ltr">
+                        <!-- سيتم إدراج الأسطر هنا بواسطة JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= الجزء 9 ================= -->
+        <section id="tab-9" class="tab-content max-w-5xl mx-auto hidden fade-in">
+            <h2 class="section-title">9. تطبيقات في مسابقات البرمجة</h2>
+            
+            <div class="box-intro">
+                <h3 class="box-heading text-purple-700"><span class="ml-2 text-3xl">🎯</span> التمهيد والمفاهيم</h3>
+                <p class="text-lg leading-loose">في التحديات البرمجية، تُستخدم العمليات على مستوى البت لتقليل التعقيد الزمني (Time Complexity) وتحسين الخوارزميات بشكل يتيح التنفيذ السريع للمهام.</p>
+            </div>
+
+            <div class="box-original">
+                <h3 class="box-heading text-blue-700"><span class="ml-2 text-3xl">📄</span> النص المرجعي (الأمثلة الواقعية)</h3>
+                <div class="text-lg leading-loose font-medium space-y-8">
+                    
+                    <!-- المثال الأول -->
+                    <div class="border-2 border-slate-200 rounded-lg p-5 bg-white shadow-sm">
+                        <h4 class="font-bold text-xl text-blue-800 border-b pb-2 mb-4">1. التحقق مما إذا كان العدد من مضاعفات قوى 2</h4>
+                        <p><strong>المشكلة:</strong> يُعطى لك عدد</p>
+                        <div class="en-line !my-1">n</div>
+                        <p>، هل يمكن تمثيله كـ</p>
+                        <div class="en-line !my-1">2^k</div>
+                        <p>؟</p>
+                        <p class="mt-4"><strong>الفكرة:</strong> أي عدد من قوى 2 في النظام الثنائي يحتوي على بت واحد فقط قيمته 1. إذا طرحنا منه 1، تنقلب جميع البتات التي على يمينه إلى 1، والبت الخاص به يصبح 0.</p>
+                        <pre class="en-code-block !my-4">n     = 8  -> 1000
+n - 1 = 7  -> 0111
+n & (n - 1) = 0000</pre>
+                        <p><strong>الكود الأمثل:</strong></p>
+                        <div class="en-line !my-1">O(1)</div>
+                        <pre class="en-code-block !my-4">if (n > 0 && (n & (n - 1)) == 0) { 
+    cout << "Power of 2"; 
+}</pre>
+                    </div>
+
+                    <!-- المثال الثاني -->
+                    <div class="border-2 border-slate-200 rounded-lg p-5 bg-white shadow-sm">
+                        <h4 class="font-bold text-xl text-blue-800 border-b pb-2 mb-4">2. التحقق من حالة بت معين</h4>
+                        <p><strong>المشكلة:</strong> معرفة ما إذا كان البت رقم</p>
+                        <div class="en-line !my-1">i</div>
+                        <p>في العدد</p>
+                        <div class="en-line !my-1">x</div>
+                        <p>يحمل القيمة 1 أم 0.</p>
+                        <p class="mt-4"><strong>الفكرة:</strong> نقوم بإزاحة العدد لليمين بمقدار</p>
+                        <div class="en-line !my-1">i</div>
+                        <p>لنجعل البت المطلوب في أقصى اليمين، ثم نجري</p>
+                        <div class="en-line !my-1">& 1</div>
+                        <p>.</p>
+                        <pre class="en-code-block !my-4">if ((x >> i) & 1) { 
+    cout << "Bit is 1"; 
+} else { 
+    cout << "Bit is 0"; 
+}</pre>
+                    </div>
+
+                    <!-- المثال الثالث -->
+                    <div class="border-2 border-slate-200 rounded-lg p-5 bg-white shadow-sm">
+                        <h4 class="font-bold text-xl text-blue-800 border-b pb-2 mb-4">3. قلب حالة بت معين</h4>
+                        <p><strong>المشكلة:</strong> تغيير قيمة البت رقم</p>
+                        <div class="en-line !my-1">i</div>
+                        <p>؛ إذا كان 1 يصبح 0، وإذا كان 0 يصبح 1.</p>
+                        <p class="mt-4"><strong>الفكرة:</strong> نستخدم معامل</p>
+                        <div class="en-line !my-1">XOR (^)</div>
+                        <p>، لأنه إذا قمنا بعمل XOR لبت مع 1، فإنه ينقلب.</p>
+                        <pre class="en-code-block !my-4">x ^= (1 << i);</pre>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="box-summary">
+                <h3 class="box-heading text-green-700"><span class="ml-2 text-3xl">📌</span> خلاصة الجزء</h3>
+                <p class="text-lg leading-loose font-bold">إتقان هذه الأساليب يُعد مهارة أساسية لتحسين أداء الأكواد وتوفير الوقت في معالجة البيانات المعقدة.</p>
+            </div>
+        </section>
+
+        <!-- ================= الجزء 10 ================= -->
+        <section id="tab-10" class="tab-content max-w-5xl mx-auto hidden fade-in">
+            <h2 class="section-title text-emerald-700">10. التلخيص والحاسبة التعليمية</h2>
+            
+            <div class="box-explain !bg-white !border-emerald-200 !border-right-emerald-500">
+                <h3 class="box-heading text-emerald-800"><span class="ml-2 text-3xl">📊</span> جدول ملخص لعمليات البت</h3>
+                <p class="text-lg mb-6 text-slate-600">يستعرض هذا الجدول القواعد الأساسية لجميع العوامل لتسهيل عملية المراجعة العلمية.</p>
+                
+                <div class="overflow-x-auto border-2 border-slate-200 rounded-xl shadow-sm">
+                    <table class="min-w-full text-right text-base border-collapse">
+                        <thead class="bg-emerald-800 text-white">
+                            <tr>
+                                <th class="py-4 px-6 border-b border-emerald-900 w-1/5 text-center">الرمز</th>
+                                <th class="py-4 px-6 border-b border-emerald-900 w-1/5">الاسم</th>
+                                <th class="py-4 px-6 border-b border-emerald-900 w-2/5">القاعدة المنطقية</th>
+                                <th class="py-4 px-6 border-b border-emerald-900 w-1/5">الوصف الرياضي</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200 bg-white text-slate-800 font-bold">
+                            <tr class="hover:bg-emerald-50"><td class="py-4 px-6 text-center"><div class="en-line mx-auto !my-0">&</div></td><td class="py-4 px-6"><div class="en-line !my-0 !bg-transparent text-emerald-700">AND</div></td><td class="py-4 px-6">1 إذا كان كل من البتين 1</td><td class="py-4 px-6 text-slate-500">التقاطع المنطقي</td></tr>
+                            <tr class="hover:bg-emerald-50 bg-slate-50"><td class="py-4 px-6 text-center"><div class="en-line mx-auto !my-0">|</div></td><td class="py-4 px-6"><div class="en-line !my-0 !bg-transparent text-emerald-700">OR</div></td><td class="py-4 px-6">1 إذا كان أحد البتين 1</td><td class="py-4 px-6 text-slate-500">الاتحاد المنطقي</td></tr>
+                            <tr class="hover:bg-emerald-50"><td class="py-4 px-6 text-center"><div class="en-line mx-auto !my-0">^</div></td><td class="py-4 px-6"><div class="en-line !my-0 !bg-transparent text-emerald-700">XOR</div></td><td class="py-4 px-6">1 إذا اختلف البتان</td><td class="py-4 px-6 text-slate-500">التباين المنطقي</td></tr>
+                            <tr class="hover:bg-emerald-50 bg-slate-50"><td class="py-4 px-6 text-center"><div class="en-line mx-auto !my-0">~</div></td><td class="py-4 px-6"><div class="en-line !my-0 !bg-transparent text-emerald-700">NOT</div></td><td class="py-4 px-6">عكس قيمة البت (0 إلى 1 والعكس)</td><td class="py-4 px-6 text-slate-500">النفي المنطقي</td></tr>
+                            <tr class="hover:bg-emerald-50"><td class="py-4 px-6 text-center"><div class="en-line mx-auto !my-0"><<</div></td><td class="py-4 px-6">إزاحة لليسار</td><td class="py-4 px-6">نقل البتات لليسار وإضافة 0 لليمين</td><td class="py-4 px-6 text-emerald-600">الضرب في مضاعفات 2</td></tr>
+                            <tr class="hover:bg-emerald-50 bg-slate-50"><td class="py-4 px-6 text-center"><div class="en-line mx-auto !my-0">>></div></td><td class="py-4 px-6">إزاحة لليمين</td><td class="py-4 px-6">نقل البتات لليمين وإلغاء الزائد</td><td class="py-4 px-6 text-emerald-600">القسمة الصحيحة على 2</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="box-original border-2 border-slate-300 shadow-xl bg-white !p-8">
+                <h3 class="text-2xl font-black mb-8 text-center text-slate-800 bg-slate-100 p-4 rounded-xl border border-slate-200 shadow-inner">الحاسبة التفاعلية للعمليات الثنائية</h3>
+                
+                <div class="flex flex-col md:flex-row gap-8 justify-center items-center mb-10">
+                    <div class="flex flex-col items-center">
+                        <label class="font-bold text-slate-500 mb-3 text-lg">الرقم الأول</label>
+                        <input type="number" id="calc-a" value="6" min="0" max="255" lang="en" dir="ltr" inputmode="numeric" class="en-num-input w-28 text-center p-3 border-2 border-slate-300 rounded-xl focus:border-blue-500 outline-none text-3xl font-black shadow-sm text-blue-600 bg-blue-50" oninput="updateCalc()">
+                    </div>
+                    
+                    <div class="flex flex-col items-center">
+                        <label class="font-bold text-slate-500 mb-3 text-lg">العملية</label>
+                        <select id="calc-op" class="w-36 text-center p-3 border-2 border-slate-300 rounded-xl focus:border-blue-500 outline-none text-2xl font-bold bg-white ltr-code shadow-sm" onchange="updateCalc()">
+                            <option value="&">& (AND)</option>
+                            <option value="|">| (OR)</option>
+                            <option value="^">^ (XOR)</option>
+                            <option value="~">~ (NOT)</option>
+                            <option value="<<">&lt;&lt; (Shift L)</option>
+                            <option value=">>">&gt;&gt; (Shift R)</option>
+                        </select>
+                    </div>
+
+                    <div class="flex flex-col items-center">
+                        <label class="font-bold text-slate-500 mb-3 text-lg">الرقم الثاني</label>
+                        <input type="number" id="calc-b" value="10" min="0" max="255" lang="en" dir="ltr" inputmode="numeric" class="en-num-input w-28 text-center p-3 border-2 border-slate-300 rounded-xl focus:border-blue-500 outline-none text-3xl font-black shadow-sm text-emerald-600 bg-emerald-50" oninput="updateCalc()">
+                    </div>
+                </div>
+
+                <div class="bg-slate-950 p-8 rounded-2xl ltr-code mx-auto max-w-lg shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)] relative border-[3px] border-slate-800">
+                    <div class="text-slate-500 text-sm absolute top-4 right-5 font-bold uppercase tracking-widest">المخرجات الثنائية</div>
+                    
+                    <div class="flex justify-between items-center text-2xl tracking-[0.4em] font-mono mb-4 mt-8">
+                        <span id="bin-a" class="text-blue-400 font-bold drop-shadow-[0_0_8px_rgba(96,165,250,0.5)]">00000110</span>
+                    </div>
+                    
+                    <div class="flex justify-between items-center text-2xl tracking-[0.4em] font-mono mb-6 border-b-2 border-slate-700 pb-6 relative">
+                        <span id="bin-b" class="text-emerald-400 font-bold drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]">00001010</span>
+                        <span id="op-label" class="absolute -left-2 top-0 text-slate-400 text-lg tracking-normal font-bold bg-slate-800 px-3 py-1 rounded-md border border-slate-600">(&)</span>
+                    </div>
+                    
+                    <div class="flex justify-between items-center text-3xl tracking-[0.4em] font-mono font-black mt-6">
+                        <span id="bin-res" class="text-yellow-400 drop-shadow-[0_0_12px_rgba(250,204,21,0.6)]">00000010</span>
+                    </div>
+                    
+                    <div class="text-center mt-10 text-slate-300 border-t-2 border-slate-800 pt-6 bg-slate-900 rounded-xl p-4 border border-slate-800/50">
+                        <span class="text-lg opacity-80">القيمة العشرية الناتجة:</span> 
+                        <div class="en-line !my-0 inline-block !bg-transparent !text-white text-4xl ml-2 font-black">
+                            <span id="dec-res">2</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- التذييل -->
+        <footer class="mt-16 text-center text-slate-400 border-t-2 border-slate-200 pt-8 pb-6 font-bold">
+            <p>جميع الحقوق محفوظة للمحتوى المرجعي الأصلي</p>
+            <p class="mt-3 text-base">فكرة وتصميم<br><span class="font-black text-slate-800 text-lg mt-1 inline-block">محمد مجممي</span></p>
+        </footer>
+
+    </main>
+
+    <script>
+        function openTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+                tab.classList.remove('block', 'flex');
+            });
+
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-slate-800', 'border-blue-500', 'border-emerald-500');
+                btn.classList.add('border-transparent');
+            });
+
+            const selectedTab = document.getElementById(tabId);
+            if(selectedTab) {
+                selectedTab.classList.remove('hidden');
+                if(tabId === 'tab-8') selectedTab.classList.add('flex');
+                else selectedTab.classList.add('block');
+            }
+
+            const activeBtn = document.getElementById('btn-' + tabId);
+            if(activeBtn) {
+                activeBtn.classList.remove('border-transparent');
+                if(tabId === 'tab-10') activeBtn.classList.add('bg-slate-800', 'border-emerald-500');
+                else activeBtn.classList.add('bg-slate-800', 'border-blue-500');
+            }
+
+            document.getElementById('mobile-nav').value = tabId;
+            document.querySelector('main').scrollTo(0,0);
+        }
+
+        const codeLinesData = [
+            { code: "#include <iostream>", exp: "يتم استدعاء مكتبة الإدخال والإخراج لتمكين البرنامج من تنفيذ عمليات الطباعة." },
+            { code: "using namespace std;", exp: "يُستخدم هذا السطر لتهيئة فضاء الأسماء القياسي، لتجنب كتابة الكلمة المفتاحية <code>std::</code> قبل التعليمات." },
+            { code: "", exp: "" },
+            { code: "void printBits(int x) {", exp: "يتم الإعلان عن دالة تستقبل معاملاً من النوع الصحيح <code>x</code> وتتولى معالجة قيمه." },
+            { code: "    for (int i = 7; i >= 0; i--) {", exp: "تستخدم الدالة حلقة تكرار تنازلية لمعالجة الخانات الثمانية بالتسلسل بدءاً من الخانة الأكثر أهمية." },
+            { code: "        cout << ((x >> i) & 1);", exp: "يتم إزاحة المتغير <code>x</code> بمقدار <code>i</code> إلى اليمين لتحديد البت المستهدف، ثم يطبق العامل المنطقي AND مع القيمة 1 لاستخراج وطباعة هذا البت فقط." },
+            { code: "    }", exp: "إغلاق نطاق الحلقة التكرارية." },
+            { code: "}", exp: "نهاية نطاق الدالة." },
+            { code: "", exp: "" },
+            { code: "int main() {", exp: "الدالة الرئيسية التي تمثل نقطة انطلاق تنفيذ البرنامج." },
+            { code: "    int a = 6;   // 00000110", exp: "تهيئة المتغير <code>a</code> وإسناد القيمة العشرية 6 إليه." },
+            { code: "    int b = 10;  // 00001010", exp: "تهيئة المتغير <code>b</code> وإسناد القيمة العشرية 10 إليه." },
+            { code: "", exp: "" },
+            { code: "    cout << \"a = \"; printBits(a); cout << \" (\" << a << \")\\n\";", exp: "استدعاء دالة الطباعة لإظهار التمثيل الثنائي للمتغير <code>a</code> ثم قيمته العشرية." },
+            { code: "    cout << \"b = \"; printBits(b); cout << \" (\" << b << \")\\n\\n\";", exp: "تنفيذ ذات الخطوة على المتغير <code>b</code> مع إضافة فواصل نصية للتنسيق." },
+            { code: "", exp: "" },
+            { code: "    cout << \"a & b = \"; printBits(a & b); cout << \" (\" << (a & b) << \")\\n\";", exp: "تطبيق التقاطع المنطقي (AND)، بحيث ينتج البت 1 فقط إذا وجد في كلا المتغيرين." },
+            { code: "    cout << \"a | b = \"; printBits(a | b); cout << \" (\" << (a | b) << \")\\n\";", exp: "تطبيق الاتحاد المنطقي (OR)، بحيث ينتج البت 1 إذا وجد في أحدهما على الأقل." },
+            { code: "    cout << \"a ^ b = \"; printBits(a ^ b); cout << \" (\" << (a ^ b) << \")\\n\";", exp: "تطبيق التباين المنطقي (XOR)، الذي يتطلب اختلاف القيم لإنتاج البت 1." },
+            { code: "    cout << \"~a    = \"; printBits((unsigned char)~a); cout << \" (only low 8 bits)\\n\";", exp: "تطبيق النفي المنطقي (NOT). يستخدم المعامل <code>unsigned char</code> لتحديد العرض بـ 8 بتات فقط لتسهيل المعاينة." },
+            { code: "    cout << \"a << 1 = \"; printBits(a << 1); cout << \" (\" << (a << 1) << \")\\n\";", exp: "تنفيذ إزاحة إلى اليسار للمتغير <code>a</code>، مما يكافئ رياضياً عملية الضرب في 2." },
+            { code: "    cout << \"b >> 1 = \"; printBits(b >> 1); cout << \" (\" << (b >> 1) << \")\\n\";", exp: "تنفيذ إزاحة إلى اليمين للمتغير <code>b</code>، مما يكافئ رياضياً عملية القسمة على 2." },
+            { code: "}", exp: "إغلاق نطاق الدالة الرئيسية والانتهاء من التنفيذ." }
+        ];
+
+        function initCodeInteractive() {
+            const container = document.getElementById('code-container');
+            const expBox = document.getElementById('explanation-box');
+
+            codeLinesData.forEach((lineData, index) => {
+                const lineDiv = document.createElement('div');
+                // بناء الحاوية بخصائص تضمن الاتجاه السليم
+                lineDiv.className = 'flex code-line py-2 text-sm md:text-base px-3 rounded font-mono items-center';
+                lineDiv.setAttribute('dir', 'ltr'); 
+
+                if(lineData.code.trim() === '') {
+                    lineDiv.innerHTML = `
+                        <span class="w-10 shrink-0 text-right pr-3 text-slate-700 select-none border-r-2 border-slate-800 mr-3 opacity-50 block">${index + 1}</span>
+                        <span class="text-slate-300 flex-1 whitespace-pre block" dir="ltr">&nbsp;</span>
+                    `;
+                } else {
+                    lineDiv.innerHTML = `
+                        <span class="w-10 shrink-0 text-right pr-3 text-slate-500 font-bold select-none border-r-2 border-slate-700 mr-3 block">${index + 1}</span>
+                        <span class="text-blue-300 flex-1 whitespace-pre block" dir="ltr">${escapeHtml(lineData.code)}</span>
+                    `;
+                    
+                    lineDiv.addEventListener('click', () => {
+                        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('active'));
+                        lineDiv.classList.add('active');
+                        
+                        expBox.innerHTML = `
+                            <div class="border-2 border-blue-200 rounded-xl overflow-hidden shadow-md w-full bg-white">
+                                <div class="bg-blue-50 text-blue-900 px-5 py-3 font-black text-right border-b-2 border-blue-200 text-lg flex items-center">
+                                    <span>المُدخل البرمجي:</span>
+                                </div>
+                                <div class="bg-slate-900 text-blue-300 p-5 ltr-code text-left font-mono text-lg" dir="ltr">${escapeHtml(lineData.code)}</div>
+                            </div>
+                            <div class="border-2 border-emerald-200 rounded-xl overflow-hidden shadow-md w-full fade-in mt-2 bg-white">
+                                <div class="bg-emerald-50 text-emerald-900 px-5 py-3 font-black text-right border-b-2 border-emerald-200 text-lg flex items-center">
+                                    <span>التوضيح الفني:</span>
+                                </div>
+                                <div class="p-6 text-slate-800 text-lg leading-loose text-right font-semibold" dir="rtl">${lineData.exp}</div>
+                            </div>
+                        `;
+                    });
+                }
+                container.appendChild(lineDiv);
+            });
+        }
+
+        // تحويل صارم للأرقام إلى إنجليزية
+        function toEnglishDigits(str) {
+            const arabicNumbers = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
+            return str.replace(/[٠-٩]/g, function(w) {
+                return arabicNumbers.indexOf(w);
+            });
+        }
+
+        // محرك الحاسبة
+        function updateCalc() {
+            let inputA = document.getElementById('calc-a');
+            let inputB = document.getElementById('calc-b');
+            
+            inputA.value = toEnglishDigits(inputA.value.toString());
+            inputB.value = toEnglishDigits(inputB.value.toString());
+
+            let a = parseInt(inputA.value) || 0;
+            let b = parseInt(inputB.value) || 0;
+            let op = document.getElementById('calc-op').value;
+            let res = 0;
+
+            a = a & 255;
+            b = b & 255;
+
+            if (op === '&') res = a & b;
+            else if (op === '|') res = a | b;
+            else if (op === '^') res = a ^ b;
+            else if (op === '~') res = ~a;
+            else if (op === '<<') res = a << (b % 8);
+            else if (op === '>>') res = a >> (b % 8);
+
+            res = res & 255;
+
+            document.getElementById('bin-a').innerText = a.toString(2).padStart(8, '0');
+            
+            if (op === '~') {
+                document.getElementById('bin-b').innerText = '--------';
+                document.getElementById('op-label').innerText = '(NOT)';
+                inputB.disabled = true;
+                inputB.classList.add('opacity-30', 'bg-slate-200');
+            } else {
+                document.getElementById('bin-b').innerText = b.toString(2).padStart(8, '0');
+                document.getElementById('op-label').innerText = `(${op})`;
+                inputB.disabled = false;
+                inputB.classList.remove('opacity-30', 'bg-slate-200');
+            }
+            
+            document.getElementById('bin-res').innerText = res.toString(2).padStart(8, '0');
+            document.getElementById('dec-res').innerText = res;
+        }
+
+        function escapeHtml(unsafe) {
+            return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+
+        window.onload = () => {
+            initCodeInteractive();
+            updateCalc();
+        };
+    </script>
+</body>
+</html>

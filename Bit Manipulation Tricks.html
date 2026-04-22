@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>حيل التعامل مع البِتّات - الدرس الشامل</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #f1f5f9;
+        }
+        
+        /* القاعدة الصارمة لفصل اللغة الإنجليزية في سطر مستقل */
+        .en-line {
+            display: block; 
+            direction: ltr !important;
+            text-align: left !important;
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #e0f2fe;
+            color: #0369a1;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            border-left: 4px solid #0ea5e9;
+            margin-top: 0.75rem;
+            margin-bottom: 0.75rem;
+            width: max-content;
+            max-width: 100%;
+            overflow-x: auto;
+            font-weight: 700;
+            font-size: 1.1rem;
+            clear: both;
+            unicode-bidi: isolate;
+        }
+
+        /* حاوية الأكواد البرمجية مع الحفاظ على المسافات بدقة */
+        .en-code-block {
+            display: block;
+            direction: ltr !important;
+            text-align: left !important;
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #0f172a;
+            color: #4ade80;
+            padding: 1.25rem;
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+            overflow-x: auto;
+            clear: both;
+            white-space: pre !important;
+            unicode-bidi: isolate;
+            line-height: 1.6;
+        }
+
+        .en-num-input {
+            direction: ltr !important;
+            text-align: center;
+            font-family: 'Courier New', Courier, monospace !important;
+            unicode-bidi: plaintext;
+        }
+
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: #e2e8f0; }
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 5px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        
+        /* تنسيقات أقسام الدرس */
+        .box-intro { background: #ffffff; border: 2px solid #e2e8f0; border-right: 6px solid #8b5cf6; padding: 1.5rem; border-radius: 0.75rem; margin-bottom: 2rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .box-original { background: #f8fafc; border: 2px dashed #cbd5e1; border-right: 6px solid #3b82f6; padding: 1.5rem; border-radius: 0.75rem; margin-bottom: 2rem; }
+        .box-explain { background: #fffbeb; border: 2px solid #fde68a; border-right: 6px solid #f59e0b; padding: 1.5rem; border-radius: 0.75rem; margin-bottom: 2rem; }
+        .box-summary { background: #f0fdf4; border: 2px solid #bbf7d0; border-right: 6px solid #22c55e; padding: 1.5rem; border-radius: 0.75rem; margin-bottom: 2rem; }
+        
+        .section-title { font-size: 2rem; font-weight: 900; color: #1e293b; border-bottom: 3px solid #e2e8f0; padding-bottom: 0.75rem; margin-bottom: 2rem; }
+        .box-heading { font-size: 1.3rem; font-weight: 800; margin-bottom: 1rem; display: flex; align-items: center; }
+        
+        /* تنسيق خاص للبتات في النشاط التفاعلي */
+        .bit-box { transition: all 0.3s; }
+        .bit-highlight { background-color: #fbbf24; color: #000; transform: scale(1.1); box-shadow: 0 0 10px rgba(251,191,36,0.8); }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden text-slate-800">
+
+    <!-- شريط التبويبات الجانبي -->
+    <aside class="w-80 bg-slate-900 text-white flex flex-col shadow-2xl z-10 hidden lg:flex shrink-0">
+        <div class="p-6 text-center border-b border-slate-700 bg-slate-950">
+            <h1 class="text-3xl font-black text-blue-400">الدرس الشامل</h1>
+            <div class="en-line text-sm mx-auto mt-2 !bg-transparent !border-0 !text-slate-400 !p-0 text-center !w-full">Bit Manipulation Tricks</div>
+        </div>
+        <nav class="flex-1 overflow-y-auto py-3 space-y-2 text-base font-bold">
+            <button onclick="openTab('tab-1')" id="btn-tab-1" class="tab-btn w-full flex items-center px-6 py-4 text-right hover:bg-slate-800 transition-colors bg-slate-800 border-r-4 border-blue-500">
+                <span>1. المتغيرات والأقنعة</span>
+            </button>
+            <button onclick="openTab('tab-2')" id="btn-tab-2" class="tab-btn w-full flex items-center px-6 py-4 text-right hover:bg-slate-800 transition-colors border-r-4 border-transparent">
+                <span>2. فحص حالة البِت</span>
+            </button>
+            <button onclick="openTab('tab-3')" id="btn-tab-3" class="tab-btn w-full flex items-center px-6 py-4 text-right hover:bg-slate-800 transition-colors border-r-4 border-transparent">
+                <span>3. ضبط وتفعيل البِت</span>
+            </button>
+            <button onclick="openTab('tab-4')" id="btn-tab-4" class="tab-btn w-full flex items-center px-6 py-4 text-right hover:bg-slate-800 transition-colors border-r-4 border-transparent">
+                <span>4. تصفير البِت (جعله 0)</span>
+            </button>
+            <button onclick="openTab('tab-5')" id="btn-tab-5" class="tab-btn w-full flex items-center px-6 py-4 text-right hover:bg-slate-800 transition-colors border-r-4 border-transparent">
+                <span>5. قلب أو تبديل البِت</span>
+            </button>
+            <button onclick="openTab('tab-6')" id="btn-tab-6" class="tab-btn w-full flex items-center px-6 py-4 text-right hover:bg-slate-800 transition-colors border-r-4 border-transparent">
+                <span>6. إزالة أقل بِت معيّن</span>
+            </button>
+            <button onclick="openTab('tab-7')" id="btn-tab-7" class="tab-btn w-full flex items-center px-6 py-4 text-right hover:bg-slate-800 transition-colors border-r-4 border-transparent">
+                <span>7. فحص قوى العدد 2</span>
+            </button>
+            <button onclick="openTab('tab-8')" id="btn-tab-8" class="tab-btn w-full flex items-center px-6 py-4 text-right hover:bg-slate-800 transition-colors border-r-4 border-transparent">
+                <span>8. استخراج أقل بِت معيّن</span>
+            </button>
+            <button onclick="openTab('tab-9')" id="btn-tab-9" class="tab-btn w-full flex items-center px-6 py-4 text-right hover:bg-slate-800 transition-colors border-r-4 border-transparent">
+                <span class="text-emerald-400">9. الملخص والمختبر التفاعلي</span>
+            </button>
+        </nav>
+    </aside>
+
+    <!-- القائمة العلوية للجوال -->
+    <div class="lg:hidden fixed top-0 left-0 right-0 bg-slate-900 text-white z-20 flex justify-between items-center p-4 shadow-md">
+        <div class="en-line !mt-0 !mb-0 !bg-transparent !border-0 !text-blue-400 !p-0">Bit Tricks</div>
+        <select id="mobile-nav" onchange="openTab(this.value)" class="bg-slate-800 text-white border border-slate-700 rounded p-2 text-base font-bold max-w-[60%]">
+            <option value="tab-1">1. المتغيرات والأقنعة</option>
+            <option value="tab-2">2. فحص حالة البت</option>
+            <option value="tab-3">3. تفعيل البت</option>
+            <option value="tab-4">4. تصفير البت</option>
+            <option value="tab-5">5. تبديل البت</option>
+            <option value="tab-6">6. إزالة أقل بت</option>
+            <option value="tab-7">7. قوى العدد 2</option>
+            <option value="tab-8">8. استخراج البت</option>
+            <option value="tab-9">9. الملخص والمختبر</option>
+        </select>
+    </div>
+
+    <!-- منطقة المحتوى الرئيسي -->
+    <main class="flex-1 overflow-y-auto p-6 lg:p-12 mt-16 lg:mt-0 relative pb-24 scroll-smooth">
+        
+        <!-- ================= الجزء 1 ================= -->
+        <section id="tab-1" class="tab-content max-w-5xl mx-auto block fade-in">
+            <h2 class="section-title">1. التمهيد: المتغيرات والأقنعة</h2>
+            
+            <div class="box-intro">
+                <h3 class="box-heading text-purple-700"><span class="ml-2 text-3xl">🎯</span> التمهيد والمفاهيم</h3>
+                <p class="text-lg leading-loose">لإجراء تعديلات دقيقة داخل ذاكرة الحاسوب، نحتاج إلى إرسال إشارات تستهدف خانة (بِت) محددة دون المساس ببقية الخانات. هذه الإشارة الموجهة تُسمى برمجياً "القناع". سنتفق أولاً على مسميات المتغيرات التي سنبني عليها كافة الحيل القادمة.</p>
+            </div>
+
+            <div class="box-original">
+                <h3 class="box-heading text-blue-700"><span class="ml-2 text-3xl">📄</span> النص المرجعي الأصلي</h3>
+                <div class="text-lg leading-loose font-medium">
+                    <p>حيل التعامل مع البِتّات</p>
+                    <div class="en-line">(Bit Manipulation Tricks)</div>
+                    <p>سنفترض وجود المتغيرين التاليين:</p>
+                    
+                    <pre class="en-code-block">int x;       // some non-negative integer
+int k;       // 0-based bit index (0 = least significant bit)</pre>
+                    
+                    <p>وسنستخدم أقنعة</p>
+                    <div class="en-line">(masks)</div>
+                    <p>مثل</p>
+                    <div class="en-line">1 << k</div>
+                    <p>، والتي يكون فيها البِت رقم</p>
+                    <div class="en-line">k</div>
+                    <p>فقط مساويًا لـ 1.</p>
+                </div>
+            </div>
+
+            <div class="box-explain">
+                <h3 class="box-heading text-amber-700"><span class="ml-2 text-3xl">💡</span> الإيضاحات والمبررات</h3>
+                <p class="text-lg leading-loose"><strong>ما هو القناع وكيف نصنعه؟</strong></p>
+                <p class="text-lg leading-loose mt-2">القناع هو رقم نستخدمه كأداة لاستهداف خانة معينة. عندما نأخذ الرقم 1 ونقوم بإزاحته لليسار بمقدار معين، فإننا نصنع هذا القناع. فمثلاً، الإزاحة بمقدار خطوتين تصنع رقماً يحتوي على 1 في الخانة الثالثة، وأصفار في البقية. هذا القناع سيسمح لنا بالتعديل على تلك الخانة حصرياً في الدروس القادمة.</p>
+            </div>
+            
+            <div class="box-summary">
+                <h3 class="box-heading text-green-700"><span class="ml-2 text-3xl">📌</span> خلاصة الجزء</h3>
+                <p class="text-lg leading-loose font-bold">المتغير الأساسي هو الرقم الذي نريد التعديل عليه، بينما يمثل الدليل موقع الخانة المستهدفة. والقناع هو الأداة الجراحية التي تُبنى باستخدام عملية الإزاحة للوصول الدقيق إلى تلك الخانة.</p>
+            </div>
+        </section>
+
+        <!-- ================= الجزء 2 ================= -->
+        <section id="tab-2" class="tab-content max-w-5xl mx-auto hidden fade-in">
+            <h2 class="section-title">2. فحص ما إذا كان البِت يساوي 1</h2>
+            
+            <div class="box-intro">
+                <h3 class="box-heading text-purple-700"><span class="ml-2 text-3xl">🎯</span> التمهيد والمفاهيم</h3>
+                <p class="text-lg leading-loose">في بعض الأحيان لا نريد تغيير البيانات، بل مجرد "قراءتها" أو الاستعلام عنها. كيف يمكننا سؤال الحاسوب: هل الخانة المحددة تحمل القيمة 1 أم 0؟ يتم ذلك باستخراج تلك الخانة إلى الطرف الأيمن.</p>
+            </div>
+
+            <div class="box-original">
+                <h3 class="box-heading text-blue-700"><span class="ml-2 text-3xl">📄</span> النص المرجعي الأصلي</h3>
+                <div class="text-lg leading-loose font-medium">
+                    <p class="font-bold">فحص ما إذا كان البِت</p>
+                    <div class="en-line !my-1 inline-block">k</div>
+                    <p>يساوي 1</p>
+                    
+                    <pre class="en-code-block">bool isSet = (x >> k) & 1;</pre>
+                    
+                    <div class="en-line">x >> k</div>
+                    <p>→ إزاحة لليمين بحيث ينتقل البِت رقم</p>
+                    <div class="en-line !my-1 inline-block">k</div>
+                    <p>إلى أقصى اليمين.</p>
+                    
+                    <div class="en-line">(x >> k) & 1</div>
+                    <p>→ تُبقي البِت الأيمن فقط وتصفّر باقي البِتّات.</p>
+                    <p>الناتج يكون 0 أو 1، وهو يعادل</p>
+                    <div class="en-line !my-1 inline-block">false</div>
+                    <p>أو</p>
+                    <div class="en-line !my-1 inline-block">true</div>
+                    <p>منطقيًا.</p>
+
+                    <p class="font-bold mt-6">أمثلة</p>
+                    <p>افحص ما إذا كان البِت رقم 1 في</p>
+                    <div class="en-line !my-1 inline-block">x</div>
+                    <p>مُعينًا (يساوي 1).</p>
+                    
+                    <pre class="en-code-block">int x = 10;     // 10 = 1010 (in binary)
+int k = 1;
+bool isSet = (x >> 1) & 1; // 1010 >> 1 = 101;  101 & 1 = 1 (true)</pre>
+                    
+                    <p>معطى عددان</p>
+                    <div class="en-line !my-1 inline-block">n</div>
+                    <p>و</p>
+                    <div class="en-line !my-1 inline-block">k</div>
+                    <p>، اكتب دالة تحدد ما إذا كان البِت رقم</p>
+                    <div class="en-line !my-1 inline-block">k</div>
+                    <p>في</p>
+                    <div class="en-line !my-1 inline-block">n</div>
+                    <p>مساويًا لـ 1.</p>
+                    
+                    <pre class="en-code-block">bool kthBitIsSet(int n, int k) {
+    return (n >> k) & 1;
+}</pre>
+                </div>
+            </div>
+
+            <div class="box-explain">
+                <h3 class="box-heading text-amber-700"><span class="ml-2 text-3xl">💡</span> الإيضاحات والمبررات</h3>
+                <p class="text-lg leading-loose"><strong>المنطق خلف عملية الفحص:</strong></p>
+                <p class="text-lg leading-loose mt-2">بدلاً من صناعة قناع معقد، نقوم بتبسيط المشكلة: ندفع الرقم كاملاً نحو اليمين حتى تسقط جميع البتات غير المهمة، ويصبح البت المستهدف هو البت الأول (الأيمن). بعد ذلك، نطبق معامل التقاطع المنطقي مع الرقم 1، مما يؤدي إلى مسح كل ما تبقى على اليسار وإبقاء نتيجة البت المستهدف واضحة كإجابة نهائية.</p>
+            </div>
+            
+            <div class="box-summary">
+                <h3 class="box-heading text-green-700"><span class="ml-2 text-3xl">📌</span> خلاصة الجزء</h3>
+                <p class="text-lg leading-loose font-bold">لقراءة أي خانة بشكل مستقل، ادفعها لتكون في البداية (يميناً)، ثم اعزلها باستخدام معامل التقاطع المنطقي.</p>
+            </div>
+        </section>
+
+        <!-- ================= الجزء 3 ================= -->
+        <section id="tab-3" class="tab-content max-w-5xl mx-auto hidden fade-in">
+            <h2 class="section-title">3. ضبط البِت وتفعيله (جعله 1)</h2>
+            
+            <div class="box-intro">
+                <h3 class="box-heading text-purple-700"><span class="ml-2 text-3xl">🎯</span> التمهيد والمفاهيم</h3>
+                <p class="text-lg leading-loose">الآن سننتقل من مرحلة "القراءة" إلى مرحلة "الكتابة". إذا أردنا إجبار خانة معينة لتصبح 1 (أي تفعيلها)، بغض النظر عن حالتها السابقة، دون التأثير على جيرانها، نلجأ إلى معامل الاتحاد.</p>
+            </div>
+
+            <div class="box-original">
+                <h3 class="box-heading text-blue-700"><span class="ml-2 text-3xl">📄</span> النص المرجعي الأصلي</h3>
+                <div class="text-lg leading-loose font-medium">
+                    <p class="font-bold">ضبط البِت رقم</p>
+                    <div class="en-line !my-1 inline-block">k</div>
+                    <p>إلى 1</p>
+                    
+                    <pre class="en-code-block">x |= (1 << k);</pre>
+                    
+                    <p>العامل</p>
+                    <div class="en-line !my-1 inline-block">|</div>
+                    <p>يعيّن البِت إلى 1 إذا كان على الأقل أحد الطرفين يحتوي 1.</p>
+                    <p>بهذا نجبر البِت رقم</p>
+                    <div class="en-line !my-1 inline-block">k</div>
+                    <p>أن يصبح 1، بينما تبقى باقي البِتّات كما هي.</p>
+                    
+                    <p class="font-bold mt-6">مثال</p>
+                    <pre class="en-code-block">int x = 4;      // 0100
+x |= (1 << 0);  // 0100 | 0001 = 0101 (5)</pre>
+                </div>
+            </div>
+
+            <div class="box-explain">
+                <h3 class="box-heading text-amber-700"><span class="ml-2 text-3xl">💡</span> الإيضاحات والمبررات</h3>
+                <p class="text-lg leading-loose"><strong>مبرر استخدام عامل الاتحاد (OR):</strong></p>
+                <p class="text-lg leading-loose mt-2">عامل الاتحاد يعطي النتيجة 1 إذا كان أي من الطرفين 1. عندما نصنع قناعاً يحتوي على 1 في المكان المطلوب وأصفار في الباقي، فإن الاتحاد مع الأصفار يحافظ على القيمة الأصلية للبتات الأخرى دون تشويه، بينما الاتحاد مع الرقم 1 يجبر الخانة المستهدفة على أن تكون 1.</p>
+            </div>
+            
+            <div class="box-summary">
+                <h3 class="box-heading text-green-700"><span class="ml-2 text-3xl">📌</span> خلاصة الجزء</h3>
+                <p class="text-lg leading-loose font-bold">لتشغيل أو تفعيل أي مفتاح، استخدم عامل الاتحاد (OR) مع القناع المناسب.</p>
+            </div>
+        </section>
+
+        <!-- ================= الجزء 4 ================= -->
+        <section id="tab-4" class="tab-content max-w-5xl mx-auto hidden fade-in">
+            <h2 class="section-title">4. تصفير البِت (جعله 0)</h2>
+            
+            <div class="box-intro">
+                <h3 class="box-heading text-purple-700"><span class="ml-2 text-3xl">🎯</span> التمهيد والمفاهيم</h3>
+                <p class="text-lg leading-loose">عكس العملية السابقة تماماً. نريد الآن إطفاء خانة محددة وإجبارها على أن تصبح 0، مع الحفاظ التام والآمن على جميع الخانات الأخرى المحيطة بها.</p>
+            </div>
+
+            <div class="box-original">
+                <h3 class="box-heading text-blue-700"><span class="ml-2 text-3xl">📄</span> النص المرجعي الأصلي</h3>
+                <div class="text-lg leading-loose font-medium">
+                    <p class="font-bold">تصفير البِت رقم</p>
+                    <div class="en-line !my-1 inline-block">k</div>
+                    <p>(جعله 0)</p>
+                    
+                    <pre class="en-code-block">x &= ~(1 << k);</pre>
+                    
+                    <div class="en-line">1 << k</div>
+                    <p>→ قناع فيه البِت رقم</p>
+                    <div class="en-line !my-1 inline-block">k</div>
+                    <p>يساوي 1.</p>
+                    
+                    <div class="en-line">~(1 << k)</div>
+                    <p>→ قناع فيه البِت رقم</p>
+                    <div class="en-line !my-1 inline-block">k</div>
+                    <p>يساوي 0، وجميع البِتّات الأخرى تساوي 1.</p>
+                    <p>إجراء</p>
+                    <div class="en-line !my-1 inline-block">&</div>
+                    <p>مع هذا القناع يقوم بتصفير البِت رقم</p>
+                    <div class="en-line !my-1 inline-block">k</div>
+                    <p>فقط.</p>
+                    
+                    <p class="font-bold mt-6">مثال</p>
+                    <pre class="en-code-block">int x = 13;         // 1101
+x &= ~(1 << 2);     // ~(0100) = ...1011
+                    // 1101 & 1011 = 1001 (9)</pre>
+                    
+                    <p>الآن البِت رقم 2 أصبح 0.</p>
+                </div>
+            </div>
+
+            <div class="box-explain">
+                <h3 class="box-heading text-amber-700"><span class="ml-2 text-3xl">💡</span> الإيضاحات والمبررات</h3>
+                <p class="text-lg leading-loose"><strong>آلية العمل العكسي للقناع:</strong></p>
+                <p class="text-lg leading-loose mt-2">القناع العادي يحتوي على 1 في المنتصف وأصفار حوله. لكن هنا، نحن نستخدم عامل النفي <code>~</code> لعكس القناع بالكامل (يصبح أصفاراً في الأطراف و 0 في المنتصف). ثم نستخدم عامل التقاطع (AND) الذي يسمح بمرور البيانات إذا قابلت 1، ويعدم البيانات (يصفرها) إذا قابلت 0.</p>
+            </div>
+            
+            <div class="box-summary">
+                <h3 class="box-heading text-green-700"><span class="ml-2 text-3xl">📌</span> خلاصة الجزء</h3>
+                <p class="text-lg leading-loose font-bold">لإطفاء مفتاح محدد، اصنع قناعاً عادياً، اعكسه تماماً، ثم ادمجه باستخدام عامل التقاطع المنطقي (AND).</p>
+            </div>
+        </section>
+
+        <!-- ================= الجزء 5 ================= -->
+        <section id="tab-5" class="tab-content max-w-5xl mx-auto hidden fade-in">
+            <h2 class="section-title">5. قلب أو تبديل البِت</h2>
+            
+            <div class="box-intro">
+                <h3 class="box-heading text-purple-700"><span class="ml-2 text-3xl">🎯</span> التمهيد والمفاهيم</h3>
+                <p class="text-lg leading-loose">ماذا لو لم نكن نعرف حالة البت الحالية، وكل ما نريده هو "عكس" حالته؟ إذا كان 1 نجعله 0، وإذا كان 0 نجعله 1 (تماما مثل زر تشغيل وإطفاء المصباح). هذه وظيفة معامل التباين الحصري.</p>
+            </div>
+
+            <div class="box-original">
+                <h3 class="box-heading text-blue-700"><span class="ml-2 text-3xl">📄</span> النص المرجعي الأصلي</h3>
+                <div class="text-lg leading-loose font-medium">
+                    <p class="font-bold">قلب (تبديل) البِت رقم</p>
+                    <div class="en-line !my-1 inline-block">k</div>
+                    
+                    <pre class="en-code-block">x ^= (1 << k);</pre>
+                    
+                    <p>العامل</p>
+                    <div class="en-line !my-1 inline-block">^</div>
+                    <p>(XOR) يقلب البِت عندما يكون القناع فيه 1:</p>
+                    
+                    <div class="en-code-block">0 ^ 1 = 1
+1 ^ 1 = 0</div>
+                    
+                    <p class="font-bold mt-6">مثال</p>
+                    <pre class="en-code-block">int x = 5;     // 0101
+x ^= (1 << 2); // 0101 ^ 0100 = 0001 (1)</pre>
+                    
+                    <p>البِت رقم 2 كان 1 → أصبح الآن 0.</p>
+                </div>
+            </div>
+
+            <div class="box-explain">
+                <h3 class="box-heading text-amber-700"><span class="ml-2 text-3xl">💡</span> الإيضاحات والمبررات</h3>
+                <p class="text-lg leading-loose"><strong>السلوك المنطقي للتباين (XOR):</strong></p>
+                <p class="text-lg leading-loose mt-2">القاعدة الذهبية لعامل XOR هي: "التشابه يعطي صفر، والاختلاف يعطي واحد". عندما يكون القناع يحمل القيمة 0، فإن XOR سيحافظ على قيمة الرقم الأصلي كما هي. ولكن في الخانة التي يحمل فيها القناع القيمة 1، فإنه يجبر الرقم الأصلي على أن ينقلب لعكس حالته.</p>
+            </div>
+            
+            <div class="box-summary">
+                <h3 class="box-heading text-green-700"><span class="ml-2 text-3xl">📌</span> خلاصة الجزء</h3>
+                <p class="text-lg leading-loose font-bold">استخدم عامل XOR لعمل "مفتاح تبديل" (Toggle) للبتات، دون الحاجة لمعرفة حالتها السابقة.</p>
+            </div>
+        </section>
+
+        <!-- ================= الجزء 6 ================= -->
+        <section id="tab-6" class="tab-content max-w-5xl mx-auto hidden fade-in">
+            <h2 class="section-title">6. إزالة أقل بِت معيّن (أقل 1 من اليمين)</h2>
+            
+            <div class="box-intro">
+                <h3 class="box-heading text-purple-700"><span class="ml-2 text-3xl">🎯</span> التمهيد والمفاهيم</h3>
+                <p class="text-lg leading-loose">هذه الحيلة تعتبر من أذكى الخوارزميات في علوم الحاسوب. هدفها إيجاد أول بت يحمل القيمة (1) بالبحث من اليمين، ومسحه (جعله 0) في خطوة رياضية واحدة دون استخدام أي حلقات تكرار.</p>
+            </div>
+
+            <div class="box-original">
+                <h3 class="box-heading text-blue-700"><span class="ml-2 text-3xl">📄</span> النص المرجعي الأصلي</h3>
+                <div class="text-lg leading-loose font-medium">
+                    <p class="font-bold">إزالة أقل بِت معيّن (أقل 1 من اليمين)</p>
+                    <p>هذه حيلة مشهورة جدًّا:</p>
+                    <pre class="en-code-block">x = x & (x - 1);</pre>
+                    <p>هذا السطر يزيل (يُصفّر) أقل بِت معيّن (أول 1 من جهة اليمين) في</p>
+                    <div class="en-line !my-1 inline-block">x</div>
+                    <p>.</p>
+                    
+                    <p class="font-bold mt-6">لماذا تعمل هذه الحيلة؟</p>
+                    <p>فكّر ماذا يحدث للبِتّات عندما نطرح 1:</p>
+                    <ul class="list-disc list-inside space-y-2 mt-2">
+                        <li>عند تنفيذ</li>
+                        <div class="en-line !my-1 inline-block">x - 1</div>
+                        <li>، نمشي من اليمين حتى نجد أول بِت قيمته 1.</li>
+                        <li>هذا البِت الأقل (أقرب 1 لليمين) يتحوّل إلى 0.</li>
+                        <li>كل البِتّات التي على يمينه (والتي كانت 0) تتحوّل إلى 1 (بسبب الاقتراض في الطرح).</li>
+                    </ul>
+                    
+                    <p class="mt-4">إذًا حول أقل بِت معيّن، النمط يكون بهذا الشكل:</p>
+                    <pre class="en-code-block">x:       .... 1 0 0 0 0
+x - 1:   .... 0 1 1 1 1</pre>
+                    
+                    <p>عند إجراء AND:</p>
+                    <pre class="en-code-block">x        = .... 1 0 0 0 0
+x - 1    = .... 0 1 1 1 1
+-------------------------
+x&(x-1)  = .... 0 0 0 0 0</pre>
+                    
+                    <ul class="list-none space-y-2 mt-4 bg-white p-4 border border-slate-200 rounded">
+                        <li>أقل بِت معيّن يصبح 0 لأنه</li>
+                        <div class="en-line !my-1 inline-block">1 & 0</div>
+                        <li>.</li>
+                        <li class="mt-2">كل البِتّات التي على يمينه كانت 0 في</li>
+                        <div class="en-line !my-1 inline-block">x</div>
+                        <li>، ومع أي قيمة في</li>
+                        <div class="en-line !my-1 inline-block">x - 1</div>
+                        <li>تعطي</li>
+                        <div class="en-line !my-1 inline-block">0 & something = 0</div>
+                        <li>.</li>
+                        <li class="mt-2">كل البِتّات التي على يساره لا تتأثر، لأن الطرح لم يغيّرها؛ أي أن قيمتها في</li>
+                        <div class="en-line !my-1 inline-block">x</div>
+                        <li>و</li>
+                        <div class="en-line !my-1 inline-block">x - 1</div>
+                        <li>متطابقة، وبالتالي تبقى كما هي بعد AND.</li>
+                    </ul>
+                    
+                    <p class="mt-4">لذلك</p>
+                    <div class="en-line !my-1 inline-block">x & (x - 1)</div>
+                    <p>تساوي قيمة</p>
+                    <div class="en-line !my-1 inline-block">x</div>
+                    <p>نفسها لكن مع أقل بِت معيّن مصفّرًا.</p>
+
+                    <p class="font-bold mt-6">مثال</p>
+                    <pre class="en-code-block">x           = 12 = 1100
+x - 1       = 11 = 1011
+x & (x - 1) =  8 = 1000</pre>
+                    <p>إذًا قمنا بإزالة أقل بِت معيّن (البِت رقم 2).</p>
+                </div>
+            </div>
+
+            <div class="box-explain">
+                <h3 class="box-heading text-amber-700"><span class="ml-2 text-3xl">💡</span> الإيضاحات والمبررات</h3>
+                <p class="text-lg leading-loose"><strong>العبقرية في التتابع الرياضي:</strong></p>
+                <p class="text-lg leading-loose mt-2">عملية الطرح البسيطة (ناقص 1) تجبر الرقم على كسر أول "مقاومة" تصادفه من اليمين (وهي البت رقم 1). وعندما ينكسر هذا البت ويتحول إلى 0، وينعكس كل ما خلفه، يصبح لدينا رقم جديد يمثل "عكس" الجزء الأيمن من الرقم الأصلي. وعند دمج الرقمين بالتقاطع (AND)، يتم إطفاء هذا الجزء تماماً وتدميره في جزء من الثانية.</p>
+            </div>
+            
+            <div class="box-summary">
+                <h3 class="box-heading text-green-700"><span class="ml-2 text-3xl">📌</span> خلاصة الجزء</h3>
+                <p class="text-lg leading-loose font-bold">صيغة التقاطع مع (الرقم ناقص واحد) هي الطريقة القياسية عالمياً لمسح أول بت مفعل من جهة اليمين بخطوة واحدة.</p>
+            </div>
+        </section>
+
+        <!-- ================= الجزء 7 ================= -->
+        <section id="tab-7" class="tab-content max-w-5xl mx-auto hidden fade-in">
+            <h2 class="section-title">7. فحص ما إذا كان العدد قوة للعدد 2</h2>
+            
+            <div class="box-intro">
+                <h3 class="box-heading text-purple-700"><span class="ml-2 text-3xl">🎯</span> التمهيد والمفاهيم</h3>
+                <p class="text-lg leading-loose">بناءً على الحيلة العبقرية السابقة (إزالة أقل بت)، سنقوم بتوظيفها لحل مشكلة برمجية كلاسيكية: كيف نعرف أن الرقم المدخل هو من مضاعفات قوى 2 (مثل 2, 4, 8, 16) بدون أي عمليات قسمة؟</p>
+            </div>
+
+            <div class="box-original">
+                <h3 class="box-heading text-blue-700"><span class="ml-2 text-3xl">📄</span> النص المرجعي الأصلي</h3>
+                <div class="text-lg leading-loose font-medium">
+                    <p class="font-bold">فحص ما إذا كان</p>
+                    <div class="en-line !my-1 inline-block">x</div>
+                    <p>قوة للعدد 2</p>
+                    <p>سنفترض أن</p>
+                    <div class="en-line !my-1 inline-block">x</div>
+                    <p>عدد موجب، ونستخدم الحيلة السابقة:</p>
+                    
+                    <pre class="en-code-block">bool isPowerOfTwo = (x & (x - 1)) == 0;</pre>
+                    
+                    <p class="font-bold mt-6">لماذا تعمل هذه الحيلة؟</p>
+                    <p>العدد الذي هو قوة للعدد 2 في الثنائي</p>
+                    <div class="en-line !my-1 inline-block">(1, 10, 100, 1000, …)</div>
+                    <p>يحتوي بِتًا واحدًا فقط معيّنًا.</p>
+                    <p class="mt-2">عند تنفيذ</p>
+                    <div class="en-line !my-1 inline-block">x & (x - 1)</div>
+                    <p>نقوم بإزالة أقل بِت معيّن.</p>
+                    <p>إذا كان هناك بِت واحد فقط معيّن، فبعد إزالة هذا البِت تصبح القيمة 0.</p>
+                    
+                    <p class="font-bold mt-4">إذًا:</p>
+                    <div class="en-line">x & (x - 1) == 0</div>
+                    <p>⇔</p>
+                    <div class="en-line !my-1 inline-block">x</div>
+                    <p>لديه بِت واحد معيّن فقط (أي قوة للعدد 2).</p>
+
+                    <p class="font-bold mt-6">أمثلة</p>
+                    <div class="en-line">x = 8 (1000)</div>
+                    <p>→</p>
+                    <div class="en-line !my-1 inline-block">x & (x-1) = 1000 & 0111 = 0000</div>
+                    <p>→ قوة للعدد 2.</p>
+                    
+                    <div class="en-line mt-4">x = 12 (1100)</div>
+                    <p>→</p>
+                    <div class="en-line !my-1 inline-block">x & (x-1) = 1100 & 1011 = 1000</div>
+                    <p>→ ليست 0 → ليس قوة للعدد 2.</p>
+                </div>
+            </div>
+
+            <div class="box-explain">
+                <h3 class="box-heading text-amber-700"><span class="ml-2 text-3xl">💡</span> الإيضاحات والمبررات</h3>
+                <p class="text-lg leading-loose"><strong>الربط المنطقي للنتيجة:</strong></p>
+                <p class="text-lg leading-loose mt-2">أي رقم يعتبر من قوى 2 يمتلك بتّاً واحداً فقط قيد التشغيل. وبما أن الخوارزمية السابقة تقوم بتدمير "أول بت يعمل"، فإذا دمرنا هذا البت الوحيد ولم يبقَ شيء في الرقم (النتيجة أصبحت صفراً)، فهذا دليل قاطع هندسياً ورياضياً على أنه لم يكن يملك غيره، وأنه يمثل قوة للعدد 2.</p>
+            </div>
+            
+            <div class="box-summary">
+                <h3 class="box-heading text-green-700"><span class="ml-2 text-3xl">📌</span> خلاصة الجزء</h3>
+                <p class="text-lg leading-loose font-bold">لتتأكد من أن الرقم هو أحد مضاعفات قوى العدد 2، احذف أول بت نشط منه، إذا أصبح صفراً فهو كذلك.</p>
+            </div>
+        </section>
+
+        <!-- ================= الجزء 8 ================= -->
+        <section id="tab-8" class="tab-content max-w-5xl mx-auto hidden fade-in">
+            <h2 class="section-title">8. استخراج أقل بِت معيّن فقط</h2>
+            
+            <div class="box-intro">
+                <h3 class="box-heading text-purple-700"><span class="ml-2 text-3xl">🎯</span> التمهيد والمفاهيم</h3>
+                <p class="text-lg leading-loose">في حيلة سابقة قمنا بمسح وتدمير أول بت من اليمين. ولكن ماذا لو أردنا "عزله" واستخراجه لاستخدامه في حسابات أخرى، مع تصفير باقي الرقم كاملاً؟ هنا سنستعين بالمتمم الثنائي (الأرقام السالبة) لإنجاز المهمة.</p>
+            </div>
+
+            <div class="box-original">
+                <h3 class="box-heading text-blue-700"><span class="ml-2 text-3xl">📄</span> النص المرجعي الأصلي</h3>
+                <div class="text-lg leading-loose font-medium">
+                    <p class="font-bold">الحصول على أقل بِت معيّن فقط</p>
+                    <pre class="en-code-block">int lowest = x & -x;</pre>
+                    
+                    <p>هنا</p>
+                    <div class="en-line !my-1 inline-block">-x</div>
+                    <p>هو المتمّم الثنائي</p>
+                    <div class="en-line !my-1 inline-block">(two’s complement)</div>
+                    <p>للعدد</p>
+                    <div class="en-line !my-1 inline-block">x</div>
+                    <p>.</p>
+                    
+                    <p class="font-bold mt-4">الفكرة:</p>
+                    <p>التعبير</p>
+                    <div class="en-line !my-1 inline-block">x & -x</div>
+                    <p>يعزل أقل بِت معيّن (أول 1 من جهة اليمين) ويصفّر جميع البِتّات الأخرى.</p>
+                    
+                    <p class="font-bold mt-6">مثال</p>
+                    <pre class="en-code-block">x                     = 12 = ...00001100
+-x (two's complement) =      ...11110100
+x & -x                =      ...00000100 = 4</pre>
+                    
+                    <p>أقل بِت معيّن في</p>
+                    <div class="en-line !my-1 inline-block">x</div>
+                    <p>يمثّل القيمة 4 (أي البِت رقم 2).</p>
+                </div>
+            </div>
+
+            <div class="box-explain">
+                <h3 class="box-heading text-amber-700"><span class="ml-2 text-3xl">💡</span> الإيضاحات والمبررات</h3>
+                <p class="text-lg leading-loose"><strong>ما هو التفسير العلمي وراء ذلك؟</strong></p>
+                <p class="text-lg leading-loose mt-2">عند تحويل الرقم إلى سالب (المتمم الثنائي)، يتم عكس جميع البتات ثم يضاف 1. هذه الإضافة (1) تقوم بإحداث تسلسل من عمليات الجمع يتوقف بالضبط عند "أول بت نشط"، مما يعيد هذا البت إلى حالته الأصلية (1) ويجعل ما يمينه أصفاراً وما يساره معكوساً. وعند التقاطع، ينهار الجزء الأيسر لأنه معكوس، ويبقى البت النشط وحيداً يتيماً.</p>
+            </div>
+            
+            <div class="box-summary">
+                <h3 class="box-heading text-green-700"><span class="ml-2 text-3xl">📌</span> خلاصة الجزء</h3>
+                <p class="text-lg leading-loose font-bold">التقاطع المنطقي (AND) بين الرقم وقيمته السالبة يعزل أقل بت مفعل ويعطيك قيمته العشرية كناتج.</p>
+            </div>
+        </section>
+
+        <!-- ================= الجزء 9 ================= -->
+        <section id="tab-9" class="tab-content max-w-6xl mx-auto hidden fade-in">
+            <h2 class="section-title text-emerald-700">9. الملخص والمختبر التفاعلي</h2>
+            
+            <div class="box-original !bg-white !border-emerald-200 !border-right-emerald-500">
+                <h3 class="box-heading text-emerald-800"><span class="ml-2 text-3xl">📄</span> النص المرجعي الأصلي (الملخص)</h3>
+                <div class="text-lg leading-loose font-medium">
+                    <p class="font-bold">ملخص سريع</p>
+                    <ul class="list-none space-y-4 mt-4 bg-slate-50 p-6 rounded-lg border border-slate-200">
+                        <li class="flex flex-col md:flex-row md:items-center gap-2">
+                            <span class="w-full md:w-1/3 font-bold">فحص البِت رقم k:</span>
+                            <div class="en-line !my-0 !w-full md:!w-2/3">isSet = (x >> k) & 1;</div>
+                        </li>
+                        <li class="flex flex-col md:flex-row md:items-center gap-2">
+                            <span class="w-full md:w-1/3 font-bold">ضبط البِت رقم k إلى 1:</span>
+                            <div class="en-line !my-0 !w-full md:!w-2/3">x |= (1 << k);</div>
+                        </li>
+                        <li class="flex flex-col md:flex-row md:items-center gap-2">
+                            <span class="w-full md:w-1/3 font-bold">تصفير البِت رقم k:</span>
+                            <div class="en-line !my-0 !w-full md:!w-2/3">x &= ~(1 << k);</div>
+                        </li>
+                        <li class="flex flex-col md:flex-row md:items-center gap-2">
+                            <span class="w-full md:w-1/3 font-bold">قلب (تبديل) البِت رقم k:</span>
+                            <div class="en-line !my-0 !w-full md:!w-2/3">x ^= (1 << k);</div>
+                        </li>
+                        <li class="flex flex-col md:flex-row md:items-center gap-2">
+                            <span class="w-full md:w-1/3 font-bold">إزالة أقل بِت معيّن:</span>
+                            <div class="en-line !my-0 !w-full md:!w-2/3">x &= (x - 1);</div>
+                        </li>
+                        <li class="flex flex-col md:flex-row md:items-center gap-2">
+                            <span class="w-full md:w-1/3 font-bold">فحص إذا كان x قوة للعدد 2:</span>
+                            <div class="en-line !my-0 !w-full md:!w-2/3">x > 0 && (x & (x - 1)) == 0</div>
+                        </li>
+                        <li class="flex flex-col md:flex-row md:items-center gap-2">
+                            <span class="w-full md:w-1/3 font-bold">الحصول على أقل بِت معيّن فقط:</span>
+                            <div class="en-line !my-0 !w-full md:!w-2/3">lowest = x & -x;</div>
+                        </li>
+                    </ul>
+                    <p class="mt-6 font-bold text-center text-xl text-blue-800">هذه هي أهم وأشهر حيل التعامل مع البِتّات (bit manipulation) في البرمجة.</p>
+                </div>
+            </div>
+
+            <!-- المختبر التفاعلي (Interactive Activity) -->
+            <div class="box-explain !border-blue-300 !border-right-blue-600 !bg-blue-50 mt-8">
+                <h3 class="text-2xl font-black mb-6 text-center text-blue-900 border-b-2 border-blue-200 pb-4">مختبر الحيل التفاعلي (Bit Trick Visualizer)</h3>
+                
+                <div class="flex flex-col md:flex-row gap-8 justify-center items-start">
+                    
+                    <!-- لوحة التحكم -->
+                    <div class="w-full md:w-1/2 bg-white p-6 rounded-xl shadow-lg border border-slate-200">
+                        <div class="flex flex-col gap-4 mb-6">
+                            <div class="flex items-center justify-between">
+                                <label class="font-bold text-slate-700 text-lg">قيمة x:</label>
+                                <input type="number" id="lab-x" value="12" min="0" max="255" class="en-num-input w-24 p-2 border-2 border-slate-300 rounded focus:border-blue-500 font-bold text-xl">
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <label class="font-bold text-slate-700 text-lg">الخانة (k):</label>
+                                <input type="number" id="lab-k" value="2" min="0" max="7" class="en-num-input w-24 p-2 border-2 border-slate-300 rounded focus:border-blue-500 font-bold text-xl">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+                            <button onclick="runTrick('check')" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded transition-colors text-sm">فحص البت k</button>
+                            <button onclick="runTrick('set')" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-4 rounded transition-colors text-sm">ضبط البت k (إلى 1)</button>
+                            <button onclick="runTrick('clear')" class="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-4 rounded transition-colors text-sm">تصفير البت k (إلى 0)</button>
+                            <button onclick="runTrick('toggle')" class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 px-4 rounded transition-colors text-sm">قلب البت k</button>
+                            <button onclick="runTrick('clear-lowest')" class="bg-amber-600 hover:bg-amber-500 text-white font-bold py-2 px-4 rounded transition-colors text-sm col-span-1 sm:col-span-2">إزالة أقل بت معين</button>
+                            <button onclick="runTrick('get-lowest')" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded transition-colors text-sm col-span-1 sm:col-span-2">استخراج أقل بت معين</button>
+                            <button onclick="runTrick('is-power')" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded transition-colors text-sm col-span-1 sm:col-span-2">فحص قوى العدد 2</button>
+                        </div>
+                    </div>
+
+                    <!-- شاشة العرض -->
+                    <div class="w-full md:w-1/2 bg-slate-900 rounded-xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.5)] border-4 border-slate-800 p-6 flex flex-col justify-center relative min-h-[350px]">
+                        
+                        <div class="text-center mb-6">
+                            <span class="text-slate-400 font-bold text-sm uppercase tracking-widest block mb-2">القيمة الحالية قبل التنفيذ (x)</span>
+                            <div class="flex justify-center gap-2 flex-row-reverse" id="lab-bits-before">
+                                <!-- سيتم التوليد برمجيا -->
+                            </div>
+                        </div>
+
+                        <div class="border-t-2 border-slate-700 mb-6 relative">
+                            <span class="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-slate-900 px-3 text-emerald-400 font-bold text-sm" id="lab-operation-name">اختر عملية...</span>
+                        </div>
+
+                        <div class="text-center mb-4">
+                            <span class="text-slate-400 font-bold text-sm uppercase tracking-widest block mb-2">القيمة بعد التنفيذ (النتيجة)</span>
+                            <div class="flex justify-center gap-2 flex-row-reverse" id="lab-bits-after">
+                                <!-- سيتم التوليد برمجيا -->
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-800 p-3 rounded-lg border border-slate-700 text-center mt-auto">
+                            <span class="text-slate-300 font-bold" id="lab-text-result">النتيجة: --</span>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- التذييل -->
+        <footer class="mt-16 text-center text-slate-400 border-t-2 border-slate-200 pt-8 pb-6 font-bold">
+            <p>جميع الحقوق محفوظة للمحتوى المرجعي الأصلي</p>
+            <p class="mt-3 text-base">فكرة، تصميم، وبرمجة الهيكل التعليمي <br><span class="font-black text-slate-800 text-lg mt-1 inline-block">محمد مجممي</span></p>
+        </footer>
+
+    </main>
+
+    <script>
+        // نظام التبويبات
+        function openTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+                tab.classList.remove('block');
+            });
+
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-slate-800', 'border-blue-500', 'border-emerald-500');
+                btn.classList.add('border-transparent');
+            });
+
+            const selectedTab = document.getElementById(tabId);
+            if(selectedTab) {
+                selectedTab.classList.remove('hidden');
+                selectedTab.classList.add('block');
+            }
+
+            const activeBtn = document.getElementById('btn-' + tabId);
+            if(activeBtn) {
+                activeBtn.classList.remove('border-transparent');
+                if(tabId === 'tab-9') activeBtn.classList.add('bg-slate-800', 'border-emerald-500');
+                else activeBtn.classList.add('bg-slate-800', 'border-blue-500');
+            }
+
+            document.getElementById('mobile-nav').value = tabId;
+            document.querySelector('main').scrollTo(0,0);
+        }
+
+        // تحويل صارم للأرقام إلى إنجليزية
+        function toEnglishDigits(str) {
+            const arabicNumbers = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
+            return str.replace(/[٠-٩]/g, function(w) {
+                return arabicNumbers.indexOf(w);
+            });
+        }
+
+        // دالة توليد البتات البصرية
+        function renderBits(containerId, value, highlightIndex = -1) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            
+            // تحويل إلى سلسلة ثنائية من 8 بتات (عكس الحلقة لنرسم من اليسار لليمين بسلوك flex-row-reverse)
+            for (let i = 0; i < 8; i++) {
+                const bitValue = (value >> i) & 1;
+                const isHighlight = (i === highlightIndex);
+                
+                const bitDiv = document.createElement('div');
+                bitDiv.className = `w-8 h-10 flex items-center justify-center rounded font-mono font-bold text-xl border border-slate-700 bit-box ${isHighlight ? 'bit-highlight' : 'bg-slate-800 text-blue-300'}`;
+                bitDiv.textContent = bitValue;
+                
+                // إضافة فهرس أسفل البت لمزيد من التوضيح
+                const wrapper = document.createElement('div');
+                wrapper.className = 'flex flex-col items-center gap-1';
+                wrapper.appendChild(bitDiv);
+                
+                const indexSpan = document.createElement('span');
+                indexSpan.className = 'text-[10px] text-slate-500 font-mono';
+                indexSpan.textContent = i;
+                wrapper.appendChild(indexSpan);
+
+                container.appendChild(wrapper);
+            }
+        }
+
+        // تحديث أولي
+        function updateInitialVisuals() {
+            let inputX = document.getElementById('lab-x');
+            inputX.value = toEnglishDigits(inputX.value.toString());
+            let x = parseInt(inputX.value) || 0;
+            x = x & 255;
+            renderBits('lab-bits-before', x);
+            renderBits('lab-bits-after', x);
+            document.getElementById('lab-operation-name').textContent = 'في انتظار أمر...';
+            document.getElementById('lab-text-result').textContent = `النتيجة: العشري = ${x}`;
+        }
+
+        // دالة تشغيل الحيل
+        function runTrick(trickType) {
+            let inputX = document.getElementById('lab-x');
+            let inputK = document.getElementById('lab-k');
+            
+            inputX.value = toEnglishDigits(inputX.value.toString());
+            inputK.value = toEnglishDigits(inputK.value.toString());
+
+            let x = parseInt(inputX.value) || 0;
+            let k = parseInt(inputK.value) || 0;
+            
+            x = x & 255; // حصر في 8 بت
+            k = k % 8;   // حصر الموضع من 0 لـ 7
+
+            renderBits('lab-bits-before', x, k); // تظليل الخانة المستهدفة قبل التنفيذ
+
+            let result = 0;
+            let opName = "";
+            let textRes = "";
+            let highlightAfter = -1;
+
+            switch(trickType) {
+                case 'check':
+                    result = (x >> k) & 1;
+                    opName = `(x >> ${k}) & 1`;
+                    textRes = `البت ${k} قيمته: ${result === 1 ? '1 (مفعل)' : '0 (غير مفعل)'}`;
+                    renderBits('lab-bits-after', x, k); // لا تغيير في الرقم
+                    break;
+                case 'set':
+                    result = x | (1 << k);
+                    opName = `x | (1 << ${k})`;
+                    textRes = `تم تشغيل البت ${k}. النتيجة العشرية: ${result}`;
+                    highlightAfter = k;
+                    renderBits('lab-bits-after', result, highlightAfter);
+                    break;
+                case 'clear':
+                    result = x & ~(1 << k);
+                    opName = `x & ~(1 << ${k})`;
+                    textRes = `تم إطفاء البت ${k}. النتيجة العشرية: ${result}`;
+                    highlightAfter = k;
+                    renderBits('lab-bits-after', result, highlightAfter);
+                    break;
+                case 'toggle':
+                    result = x ^ (1 << k);
+                    opName = `x ^ (1 << ${k})`;
+                    textRes = `تم قلب البت ${k}. النتيجة العشرية: ${result}`;
+                    highlightAfter = k;
+                    renderBits('lab-bits-after', result, highlightAfter);
+                    break;
+                case 'clear-lowest':
+                    result = x & (x - 1);
+                    opName = `x & (x - 1)`;
+                    // العثور على أقل بت معين رياضيا للتظليل
+                    highlightAfter = -1;
+                    for(let i=0; i<8; i++) { if((x>>i)&1) { highlightAfter = i; break; } }
+                    textRes = `تم إزالة أقل بت مفعل. النتيجة: ${result}`;
+                    renderBits('lab-bits-after', result, highlightAfter);
+                    break;
+                case 'get-lowest':
+                    result = x & -x;
+                    opName = `x & -x`;
+                    highlightAfter = -1;
+                    for(let i=0; i<8; i++) { if((result>>i)&1) { highlightAfter = i; break; } }
+                    textRes = `القيمة العشرية لأقل بت مفعل هي: ${result}`;
+                    renderBits('lab-bits-after', result, highlightAfter);
+                    break;
+                case 'is-power':
+                    let isPower = (x > 0) && ((x & (x - 1)) === 0);
+                    opName = `(x & (x-1)) == 0`;
+                    textRes = isPower ? `نعم، الرقم ${x} هو من قوى العدد 2.` : `لا، الرقم ${x} ليس من قوى العدد 2.`;
+                    renderBits('lab-bits-after', x); // لا نعرض تغييرا على البتات
+                    break;
+            }
+
+            document.getElementById('lab-operation-name').textContent = opName;
+            document.getElementById('lab-text-result').textContent = textRes;
+            
+            // تحديث قيمة الإدخال للعملية القادمة إذا كانت العملية تعدل القيمة
+            if(['set', 'clear', 'toggle', 'clear-lowest'].includes(trickType)) {
+                document.getElementById('lab-x').value = result;
+            }
+        }
+
+        // إضافة أحداث الإدخال
+        document.getElementById('lab-x').addEventListener('input', updateInitialVisuals);
+        document.getElementById('lab-k').addEventListener('input', updateInitialVisuals);
+
+        window.onload = () => {
+            updateInitialVisuals();
+        };
+    </script>
+</body>
+</html>

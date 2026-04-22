@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الهياكل (Structs) في C++ - الدرس الشامل</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #f1f5f9;
+        }
+        
+        /* القاعدة الصارمة لفصل اللغة الإنجليزية في سطر مستقل */
+        .en-line {
+            display: block; 
+            direction: ltr !important;
+            text-align: left !important;
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #e0f2fe;
+            color: #0369a1;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            border-left: 4px solid #0ea5e9;
+            margin-top: 0.75rem;
+            margin-bottom: 0.75rem;
+            width: max-content;
+            max-width: 100%;
+            overflow-x: auto;
+            font-weight: 700;
+            font-size: 1.1rem;
+            clear: both;
+            unicode-bidi: isolate;
+        }
+
+        /* حاوية الأكواد البرمجية مع الحفاظ على المسافات بدقة */
+        .en-code-block {
+            display: block;
+            direction: ltr !important;
+            text-align: left !important;
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #0f172a;
+            color: #4ade80;
+            padding: 1.25rem;
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+            overflow-x: auto;
+            clear: both;
+            white-space: pre !important;
+            unicode-bidi: isolate;
+        }
+
+        .code-line { cursor: pointer; transition: all 0.2s; border-left: 4px solid transparent; }
+        .code-line:hover { background-color: #334155; }
+        .code-line.active { background-color: #1e293b; border-left: 4px solid #3b82f6; }
+        
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: #e2e8f0; }
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 5px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        
+        /* تنسيقات أقسام الدرس */
+        .box-intro { background: #ffffff; border: 2px solid #e2e8f0; border-right: 6px solid #8b5cf6; padding: 1.5rem; border-radius: 0.75rem; margin-bottom: 2rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .box-original { background: #f8fafc; border: 2px dashed #cbd5e1; border-right: 6px solid #3b82f6; padding: 1.5rem; border-radius: 0.75rem; margin-bottom: 2rem; }
+        .box-explain { background: #fffbeb; border: 2px solid #fde68a; border-right: 6px solid #f59e0b; padding: 1.5rem; border-radius: 0.75rem; margin-bottom: 2rem; }
+        .box-summary { background: #f0fdf4; border: 2px solid #bbf7d0; border-right: 6px solid #22c55e; padding: 1.5rem; border-radius: 0.75rem; margin-bottom: 2rem; }
+        
+        .section-title { font-size: 2rem; font-weight: 900; color: #1e293b; border-bottom: 3px solid #e2e8f0; padding-bottom: 0.75rem; margin-bottom: 2rem; }
+        .box-heading { font-size: 1.3rem; font-weight: 800; margin-bottom: 1rem; display: flex; align-items: center; }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden text-slate-800">
+
+    <!-- شريط التبويبات الجانبي -->
+    <aside class="w-80 bg-slate-900 text-white flex flex-col shadow-2xl z-10 hidden lg:flex shrink-0">
+        <div class="p-6 text-center border-b border-slate-700 bg-slate-950">
+            <h1 class="text-3xl font-black text-blue-400">الدرس الشامل</h1>
+            <div class="en-line text-sm mx-auto mt-2 !bg-transparent !border-0 !text-slate-400 !p-0 text-center !w-full">C++ Structs</div>
+        </div>
+        <nav class="flex-1 overflow-y-auto py-3 space-y-2 text-base font-bold">
+            <button onclick="openTab('tab-1')" id="btn-tab-1" class="tab-btn w-full flex items-center px-6 py-4 text-right hover:bg-slate-800 transition-colors bg-slate-800 border-r-4 border-blue-500">
+                <span>1. مفهوم الهياكل (Struct)</span>
+            </button>
+            <button onclick="openTab('tab-2')" id="btn-tab-2" class="tab-btn w-full flex items-center px-6 py-4 text-right hover:bg-slate-800 transition-colors border-r-4 border-transparent">
+                <span>2. الصيغة العامة لكتابتها</span>
+            </button>
+            <button onclick="openTab('tab-3')" id="btn-tab-3" class="tab-btn w-full flex items-center px-6 py-4 text-right hover:bg-slate-800 transition-colors border-r-4 border-transparent">
+                <span>3. الوصول إلى الأعضاء</span>
+            </button>
+            <button onclick="openTab('tab-4')" id="btn-tab-4" class="tab-btn w-full flex items-center px-6 py-4 text-right hover:bg-slate-800 transition-colors border-r-4 border-transparent">
+                <span>4. اختصارات التعريف المباشر</span>
+            </button>
+            <button onclick="openTab('tab-5')" id="btn-tab-5" class="tab-btn w-full flex items-center px-6 py-4 text-right hover:bg-slate-800 transition-colors border-r-4 border-transparent">
+                <span>5. الشرح التفاعلي للكود</span>
+            </button>
+            <button onclick="openTab('tab-6')" id="btn-tab-6" class="tab-btn w-full flex items-center px-6 py-4 text-right hover:bg-slate-800 transition-colors border-r-4 border-transparent">
+                <span class="text-emerald-400">6. التلخيص والنشاط التفاعلي</span>
+            </button>
+        </nav>
+    </aside>
+
+    <!-- القائمة العلوية للجوال -->
+    <div class="lg:hidden fixed top-0 left-0 right-0 bg-slate-900 text-white z-20 flex justify-between items-center p-4 shadow-md">
+        <div class="en-line !mt-0 !mb-0 !bg-transparent !border-0 !text-blue-400 !p-0">Structs</div>
+        <select id="mobile-nav" onchange="openTab(this.value)" class="bg-slate-800 text-white border border-slate-700 rounded p-2 text-base font-bold max-w-[60%]">
+            <option value="tab-1">1. مفهوم الهياكل</option>
+            <option value="tab-2">2. الصيغة العامة</option>
+            <option value="tab-3">3. الوصول للأعضاء</option>
+            <option value="tab-4">4. اختصارات التعريف</option>
+            <option value="tab-5">5. شرح الكود</option>
+            <option value="tab-6">6. النشاط التفاعلي</option>
+        </select>
+    </div>
+
+    <!-- منطقة المحتوى الرئيسي -->
+    <main class="flex-1 overflow-y-auto p-6 lg:p-12 mt-16 lg:mt-0 relative pb-24 scroll-smooth">
+        
+        <!-- ================= الجزء 1 ================= -->
+        <section id="tab-1" class="tab-content max-w-5xl mx-auto block fade-in">
+            <h2 class="section-title">1. مفهوم الهياكل في لغة البرمجة</h2>
+            
+            <div class="box-intro">
+                <h3 class="box-heading text-purple-700"><span class="ml-2 text-3xl">🎯</span> التمهيد والمفاهيم</h3>
+                <p class="text-lg leading-loose">في العادة، نستخدم المتغيرات لتخزين قيمة واحدة (مثل رقم أو نص). ولكن في العالم الحقيقي، الأشياء مترابطة؛ فالطالب لديه (اسم، عمر، ودرجة). بدلاً من إنشاء متغيرات متناثرة لكل صفة، تمنحنا لغات البرمجة أداة قوية لتجميع هذه الصفات المرتبطة معاً في "صندوق" واحد منظم.</p>
+            </div>
+
+            <div class="box-original">
+                <h3 class="box-heading text-blue-700"><span class="ml-2 text-3xl">📄</span> النص المرجعي الأصلي</h3>
+                <div class="text-lg leading-loose font-medium">
+                    <p>الهياكل</p>
+                    <div class="en-line">struct</div>
+                    <p>في لغة</p>
+                    <div class="en-line">C++</div>
+                    <p>تسمح لك البنية</p>
+                    <div class="en-line">(struct)</div>
+                    <p>بتجميع عدة أجزاء من البيانات تحت اسم واحد. يمكنك التفكير فيها كنوع بيانات مخصّص تقوم أنت بتصميمه بنفسك.</p>
+                    <p class="font-bold mt-4">ما هي البنية</p>
+                    <div class="en-line">struct</div>
+                    <p>؟</p>
+                    <p>البنية</p>
+                    <div class="en-line">struct</div>
+                    <p>تجمع مجموعة من المتغيرات ذات العلاقة (تسمّى أعضاء أو</p>
+                    <div class="en-line">members</div>
+                    <p>) وقد تكون من أنواع مختلفة داخل نفس الكيان.</p>
+                </div>
+            </div>
+
+            <div class="box-explain">
+                <h3 class="box-heading text-amber-700"><span class="ml-2 text-3xl">💡</span> الإيضاحات والمبررات</h3>
+                <p class="text-lg leading-loose"><strong>لماذا نستخدم الهياكل؟</strong></p>
+                <ul class="list-disc list-inside space-y-3 mt-4 text-lg">
+                    <li><strong>التنظيم:</strong> تجميع البيانات يمنع الفوضى في الأكواد الكبيرة (مثل وضع الأوراق المتعلقة بموضوع واحد في ملف واحد بدلاً من بعثرتها).</li>
+                    <li><strong>تخصيص البيانات:</strong> لغات البرمجة تأتي بأنواع جاهزة للأرقام والنصوص، لكن الهياكل تتيح لك أن تصبح "مخترعاً" لنوع بيانات جديد يناسب مشكلتك البرمجية الخاصة (مثل اختراع نوع بيانات يسمى "سيارة" يحتوي على موديل، لون، وسعر).</li>
+                </ul>
+            </div>
+            
+            <div class="box-summary">
+                <h3 class="box-heading text-green-700"><span class="ml-2 text-3xl">📌</span> خلاصة الجزء</h3>
+                <p class="text-lg leading-loose font-bold">الهيكل هو قالب أو حاوية نقوم بتصميمها لجمع مجموعة من المتغيرات المترابطة (حتى لو اختلفت أنواعها) لتصبح كياناً برمجياً واحداً متكاملاً.</p>
+            </div>
+        </section>
+
+        <!-- ================= الجزء 2 ================= -->
+        <section id="tab-2" class="tab-content max-w-5xl mx-auto hidden fade-in">
+            <h2 class="section-title">2. الصيغة العامة لكتابتها (Syntax)</h2>
+            
+            <div class="box-intro">
+                <h3 class="box-heading text-purple-700"><span class="ml-2 text-3xl">🎯</span> التمهيد والمفاهيم</h3>
+                <p class="text-lg leading-loose">لإنشاء هذا القالب البرمجي، هناك قواعد كتابة ثابتة يجب اتباعها. يجب أن نخبر الحاسوب بوضوح أين يبدأ القالب، أين ينتهي، وماذا يوجد بداخله.</p>
+            </div>
+
+            <div class="box-original">
+                <h3 class="box-heading text-blue-700"><span class="ml-2 text-3xl">📄</span> النص المرجعي الأصلي</h3>
+                <div class="text-lg leading-loose font-medium">
+                    <p class="font-bold">الصيغة</p>
+                    
+                    <pre class="en-code-block">struct TypeName {
+    member_type1 member_name1;
+    member_type2 member_name2;
+    // ...
+};</pre>
+                    
+                    <div class="en-line">TypeName</div>
+                    <p>→ اسم نوع البيانات الجديد الذي تعرّفه.</p>
+                    
+                    <p class="mt-4">داخل الأقواس المعقوفة</p>
+                    <div class="en-line">{ }</div>
+                    <p>→ الأعضاء</p>
+                    <div class="en-line">(members)</div>
+                    <p>، وهي المتغيرات التي تنتمي لهذا النوع.</p>
+                </div>
+            </div>
+
+            <div class="box-explain">
+                <h3 class="box-heading text-amber-700"><span class="ml-2 text-3xl">💡</span> الإيضاحات والمبررات</h3>
+                <p class="text-lg leading-loose"><strong>تفصيل مكونات الصيغة:</strong></p>
+                <p class="text-lg leading-loose mt-2">نبدأ دائماً بالكلمة المفتاحية المخصصة للهياكل، تليها تسمية القالب (ويفضل أن يكون اسماً يعبر عن محتواه). نفتح الأقواس لإدراج المتغيرات الداخلية. <strong>الخطأ الشائع هنا:</strong> ينسى الكثير من المبرمجين وضع الفاصلة المنقوطة <code class="text-red-500 font-bold">;</code> في نهاية القوس المغلق، وهي إلزامية جداً لإخبار الحاسوب بانتهاء التصميم.</p>
+            </div>
+            
+            <div class="box-summary">
+                <h3 class="box-heading text-green-700"><span class="ml-2 text-3xl">📌</span> خلاصة الجزء</h3>
+                <p class="text-lg leading-loose font-bold">تصميم القالب لا يستهلك أي مساحة في الذاكرة بحد ذاته؛ هو فقط "مخطط" أو "رسم هندسي" سيعتمد عليه الحاسوب لاحقاً عندما نطلب منه بناء المتغيرات.</p>
+            </div>
+        </section>
+
+        <!-- ================= الجزء 3 ================= -->
+        <section id="tab-3" class="tab-content max-w-5xl mx-auto hidden fade-in">
+            <h2 class="section-title">3. الوصول إلى الأعضاء</h2>
+            
+            <div class="box-intro">
+                <h3 class="box-heading text-purple-700"><span class="ml-2 text-3xl">🎯</span> التمهيد والمفاهيم</h3>
+                <p class="text-lg leading-loose">بعد أن أنشأنا الهيكل، وقمنا بصنع كائن بناءً عليه، كيف ندخل إلى داخل هذا الكائن لنضع فيه البيانات أو نقرأها منه؟ نحتاج إلى مفتاح يفتح لنا أبواب المتغيرات الداخلية.</p>
+            </div>
+
+            <div class="box-original">
+                <h3 class="box-heading text-blue-700"><span class="ml-2 text-3xl">📄</span> النص المرجعي الأصلي</h3>
+                <div class="text-lg leading-loose font-medium">
+                    <p class="font-bold">الوصول إلى الأعضاء</p>
+                    <p>نستخدم عامل النقطة</p>
+                    <div class="en-line">.</div>
+                    <p>:</p>
+                    
+                    <div class="en-line">apple.weight</div>
+                    <p>→ عضو من نوع</p>
+                    <div class="en-line">int</div>
+                    
+                    <div class="en-line !mt-4">apple.price</div>
+                    <p>→ عضو من نوع</p>
+                    <div class="en-line">double</div>
+                    
+                    <p class="mt-4">يمكنك القراءة من هذه الأعضاء أو التعديل عليها مثل أي متغير عادي تمامًا.</p>
+                </div>
+            </div>
+
+            <div class="box-explain">
+                <h3 class="box-heading text-amber-700"><span class="ml-2 text-3xl">💡</span> الإيضاحات والمبررات</h3>
+                <p class="text-lg leading-loose"><strong>آلية عامل النقطة:</strong></p>
+                <p class="text-lg leading-loose mt-2">عامل النقطة هو جسر التواصل. عندما نكتب اسم الكائن يليه نقطة، يعرض لنا الحاسوب قائمة بكل المتغيرات التي صممناها داخل الهيكل. هذه الطريقة تمنع تداخل الأسماء؛ فوزن التفاحة مستقل تماماً عن وزن الموزة، رغم أن المتغير الداخلي له نفس الاسم.</p>
+            </div>
+            
+            <div class="box-summary">
+                <h3 class="box-heading text-green-700"><span class="ml-2 text-3xl">📌</span> خلاصة الجزء</h3>
+                <p class="text-lg leading-loose font-bold">النقطة هي المفتاح السحري؛ نكتب اسم الكائن (العلبة الخارجية)، ثم نقطة، ثم اسم العضو (المحتوى الداخلي) للتعامل معه بحرية.</p>
+            </div>
+        </section>
+
+        <!-- ================= الجزء 4 ================= -->
+        <section id="tab-4" class="tab-content max-w-5xl mx-auto hidden fade-in">
+            <h2 class="section-title">4. اختصارات التعريف المباشر</h2>
+            
+            <div class="box-intro">
+                <h3 class="box-heading text-purple-700"><span class="ml-2 text-3xl">🎯</span> التمهيد والمفاهيم</h3>
+                <p class="text-lg leading-loose">تتميز لغات البرمجة بتوفير اختصارات للمبرمجين المتقدمين لتقليل عدد الأسطر البرمجية المكتوبة، وتسريع عملية الإعلان عن المتغيرات الجديدة وتصميم قوالبها في خطوة واحدة مدمجة.</p>
+            </div>
+
+            <div class="box-original">
+                <h3 class="box-heading text-blue-700"><span class="ml-2 text-3xl">📄</span> النص المرجعي الأصلي</h3>
+                <div class="text-lg leading-loose font-medium">
+                    <p class="font-bold">تعريف كائنات مباشرة بعد تعريف البنية</p>
+                    <p>يمكنك أيضًا تعريف المتغيرات في نهاية تعريف البنية مباشرة:</p>
+                    
+                    <pre class="en-code-block">struct product {
+    int weight;
+    double price;
+} apple, banana, melon;</pre>
+
+                    <p class="font-bold mt-4">هنا:</p>
+                    <div class="en-line">product</div>
+                    <p>هو اسم النوع (البنية).</p>
+                    
+                    <div class="en-line !mt-4">apple، banana، melon</div>
+                    <p>هي متغيرات (كائنات) من هذا النوع.</p>
+                </div>
+            </div>
+
+            <div class="box-explain">
+                <h3 class="box-heading text-amber-700"><span class="ml-2 text-3xl">💡</span> الإيضاحات والمبررات</h3>
+                <p class="text-lg leading-loose"><strong>كيف يعمل هذا الاختصار؟</strong></p>
+                <p class="text-lg leading-loose mt-2">في الطريقة التقليدية، نقوم بتصميم الهيكل أولاً، ثم نذهب إلى الدالة الرئيسية لإنشاء المتغيرات. هذا الاختصار يسمح لنا باستغلال المساحة الموجودة قبل الفاصلة المنقوطة النهائية لإعلان المتغيرات مباشرة أثناء إغلاق تصميم الهيكل. إنها طريقة أنيقة ومختصرة للمبرمج المحترف.</p>
+            </div>
+            
+            <div class="box-summary">
+                <h3 class="box-heading text-green-700"><span class="ml-2 text-3xl">📌</span> خلاصة الجزء</h3>
+                <p class="text-lg leading-loose font-bold">يمكن دمج خطوة "تصميم الهيكل" مع خطوة "إنشاء الكائنات" في جملة برمجية واحدة لتقليل الأكواد وتوفير الوقت.</p>
+            </div>
+        </section>
+
+        <!-- ================= الجزء 5 ================= -->
+        <section id="tab-5" class="tab-content max-w-6xl mx-auto hidden fade-in h-auto lg:h-full flex-col">
+            <h2 class="section-title shrink-0">5. الشرح التفاعلي للكود</h2>
+            
+            <div class="box-intro shrink-0 !mb-4">
+                <h3 class="box-heading text-purple-700"><span class="ml-2 text-3xl">🎯</span> التمهيد والمفاهيم</h3>
+                <p class="text-lg leading-loose">قمنا هنا بتجميع كل المفاهيم في برنامج تطبيقي واحد. اقرأ المخرجات والشرح أدناه، ثم تفاعل مع الأسطر البرمجية لرؤية تفصيل كل جزء بدقة.</p>
+            </div>
+
+            <div class="box-original shrink-0 !mb-6 !p-4">
+                <h3 class="box-heading text-blue-700"><span class="ml-2 text-2xl">📄</span> النص المرجعي الأساسي (شرح المثال)</h3>
+                <div class="text-base leading-relaxed font-medium">
+                    <p class="font-bold">في هذا المثال:</p>
+                    <p>عرّفنا نوعًا جديدًا اسمه</p>
+                    <div class="en-line !my-1">product</div>
+                    <p>هذا النوع يحتوي عضوين:</p>
+                    <div class="en-line !my-1">weight</div>
+                    <p>من نوع</p>
+                    <div class="en-line !my-1">int</div>
+                    <p>يمثّل الوزن بالجرام.</p>
+                    <div class="en-line !my-1">price</div>
+                    <p>من نوع</p>
+                    <div class="en-line !my-1">double</div>
+                    <p>يمثّل السعر بالريال.</p>
+                    <p>بعدها أنشأنا متغيّرات (كائنات) من هذا النوع:</p>
+                    <div class="en-line !my-1">apple، banana، وmelon</div>
+                    <p>، وأعطينا كلًا منها قيمًا خاصة به.</p>
+                </div>
+            </div>
+            
+            <div class="flex flex-col lg:flex-row gap-8 flex-1 min-h-[550px]">
+                <!-- مربع الشرح التفاعلي -->
+                <div class="w-full lg:w-1/3 flex flex-col">
+                    <div id="explanation-box" class="flex flex-col gap-4 w-full sticky top-0">
+                        <div class="flex items-center justify-center h-48 bg-slate-100 border-2 border-dashed border-slate-300 rounded-xl text-slate-500 text-xl shadow-inner text-center font-bold px-4">
+                            👈 يرجى تحديد السطر البرمجي لعرض التفاصيل
+                        </div>
+                    </div>
+                </div>
+
+                <!-- مساحة الكود -->
+                <div class="w-full lg:w-2/3 bg-slate-950 rounded-xl shadow-2xl overflow-hidden flex flex-col relative border-2 border-slate-700" style="direction: ltr;">
+                    <div class="overflow-y-auto flex-1 py-6" id="code-container" dir="ltr">
+                        <!-- سيتم إدراج الأسطر هنا بواسطة JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= الجزء 6 ================= -->
+        <section id="tab-6" class="tab-content max-w-5xl mx-auto hidden fade-in">
+            <h2 class="section-title text-emerald-700">6. التلخيص والنشاط التفاعلي</h2>
+            
+            <div class="box-explain !bg-white !border-emerald-200 !border-right-emerald-500">
+                <h3 class="box-heading text-emerald-800"><span class="ml-2 text-3xl">📊</span> تمثيل بصري لفكرة الهياكل</h3>
+                <p class="text-lg mb-6 text-slate-600">هذا النشاط التفاعلي يجسد لك كيف يتعامل الحاسوب مع البيانات العادية (متفرقة) مقارنة بالبيانات داخل الهياكل (مجمعة ومرتبة).</p>
+                
+                <div class="bg-slate-50 border-2 border-slate-200 shadow-xl rounded-xl p-8 mb-6">
+                    <h4 class="font-bold text-xl text-slate-800 mb-6 text-center">أدخل بيانات منتج جديد لتوليد الهيكل الخاص به:</h4>
+                    
+                    <div class="flex flex-col md:flex-row gap-6 justify-center items-end mb-10">
+                        <div class="flex flex-col w-full md:w-1/3">
+                            <label class="font-bold text-slate-600 mb-2">اسم الكائن (مثلاً: Orange)</label>
+                            <input type="text" id="obj-name" value="orange" dir="ltr" class="p-3 border-2 border-slate-300 rounded-lg focus:border-blue-500 outline-none font-mono font-bold text-lg text-slate-800" oninput="updateVisualizer()">
+                        </div>
+                        <div class="flex flex-col w-full md:w-1/3">
+                            <label class="font-bold text-slate-600 mb-2">الوزن (weight)</label>
+                            <input type="number" id="obj-weight" value="200" dir="ltr" inputmode="numeric" class="en-num-input p-3 border-2 border-slate-300 rounded-lg focus:border-blue-500 outline-none font-mono font-bold text-lg text-slate-800" oninput="updateVisualizer()">
+                        </div>
+                        <div class="flex flex-col w-full md:w-1/3">
+                            <label class="font-bold text-slate-600 mb-2">السعر (price)</label>
+                            <input type="number" step="0.01" id="obj-price" value="2.50" dir="ltr" inputmode="numeric" class="en-num-input p-3 border-2 border-slate-300 rounded-lg focus:border-blue-500 outline-none font-mono font-bold text-lg text-slate-800" oninput="updateVisualizer()">
+                        </div>
+                    </div>
+
+                    <!-- التجسيد البصري -->
+                    <div class="flex flex-col md:flex-row gap-8 justify-center">
+                        
+                        <!-- الشكل المبعثر (بدون هيكل) -->
+                        <div class="w-full md:w-1/2 opacity-60">
+                            <h4 class="text-center font-bold text-red-600 mb-4 border-b-2 border-red-200 pb-2">بدون هيكل (متغيرات مبعثرة)</h4>
+                            <div class="flex gap-4 justify-center mt-6">
+                                <div class="bg-white border-2 border-slate-300 rounded-lg p-4 shadow text-center w-32 relative">
+                                    <div class="text-xs text-slate-500 mb-1 ltr-code bg-slate-100 rounded px-1 absolute -top-3 left-1 border border-slate-300">int</div>
+                                    <span class="font-mono text-lg font-bold block mt-2 text-slate-800"><span id="v-scatter-w">200</span></span>
+                                    <span class="text-sm font-bold text-slate-500 block mt-2">weight_var</span>
+                                </div>
+                                <div class="bg-white border-2 border-slate-300 rounded-lg p-4 shadow text-center w-32 relative">
+                                    <div class="text-xs text-slate-500 mb-1 ltr-code bg-slate-100 rounded px-1 absolute -top-3 left-1 border border-slate-300">double</div>
+                                    <span class="font-mono text-lg font-bold block mt-2 text-slate-800"><span id="v-scatter-p">2.50</span></span>
+                                    <span class="text-sm font-bold text-slate-500 block mt-2">price_var</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- الشكل المنظم (باستخدام الهيكل) -->
+                        <div class="w-full md:w-1/2">
+                            <h4 class="text-center font-bold text-emerald-600 mb-4 border-b-2 border-emerald-200 pb-2">باستخدام هيكل (صندوق منظم)</h4>
+                            
+                            <div class="bg-slate-900 border-4 border-emerald-500 rounded-xl p-5 shadow-2xl relative mt-6 w-64 mx-auto transition-all duration-300 transform hover:-translate-y-1">
+                                <div class="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-emerald-500 text-white font-mono font-bold px-4 py-1 rounded-full text-lg shadow-md border-2 border-white">
+                                    <span id="v-struct-name">orange</span>
+                                </div>
+                                <div class="text-xs text-emerald-300 absolute top-2 right-2 ltr-code opacity-70">type: product</div>
+                                
+                                <div class="mt-6 flex flex-col gap-3">
+                                    <div class="bg-slate-800 rounded p-3 flex justify-between items-center border border-slate-700">
+                                        <span class="text-slate-400 font-mono text-sm ltr-code">.weight</span>
+                                        <span class="text-blue-300 font-mono font-bold text-lg ltr-code" id="v-struct-w">200</span>
+                                    </div>
+                                    <div class="bg-slate-800 rounded p-3 flex justify-between items-center border border-slate-700">
+                                        <span class="text-slate-400 font-mono text-sm ltr-code">.price</span>
+                                        <span class="text-emerald-300 font-mono font-bold text-lg ltr-code" id="v-struct-p">2.50</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- التذييل -->
+        <footer class="mt-16 text-center text-slate-400 border-t-2 border-slate-200 pt-8 pb-6 font-bold">
+            <p>جميع الحقوق محفوظة للمحتوى المرجعي الأصلي</p>
+            <p class="mt-3 text-base">فكرة، تصميم، وبرمجة الهيكل التعليمي <br><span class="font-black text-slate-800 text-lg mt-1 inline-block">محمد مجممي</span></p>
+        </footer>
+
+    </main>
+
+    <script>
+        // نظام التبويبات
+        function openTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+                tab.classList.remove('block', 'flex');
+            });
+
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-slate-800', 'border-blue-500', 'border-emerald-500');
+                btn.classList.add('border-transparent');
+            });
+
+            const selectedTab = document.getElementById(tabId);
+            if(selectedTab) {
+                selectedTab.classList.remove('hidden');
+                if(tabId === 'tab-5') selectedTab.classList.add('flex');
+                else selectedTab.classList.add('block');
+            }
+
+            const activeBtn = document.getElementById('btn-' + tabId);
+            if(activeBtn) {
+                activeBtn.classList.remove('border-transparent');
+                if(tabId === 'tab-6') activeBtn.classList.add('bg-slate-800', 'border-emerald-500');
+                else activeBtn.classList.add('bg-slate-800', 'border-blue-500');
+            }
+
+            document.getElementById('mobile-nav').value = tabId;
+            document.querySelector('main').scrollTo(0,0);
+        }
+
+        // بيانات الكود التفاعلي مفصولة ومبنية بناء على النص المرفق
+        const codeLinesData = [
+            { code: "#include <iostream>", exp: "يتم استدعاء مكتبة الإدخال والإخراج لتمكين البرنامج من تنفيذ عمليات الطباعة." },
+            { code: "using namespace std;", exp: "يُستخدم هذا السطر لتهيئة فضاء الأسماء القياسي." },
+            { code: "", exp: "" },
+            { code: "struct product {", exp: "بداية تعريف الهيكل: في هذا المثال، عرّفنا نوعًا جديدًا (نوع بيانات مخصص) وأعطيناه الاسم <code>product</code>." },
+            { code: "    int weight;     // in grams", exp: "هذا النوع يحتوي عضوين: العضو الأول هنا اسمه <code>weight</code> من نوع <code>int</code>، ويمثّل الوزن بالجرام." },
+            { code: "    double price;   // in riyals", exp: "العضو الثاني اسمه <code>price</code> من نوع <code>double</code>، ويمثّل السعر بالريال." },
+            { code: "};", exp: "إغلاق قالب الهيكل. لاحظ أهمية وجود الفاصلة المنقوطة في نهاية التعريف." },
+            { code: "", exp: "" },
+            { code: "int main() {", exp: "الدالة الرئيسية التي تمثل نقطة انطلاق تنفيذ البرنامج." },
+            { code: "    product apple;", exp: "بعد تصميم القالب، أنشأنا متغيّرًا (كائنًا) من هذا النوع الجديد، وأسميناه <code>apple</code>." },
+            { code: "    product banana, melon;", exp: "وأنشأنا متغيّرات (كائنات) إضافية من نفس النوع، وأسميناها <code>banana</code> و <code>melon</code>." },
+            { code: "", exp: "" },
+            { code: "    apple.weight = 150;", exp: "نستخدم (عامل النقطة) للوصول للعضو وتعديله. هنا حددنا قيمة الوزن للتفاحة." },
+            { code: "    apple.price  = 1.99;", exp: "هنا حددنا قيمة السعر للتفاحة. أعطينا كلًا منها قيمًا خاصة به بشكل منفصل." },
+            { code: "    banana.weight = 120;", exp: "الوصول لعضو الوزن الخاص بكائن الموز وتعديله بمعزل تام عن التفاحة." },
+            { code: "    banana.price  = 0.99;", exp: "الوصول لعضو السعر الخاص بكائن الموز وتعديله." },
+            { code: "", exp: "" },
+            { code: "    cout << \"Apple: \"  << apple.weight  << \" g, \" << apple.price << \" SAR\" << endl;", exp: "كما استخدمنا عامل النقطة للتعديل، نستخدمه هنا للقراءة من هذه الأعضاء لطباعتها على الشاشة." },
+            { code: "    cout << \"Banana: \" << banana.weight << \" g, \" << banana.price << \" SAR\" << endl;", exp: "طباعة بيانات كائن الموز بالاعتماد على القيم التي تم حفظها بداخل هيكله الخاص." },
+            { code: "}", exp: "إغلاق الدالة الرئيسية والانتهاء من التنفيذ." }
+        ];
+
+        function initCodeInteractive() {
+            const container = document.getElementById('code-container');
+            const expBox = document.getElementById('explanation-box');
+
+            codeLinesData.forEach((lineData, index) => {
+                const lineDiv = document.createElement('div');
+                lineDiv.className = 'flex code-line py-2 text-sm md:text-base px-3 rounded font-mono items-center';
+                lineDiv.setAttribute('dir', 'ltr'); 
+
+                if(lineData.code.trim() === '') {
+                    lineDiv.innerHTML = `
+                        <span class="w-10 shrink-0 text-right pr-3 text-slate-700 select-none border-r-2 border-slate-800 mr-3 opacity-50 block">${index + 1}</span>
+                        <span class="text-slate-300 flex-1 whitespace-pre block" dir="ltr">&nbsp;</span>
+                    `;
+                } else {
+                    lineDiv.innerHTML = `
+                        <span class="w-10 shrink-0 text-right pr-3 text-slate-500 font-bold select-none border-r-2 border-slate-700 mr-3 block">${index + 1}</span>
+                        <span class="text-blue-300 flex-1 whitespace-pre block" dir="ltr">${escapeHtml(lineData.code)}</span>
+                    `;
+                    
+                    lineDiv.addEventListener('click', () => {
+                        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('active'));
+                        lineDiv.classList.add('active');
+                        
+                        expBox.innerHTML = `
+                            <div class="border-2 border-blue-200 rounded-xl overflow-hidden shadow-md w-full bg-white">
+                                <div class="bg-blue-50 text-blue-900 px-5 py-3 font-black text-right border-b-2 border-blue-200 text-lg flex items-center">
+                                    <span>المُدخل البرمجي:</span>
+                                </div>
+                                <div class="bg-slate-900 text-blue-300 p-5 ltr-code text-left font-mono text-lg" dir="ltr">${escapeHtml(lineData.code)}</div>
+                            </div>
+                            <div class="border-2 border-emerald-200 rounded-xl overflow-hidden shadow-md w-full fade-in mt-2 bg-white">
+                                <div class="bg-emerald-50 text-emerald-900 px-5 py-3 font-black text-right border-b-2 border-emerald-200 text-lg flex items-center">
+                                    <span>التوضيح الفني:</span>
+                                </div>
+                                <div class="p-6 text-slate-800 text-lg leading-loose text-right font-semibold" dir="rtl">${lineData.exp}</div>
+                            </div>
+                        `;
+                    });
+                }
+                container.appendChild(lineDiv);
+            });
+        }
+
+        // محرك النشاط التفاعلي (المجسد البصري للهياكل)
+        function updateVisualizer() {
+            const name = document.getElementById('obj-name').value || 'object';
+            const weight = document.getElementById('obj-weight').value || '0';
+            const price = document.getElementById('obj-price').value || '0.00';
+
+            // تحديث العرض المبعثر
+            document.getElementById('v-scatter-w').textContent = weight;
+            document.getElementById('v-scatter-p').textContent = price;
+
+            // تحديث العرض الهيكلي المنظم
+            document.getElementById('v-struct-name').textContent = name;
+            document.getElementById('v-struct-w').textContent = weight;
+            document.getElementById('v-struct-p').textContent = price;
+        }
+
+        function escapeHtml(unsafe) {
+            return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+
+        window.onload = () => {
+            initCodeInteractive();
+            updateVisualizer();
+        };
+    </script>
+</body>
+</html>
