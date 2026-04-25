@@ -1,0 +1,2157 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>حيل التعامل مع البِتّات — شرح تفاعلي</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  /* ============ NAVY & SILVER LUXURY THEME ============ */
+  :root {
+    /* Base Colors - كحلي وفضي */
+    --bg: #121d33; /* كحلي أساسي */
+    --bg-soft: rgba(255, 255, 255, 0.04);
+    --card: rgba(23, 37, 65, 0.65); /* زجاجي كحلي */
+    --text: #F8FAFC; /* فضي فاتح جداً / أبيض */
+    --text-soft: #CBD5E1; /* فضي فاتح */
+    --muted: #94A3B8; /* فضي متوسط */
+    
+    /* Primary & Accent (Silver tones) */
+    --primary: #94A3B8; /* فضي */
+    --primary-soft: rgba(148, 163, 184, 0.15);
+    --accent: #E2E8F0; /* فضي فاتح مشرق */
+    
+    /* Utilities */
+    --success: #10B981; 
+    --warning: #FBBF24;
+    --danger: #F43F5E;
+    --border: rgba(148, 163, 184, 0.2);
+    
+    /* Code Environment - خلفية داكنة جداً للكود فقط */
+    --code-bg: #05080f; /* خلفية الكود */
+    --code-bg-light: #0d1424;
+    --code-text: #E2E8F0;
+    
+    /* Syntax Highlighting */
+    --code-keyword: #93C5FD;
+    --code-type: #6EE7B7;
+    --code-number: #F8FAFC;
+    --code-comment: #64748B;
+    --code-op: #CBD5E1;
+    
+    /* Bit Visualization */
+    --bit-on: rgba(226, 232, 240, 0.15);
+    --bit-off: rgba(255, 255, 255, 0.03);
+    --bit-highlight: rgba(251, 191, 36, 0.2);
+    
+    /* Shadows & Glows */
+    --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
+    --shadow-lg: 0 8px 32px 0 rgba(148, 163, 184, 0.15);
+    --glow-primary: 0 0 15px rgba(148, 163, 184, 0.4);
+    --glow-accent: 0 0 15px rgba(226, 232, 240, 0.5);
+  }
+
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; }
+  
+  body{
+    font-family: 'Tajawal', sans-serif;
+    background-color: var(--bg);
+    color: var(--text);
+    line-height: 1.75;
+    font-size: 16px;
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* Tech Grid Background - Silver lines */
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background-image: 
+      linear-gradient(rgba(148, 163, 184, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  /* إجبار اتجاه الكود على اليسار دائماً */
+  code, pre, .code-block, .bit-row, .bit-label, .bit-value,
+  .binary, .mono, .modal-code, .code-line{
+    direction: ltr !important;
+    unicode-bidi: bidi-override;
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    text-align: left;
+  }
+
+  /* ============ HEADER ============ */
+  header{
+    background: radial-gradient(circle at 50% 100%, rgba(148, 163, 184, 0.15), transparent 60%),
+                linear-gradient(180deg, #121d33 0%, #0d1526 100%);
+    color: white;
+    padding: 80px 24px 100px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+  }
+  header h1{
+    font-size: clamp(32px, 5vw, 52px);
+    margin: 0 0 16px;
+    font-weight: 900;
+    position: relative;
+    background: linear-gradient(to right, #fff, var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: var(--glow-accent);
+  }
+  header .subtitle{
+    font-size: clamp(15px, 2.5vw, 19px);
+    color: var(--text-soft);
+    font-weight: 300;
+    max-width: 720px;
+    margin: 0 auto;
+    position: relative;
+  }
+  header .floating-bits{
+    position: absolute;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--accent);
+    font-size: 16px;
+    pointer-events: none;
+    direction: ltr;
+    opacity: 0.5;
+    text-shadow: 0 0 8px var(--accent);
+    animation: floatMatrix 6s infinite ease-in-out alternate;
+  }
+  @keyframes floatMatrix {
+    0% { transform: translateY(0) scale(1); opacity: 0.3; }
+    100% { transform: translateY(-20px) scale(1.1); opacity: 0.7; }
+  }
+
+  /* ============ CONTAINER ============ */
+  .container{
+    max-width: 1100px;
+    margin: -40px auto 60px;
+    padding: 0 20px;
+    position: relative;
+    z-index: 2;
+  }
+
+  /* ============ GLASSMORPHISM BASE (CARDS) ============ */
+  .intro, .how-to, .trick, .summary, .toc, .modal {
+    background: var(--card);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+  }
+
+  /* ============ INTRO BOX ============ */
+  .intro{
+    border-radius: 16px;
+    padding: 32px;
+    margin-bottom: 40px;
+  }
+  .intro h2{
+    margin: 0 0 16px;
+    color: var(--accent);
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-shadow: 0 0 10px rgba(226, 232, 240, 0.3);
+  }
+  .intro h2::before{
+    content: '💡';
+    font-size: 24px;
+    filter: drop-shadow(0 0 8px rgba(226, 232, 240, 0.5));
+  }
+  .intro p{ margin: 8px 0; color: var(--text-soft); }
+  .intro .setup-code{ margin-top: 16px; }
+
+  /* ============ HOW TO USE ============ */
+  .how-to{
+    border-radius: 12px;
+    padding: 22px 26px;
+    margin-bottom: 40px;
+    border-right: 4px solid var(--warning);
+    background: linear-gradient(90deg, rgba(251, 191, 36, 0.05) 0%, transparent 100%);
+    font-size: 15px;
+    position: relative;
+    overflow: hidden;
+  }
+  .how-to::before {
+    content: "SYSTEM_HINT";
+    position: absolute;
+    left: -10px; top: 50%;
+    transform: translateY(-50%) rotate(-90deg);
+    font-family: 'JetBrains Mono';
+    font-size: 10px;
+    color: var(--warning);
+    opacity: 0.3;
+    letter-spacing: 2px;
+  }
+  .how-to strong{ color: var(--warning); text-shadow: 0 0 8px rgba(251,191,36,0.5); font-size: 18px; }
+  .how-to ul{ margin: 12px 0 0; padding-right: 22px; }
+  .how-to li{ margin: 8px 0; color: var(--text-soft); }
+
+  /* ============ SECTION / TRICK CARD ============ */
+  .trick{
+    border-radius: 16px;
+    padding: 32px;
+    margin-bottom: 32px;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+  }
+  .trick::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--primary), transparent);
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+  .trick:hover{ 
+    box-shadow: var(--shadow-lg); 
+    border-color: rgba(226, 232, 240, 0.3);
+    transform: translateY(-3px);
+  }
+  .trick:hover::before { opacity: 1; }
+  
+  .trick h2{
+    margin: 0 0 8px;
+    color: #fff;
+    font-size: 24px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    text-shadow: 0 0 10px rgba(255,255,255,0.2);
+  }
+  .trick-number{
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px; height: 40px;
+    background: var(--primary-soft);
+    color: var(--text);
+    border: 1px solid var(--primary);
+    border-radius: 10px;
+    font-size: 18px;
+    font-weight: 900;
+    flex-shrink: 0;
+    box-shadow: inset 0 0 10px rgba(148, 163, 184, 0.2), 0 0 10px rgba(148, 163, 184, 0.2);
+  }
+  .info-badge{
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px; height: 32px;
+    background: rgba(226, 232, 240, 0.1);
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 900;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 0 10px rgba(226, 232, 240, 0.3);
+    animation: pulse-badge 2s infinite alternate;
+    font-family: 'Tajawal', sans-serif;
+  }
+  .info-badge:hover{
+    transform: scale(1.1);
+    background: var(--accent);
+    color: #121d33;
+    box-shadow: 0 0 20px var(--accent);
+  }
+  @keyframes pulse-badge{
+    0%{ box-shadow: 0 0 5px rgba(226, 232, 240, 0.2); }
+    100%{ box-shadow: 0 0 15px rgba(226, 232, 240, 0.5); }
+  }
+  .trick .tagline{
+    color: var(--primary);
+    font-size: 14px;
+    margin-bottom: 22px;
+    margin-right: 54px;
+    direction: ltr;
+    text-align: right;
+    opacity: 0.8;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 1px;
+  }
+
+  /* ============ CODE BLOCK ============ */
+  .code-block{
+    background: var(--code-bg);
+    color: var(--code-text);
+    border-radius: 12px;
+    padding: 28px 24px 20px;
+    margin: 18px 0;
+    font-size: 15px;
+    overflow-x: auto;
+    position: relative;
+    border: 1px solid rgba(255,255,255,0.05);
+    direction: ltr;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+  }
+  .code-block::before{
+    content: 'TERMINAL';
+    position: absolute;
+    top: 8px;
+    left: 12px;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    opacity: 0.5;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .code-block pre{
+    margin: 0;
+    white-space: pre;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .code-line{
+    display: block;
+    padding: 4px 10px;
+    margin: 1px -10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    border-right: 2px solid transparent;
+  }
+  .code-line:hover{
+    background: var(--primary-soft);
+    border-right-color: var(--accent);
+  }
+  .code-line:hover::after{
+    content: 'SCAN';
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 10px;
+    color: var(--accent);
+    opacity: 0.7;
+    letter-spacing: 1px;
+  }
+  .code-line.no-hover{ cursor: default; border-right-color: transparent; }
+  .code-line.no-hover:hover{ background: transparent; }
+  .code-line.no-hover:hover::after{ content: ''; }
+
+  .tk-key{ color: var(--code-keyword); }
+  .tk-type{ color: var(--code-type); }
+  .tk-num{ color: var(--code-number); }
+  .tk-op{ color: var(--code-op); }
+  .tk-com{ color: var(--code-comment); font-style: italic; }
+  .tk-str{ color: #a5d6ff; }
+  .tk-fn{ color: #d2a8ff; }
+
+  /* clickable token (concept) */
+  .clickable{
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 2px 4px;
+    transition: all 0.2s;
+    position: relative;
+    border-bottom: 1px dashed rgba(226, 232, 240, 0.5);
+  }
+  .clickable:hover{
+    background: rgba(226, 232, 240, 0.2);
+    border-bottom: 1px solid var(--accent);
+    color: #fff;
+    text-shadow: 0 0 8px var(--accent);
+  }
+
+  /* ============ EXPLANATION ============ */
+  .explanation{
+    background: var(--primary-soft);
+    border-right: 3px solid var(--primary);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 20px 0;
+    color: var(--text);
+    box-shadow: inset 0 0 20px rgba(148, 163, 184, 0.05);
+  }
+  .explanation strong{ color: var(--accent); font-weight: 700; letter-spacing: 0.5px;}
+
+  .steps{
+    margin: 14px 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: step-counter;
+  }
+  .steps li{
+    counter-increment: step-counter;
+    padding: 12px 16px;
+    margin: 10px 0;
+    background: var(--card);
+    border: 1px solid rgba(255,255,255,0.03);
+    border-radius: 10px;
+    position: relative;
+    padding-right: 56px;
+    transition: transform 0.2s;
+  }
+  .steps li:hover {
+    transform: translateX(-5px);
+    border-color: rgba(148, 163, 184, 0.3);
+  }
+  .steps li::before{
+    content: counter(step-counter);
+    position: absolute;
+    right: 14px; top: 50%;
+    transform: translateY(-50%);
+    width: 30px; height: 30px;
+    background: var(--primary-soft);
+    border: 1px solid var(--primary);
+    color: var(--text);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 900;
+    font-size: 14px;
+    box-shadow: 0 0 10px rgba(148, 163, 184, 0.2);
+  }
+
+  /* ============ DEMO ============ */
+  .demo{
+    background: rgba(10, 15, 30, 0.6);
+    border-radius: 14px;
+    padding: 26px;
+    margin-top: 24px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    box-shadow: inset 0 0 30px rgba(0,0,0,0.3);
+  }
+  .demo-title{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 900;
+    color: var(--accent);
+    margin-bottom: 18px;
+    font-size: 18px;
+    text-shadow: 0 0 10px rgba(226, 232, 240, 0.4);
+    letter-spacing: 1px;
+  }
+  .demo-title::before{ content: '/>'; font-family: 'JetBrains Mono'; font-weight: bold;}
+
+  .controls{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  .control-group{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255,255,255,0.03);
+    padding: 8px 16px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+  .control-group label{
+    font-weight: 700;
+    color: var(--primary);
+    font-size: 15px;
+    font-family: 'JetBrains Mono', monospace;
+    direction: ltr;
+  }
+  .control-group input[type="number"]{
+    width: 75px;
+    padding: 8px 10px;
+    background: var(--code-bg);
+    color: #fff;
+    border: 1px solid rgba(226, 232, 240, 0.2);
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    direction: ltr;
+    text-align: center;
+    font-size: 15px;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+  .control-group input:focus{
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 10px rgba(226, 232, 240, 0.3);
+  }
+  button.action{
+    padding: 10px 24px;
+    border: 1px solid var(--primary);
+    background: var(--primary-soft);
+    color: var(--text);
+    border-radius: 8px;
+    font-family: 'Tajawal', sans-serif;
+    font-weight: 900;
+    cursor: pointer;
+    font-size: 15px;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+    box-shadow: 0 0 10px rgba(148, 163, 184, 0.2);
+    text-shadow: 0 0 5px rgba(148, 163, 184, 0.5);
+  }
+  button.action:hover{
+    background: var(--primary);
+    color: #121d33;
+    box-shadow: 0 0 20px rgba(148, 163, 184, 0.6);
+    transform: translateY(-2px);
+  }
+  button.action:active{ transform: translateY(0); }
+  
+  button.action.next-step-btn {
+    background: rgba(226, 232, 240, 0.15);
+    border-color: var(--accent);
+    color: var(--text);
+    text-shadow: 0 0 5px var(--accent);
+    box-shadow: 0 0 10px rgba(226, 232, 240, 0.2);
+    display: none;
+  }
+  button.action.next-step-btn:hover {
+    background: var(--accent);
+    color: #121d33;
+    box-shadow: 0 0 20px var(--accent);
+    transform: translateY(-2px);
+  }
+
+  /* ============ BIT VIZ ============ */
+  .bit-viz{
+    background: rgba(10, 15, 30, 0.8);
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 18px;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+  .bit-row{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 12px 0;
+    direction: ltr;
+    flex-wrap: wrap;
+    opacity: 0;
+    transform: translateY(-10px);
+    animation: neonSlideInRow 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  }
+  @keyframes neonSlideInRow{
+    to{ opacity: 1; transform: translateY(0); }
+  }
+  
+  .bit-label{
+    min-width: 140px;
+    font-weight: 700;
+    color: var(--primary);
+    font-size: 14px;
+    direction: ltr;
+    text-align: right;
+    padding-left: 10px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .bit-cell{
+    width: 38px; height: 38px;
+    border-radius: 8px;
+    background: var(--bit-off);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: var(--text-soft);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 16px;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    flex-shrink: 0;
+  }
+  .bit-cell.on{
+    background: rgba(226, 232, 240, 0.15);
+    color: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 0 15px rgba(226, 232, 240, 0.3), inset 0 0 10px rgba(226, 232, 240, 0.1);
+    text-shadow: 0 0 8px var(--accent);
+  }
+  .bit-cell.highlight{
+    background: var(--bit-highlight);
+    color: var(--warning);
+    border-color: var(--warning);
+    transform: scale(1.15) translateY(-2px);
+    box-shadow: 0 0 20px rgba(251, 191, 36, 0.4), inset 0 0 10px rgba(251, 191, 36, 0.2);
+    text-shadow: 0 0 8px var(--warning);
+    z-index: 2;
+  }
+  .bit-index{
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 6px;
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .bit-value-display{
+    margin-right: 14px;
+    padding: 6px 12px;
+    background: rgba(226, 232, 240, 0.1);
+    border: 1px solid rgba(226, 232, 240, 0.3);
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    color: var(--accent);
+    direction: ltr;
+    font-size: 14px;
+    text-shadow: 0 0 5px rgba(226, 232, 240, 0.5);
+  }
+
+  .result-box{
+    margin-top: 18px;
+    padding: 16px 20px;
+    border-radius: 10px;
+    background: rgba(148, 163, 184, 0.1);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-right: 4px solid var(--accent);
+    color: #fff;
+    font-weight: 500;
+    display: none;
+    box-shadow: 0 0 15px rgba(148, 163, 184, 0.1);
+    text-shadow: 0 0 2px rgba(226, 232, 240, 0.3);
+  }
+  .result-box.show{ display: block; animation: neonSlideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+  .result-box.false{
+    background: rgba(244, 63, 94, 0.05); /* هادئ أكثر */
+    border-color: rgba(244, 63, 94, 0.3);
+    border-right-color: var(--danger);
+    box-shadow: 0 0 15px rgba(244, 63, 94, 0.1);
+    text-shadow: 0 0 2px rgba(244, 63, 94, 0.3);
+  }
+  @keyframes neonSlideIn{
+    from{ opacity: 0; transform: translateY(-10px) scale(0.98); }
+    to{ opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  /* ============ MODAL ============ */
+  .modal-backdrop{
+    position: fixed;
+    inset: 0;
+    background: rgba(5, 8, 15, 0.8);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+  }
+  .modal-backdrop.show{
+    display: flex;
+    animation: fadeIn 0.3s ease;
+  }
+  @keyframes fadeIn{
+    from{ opacity: 0; } to{ opacity: 1; }
+  }
+  .modal{
+    background: var(--card);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.5), 0 0 20px rgba(148, 163, 184, 0.15);
+    border-radius: 16px;
+    max-width: 680px;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    padding: 32px;
+    position: relative;
+    animation: neonPopIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  @keyframes neonPopIn{
+    from{ transform: scale(0.9) translateY(20px); opacity: 0; }
+    to{ transform: scale(1) translateY(0); opacity: 1; }
+  }
+  .modal-header{
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding-left: 40px;
+  }
+  .modal-header .modal-icon{
+    width: 46px; height: 46px;
+    border-radius: 12px;
+    background: var(--primary-soft);
+    border: 1px solid var(--primary);
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+    box-shadow: 0 0 15px rgba(148, 163, 184, 0.3);
+  }
+  .modal h3{
+    margin: 0;
+    color: #fff;
+    font-size: 22px;
+    font-weight: 900;
+    text-shadow: 0 0 8px rgba(255,255,255,0.3);
+  }
+  .modal .section-title{
+    font-weight: 900;
+    color: var(--accent);
+    margin: 24px 0 12px;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-shadow: 0 0 8px rgba(226, 232, 240, 0.4);
+  }
+  .modal .modal-code{
+    background: var(--code-bg);
+    color: var(--code-text);
+    padding: 16px;
+    border-radius: 10px;
+    margin: 14px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    direction: ltr;
+    text-align: left;
+    overflow-x: auto;
+    white-space: pre;
+    border: 1px solid rgba(255,255,255,0.05);
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+  }
+  .modal p{ color: var(--text-soft); line-height: 1.8; margin: 10px 0; }
+  .modal ul{ padding-right: 24px; }
+  .modal ul li{ margin: 8px 0; color: var(--text-soft); }
+  .modal .problem-card{
+    background: rgba(0,0,0,0.2);
+    border-radius: 10px;
+    padding: 16px;
+    margin: 12px 0;
+    border-right: 3px solid var(--primary);
+    border-left: 1px solid rgba(255,255,255,0.05);
+    border-top: 1px solid rgba(255,255,255,0.05);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    transition: transform 0.2s;
+  }
+  .modal .problem-card:hover {
+    transform: translateX(-5px);
+    background: rgba(148, 163, 184, 0.05);
+  }
+  .modal .problem-card .problem-title{
+    font-weight: 900;
+    color: var(--accent);
+    margin-bottom: 6px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .modal .problem-card .problem-desc{
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .modal-close{
+    position: absolute;
+    top: 20px; left: 20px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 18px;
+    color: #fff;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-close:hover{
+    background: rgba(244, 63, 94, 0.2);
+    color: var(--danger);
+    border-color: var(--danger);
+    box-shadow: 0 0 15px rgba(244, 63, 94, 0.5);
+    transform: rotate(90deg);
+  }
+
+  /* line-by-line trace inside modal */
+  .trace-line{
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    margin: 14px 0;
+    padding: 14px 16px;
+    background: rgba(10, 15, 30, 0.5);
+    border-radius: 10px;
+    border-right: 3px solid var(--accent);
+    border-left: 1px solid rgba(255,255,255,0.05);
+  }
+  .trace-line .trace-num{
+    flex-shrink: 0;
+    width: 30px; height: 30px;
+    background: rgba(226, 232, 240, 0.1);
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    font-size: 13px;
+    font-family: 'JetBrains Mono', monospace;
+    box-shadow: 0 0 10px rgba(226, 232, 240, 0.2);
+  }
+  .trace-line .trace-content{
+    flex: 1;
+    color: var(--text-soft);
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  .trace-line .trace-code{
+    display: inline-block;
+    background: var(--code-bg);
+    color: var(--accent);
+    padding: 6px 12px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    direction: ltr;
+    text-align: left;
+    border: 1px solid rgba(226, 232, 240, 0.2);
+  }
+
+  /* ============ SUMMARY ============ */
+  .summary{
+    border-radius: 16px;
+    padding: 32px;
+    margin-bottom: 40px;
+  }
+  .summary h2{
+    color: var(--accent);
+    margin-top: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-shadow: 0 0 10px rgba(226, 232, 240, 0.3);
+  }
+  .summary h2::before{ content: '📋'; filter: drop-shadow(0 0 5px rgba(255,255,255,0.5)); }
+  .summary-table{
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .summary-table th{
+    background: rgba(148, 163, 184, 0.15);
+    color: #fff;
+    padding: 16px;
+    text-align: right;
+    font-weight: 900;
+    border-bottom: 2px solid var(--accent);
+  }
+  .summary-table th:last-child{ text-align: center; }
+  .summary-table td{
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    color: var(--text-soft);
+  }
+  .summary-table td:last-child{
+    font-family: 'JetBrains Mono', monospace;
+    direction: ltr;
+    text-align: center;
+    background: rgba(0,0,0,0.4);
+    color: var(--primary);
+    font-size: 14px;
+    font-weight: bold;
+  }
+  .summary-table tr:hover td{ background: rgba(148, 163, 184, 0.05); }
+
+  /* ============ FOOTER ============ */
+  footer{
+    background: linear-gradient(180deg, transparent 0%, #0d1424 100%);
+    color: var(--muted);
+    text-align: center;
+    padding: 60px 20px 40px;
+    margin-top: 60px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+  }
+  footer .author{
+    font-size: 24px;
+    font-weight: 900;
+    color: var(--accent);
+    margin-bottom: 10px;
+    letter-spacing: 1px;
+    text-shadow: 0 0 10px rgba(226, 232, 240, 0.3);
+  }
+  footer .author::before{ content: '/> '; font-family: 'JetBrains Mono'; opacity: 0.5;}
+  footer p{ margin: 4px 0; font-size: 15px; opacity: 0.7; }
+
+  /* ============ PROGRESS ============ */
+  .progress-container{
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: rgba(0,0,0,0.5);
+    z-index: 9999;
+  }
+  .progress-bar{
+    height: 100%;
+    background: linear-gradient(90deg, var(--muted), var(--primary), var(--accent));
+    width: 0%;
+    transition: width 0.1s;
+    box-shadow: 0 0 10px var(--primary), 0 0 20px var(--accent);
+  }
+
+  /* ============ TOC ============ */
+  .toc{
+    border-radius: 16px;
+    padding: 24px 28px;
+    margin-bottom: 40px;
+  }
+  .toc h3{
+    margin: 0 0 16px;
+    font-size: 18px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-shadow: 0 0 8px rgba(255,255,255,0.3);
+  }
+  .toc h3::before{ content: '🧭'; filter: drop-shadow(0 0 5px rgba(255,255,255,0.5));}
+  .toc-grid{
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px;
+  }
+  .toc-item{
+    padding: 12px 16px;
+    background: rgba(0,0,0,0.2);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 8px;
+    color: var(--text-soft);
+    text-decoration: none;
+    font-size: 15px;
+    font-weight: 500;
+    transition: all 0.3s;
+    border-right: 3px solid transparent;
+  }
+  .toc-item:hover{
+    background: rgba(148, 163, 184, 0.05);
+    border-right-color: var(--accent);
+    color: #fff;
+    transform: translateX(-6px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--bg); 
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.1); 
+    border-radius: 5px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--accent); 
+    box-shadow: 0 0 10px var(--accent);
+  }
+
+  @media (max-width: 600px){
+    .bit-cell{ width: 32px; height: 32px; font-size: 14px; }
+    .bit-label{ min-width: 110px; font-size: 12px; }
+    .trick{ padding: 24px; }
+    .trick h2{ font-size: 20px; }
+    header h1 { font-size: 28px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="progress-container"><div class="progress-bar" id="progressBar"></div></div>
+
+<header>
+  <span class="floating-bits" style="top:20px; right:10%;">10110101</span>
+  <span class="floating-bits" style="top:60px; right:30%; animation-delay: 1s;">01001100</span>
+  <span class="floating-bits" style="top:100px; left:15%; animation-delay: 2s;">11010010</span>
+  <span class="floating-bits" style="top:40px; left:35%; animation-delay: 0.5s;">00110111</span>
+  <h1>حيل التعامل مع البِتّات</h1>
+  <p class="subtitle">Bit Manipulation Tricks — شرح تفاعلي مع أمثلة حيّة ومحاكاة بصرية</p>
+</header>
+
+<div class="container">
+
+  <!-- INTRO -->
+  <div class="intro">
+    <h2>المقدّمة والافتراضات</h2>
+    <p>سنفترض وجود المتغيرين التاليين طوال الدرس:</p>
+    <div class="setup-code">
+      <div class="code-block">
+<pre><span class="code-line no-hover"><span class="tk-type">int</span> <span class="clickable" data-concept="var-x">x</span>;       <span class="tk-com">// some non-negative integer</span></span>
+<span class="code-line no-hover"><span class="tk-type">int</span> <span class="clickable" data-concept="var-k">k</span>;       <span class="tk-com">// 0-based bit index (0 = least significant bit)</span></span></pre>
+      </div>
+    </div>
+    <p>وسنستخدم <strong>أقنعة (masks)</strong> مثل القناع أدناه، والذي يكون فيه البِت رقم <code style="background:#161b22;color:#E2E8F0;padding:2px 8px;border-radius:4px; border:1px solid rgba(226,232,240,0.2);">k</code> فقط مساويًا للقيمة <strong>1</strong>.</p>
+    <div class="code-block">
+<pre><span class="code-line no-hover"><span class="tk-num">1</span> <span class="tk-op">&lt;&lt;</span> k</span></pre>
+    </div>
+  </div>
+
+  <!-- HOW TO USE -->
+  <div class="how-to">
+    <strong>🎯 كيف تستخدم هذه الصفحة؟</strong>
+    <ul>
+      <li>اضغط على زر <strong>ⓘ</strong> بجوار اسم كل حيلة لقراءة: متى تستخدم؟ وما المشاكل الشهيرة التي تحلّها؟</li>
+      <li>انقر على أي <strong>سطر برمجي</strong> داخل خلفية الكود الداكنة لتظهر نافذة تشرح السطر كلمةً كلمة.</li>
+      <li>انقر على الرموز المظلّلة مثل العوامل البِتّية لفتح شرح مفصّل لكل رمز.</li>
+      <li>جرّب الحيلة بنفسك عبر تغيير القيم ثم الضغط على زر «نفّذ».</li>
+    </ul>
+  </div>
+
+  <!-- TOC -->
+  <div class="toc">
+    <h3>الحيل المغطّاة</h3>
+    <div class="toc-grid">
+      <a href="#trick1" class="toc-item">١. فحص البِت رقم k</a>
+      <a href="#trick2" class="toc-item">٢. ضبط البِت إلى 1</a>
+      <a href="#trick3" class="toc-item">٣. تصفير البِت</a>
+      <a href="#trick4" class="toc-item">٤. قلب البِت</a>
+      <a href="#trick5" class="toc-item">٥. إزالة أقل بِت معيّن</a>
+      <a href="#trick6" class="toc-item">٦. فحص قوة الـ 2</a>
+      <a href="#trick7" class="toc-item">٧. عزل أقل بِت معيّن</a>
+    </div>
+  </div>
+
+  <!-- ============ TRICK 1 ============ -->
+  <section class="trick" id="trick1">
+    <h2>
+      <span class="trick-number">١</span>
+      فحص ما إذا كان البِت رقم k يساوي 1
+      <button class="info-badge" onclick="openTrickInfo('trick1')" title="اضغط لمعرفة متى تُستخدم هذه الحيلة">ⓘ</button>
+    </h2>
+    <p class="tagline">Check if bit k is set</p>
+
+    <div class="code-block">
+<pre><span class="code-line" data-line="t1-1"><span class="tk-type">bool</span> isSet = (x <span class="clickable tk-op" data-concept="shift-right">&gt;&gt;</span> k) <span class="clickable tk-op" data-concept="bitwise-and">&amp;</span> <span class="tk-num">1</span>;</span></pre>
+    </div>
+
+    <div class="explanation">
+      <strong>كيف تعمل؟</strong>
+      <ul class="steps">
+        <li>الإزاحة لليمين تنقل البِت رقم <code>k</code> إلى أقصى اليمين.</li>
+        <li>ثم عملية <code>AND</code> مع <code>1</code> تُبقي البِت الأيمن فقط وتصفّر باقي البِتّات.</li>
+        <li>الناتج يكون <code>0</code> أو <code>1</code>، وهو يعادل <code>false</code> أو <code>true</code> منطقيًا.</li>
+      </ul>
+    </div>
+
+    <p><strong>مثال:</strong> افحص ما إذا كان البِت رقم <code>1</code> في <code>x = 10</code> مُعيَّنًا.</p>
+    <div class="code-block">
+<pre><span class="code-line" data-line="t1-2"><span class="tk-type">int</span> x = <span class="tk-num">10</span>;     <span class="tk-com">// 10 = 1010 (in binary)</span></span>
+<span class="code-line" data-line="t1-3"><span class="tk-type">int</span> k = <span class="tk-num">1</span>;</span>
+<span class="code-line no-hover"></span>
+<span class="code-line" data-line="t1-4"><span class="tk-type">bool</span> isSet = (x &gt;&gt; <span class="tk-num">1</span>) &amp; <span class="tk-num">1</span>; <span class="tk-com">// 1010 &gt;&gt; 1 = 101;  101 &amp; 1 = 1</span></span></pre>
+    </div>
+
+    <p>وهنا دالة جاهزة تُعيد ما إذا كان البِت رقم <code>k</code> في <code>n</code> مساويًا لـ <code>1</code>:</p>
+    <div class="code-block">
+<pre><span class="code-line" data-line="t1-5"><span class="tk-type">bool</span> kthBitIsSet(<span class="tk-type">int</span> n, <span class="tk-type">int</span> k) {</span>
+<span class="code-line" data-line="t1-6">    <span class="tk-key">return</span> (n &gt;&gt; k) &amp;&amp; <span class="tk-num">1</span>;</span>
+<span class="code-line no-hover">}</span></pre>
+    </div>
+
+    <div class="demo">
+      <div class="demo-title">جرّب بنفسك</div>
+      <div class="controls">
+        <div class="control-group">
+          <label>x =</label>
+          <input type="number" id="t1-x" value="10" min="0" max="255">
+        </div>
+        <div class="control-group">
+          <label>k =</label>
+          <input type="number" id="t1-k" value="1" min="0" max="7">
+        </div>
+        <button class="action" onclick="runTrick1()">نفّذ 🚀</button>
+      </div>
+      <div class="bit-viz" id="t1-viz"></div>
+      <div class="result-box" id="t1-result"></div>
+    </div>
+  </section>
+
+  <!-- ============ TRICK 2 ============ -->
+  <section class="trick" id="trick2">
+    <h2>
+      <span class="trick-number">٢</span>
+      ضبط البِت رقم k إلى 1
+      <button class="info-badge" onclick="openTrickInfo('trick2')" title="اضغط لمعرفة متى تُستخدم هذه الحيلة">ⓘ</button>
+    </h2>
+    <p class="tagline">Set bit k to 1</p>
+
+    <div class="code-block">
+<pre><span class="code-line" data-line="t2-1">x <span class="clickable tk-op" data-concept="or-assign">|=</span> (<span class="tk-num">1</span> <span class="clickable tk-op" data-concept="shift-left">&lt;&lt;</span> k);</span></pre>
+    </div>
+
+    <div class="explanation">
+      <strong>الفكرة:</strong>
+      <ul class="steps">
+        <li>العامل <code>|</code> يعيّن البِت إلى <code>1</code> إذا كان على الأقل أحد الطرفين يحتوي <code>1</code>.</li>
+        <li>بهذا نجبر البِت رقم <code>k</code> أن يصبح <code>1</code>، بينما تبقى باقي البِتّات كما هي.</li>
+      </ul>
+    </div>
+
+    <p><strong>مثال:</strong></p>
+    <div class="code-block">
+<pre><span class="code-line" data-line="t2-2"><span class="tk-type">int</span> x = <span class="tk-num">4</span>;      <span class="tk-com">// 0100</span></span>
+<span class="code-line" data-line="t2-3">x |= (<span class="tk-num">1</span> &lt;&lt; <span class="tk-num">0</span>);  <span class="tk-com">// 0100 | 0001 = 0101 (5)</span></span></pre>
+    </div>
+
+    <div class="demo">
+      <div class="demo-title">جرّب بنفسك</div>
+      <div class="controls">
+        <div class="control-group">
+          <label>x =</label>
+          <input type="number" id="t2-x" value="4" min="0" max="255">
+        </div>
+        <div class="control-group">
+          <label>k =</label>
+          <input type="number" id="t2-k" value="0" min="0" max="7">
+        </div>
+        <button class="action" onclick="runTrick2()">نفّذ 🚀</button>
+      </div>
+      <div class="bit-viz" id="t2-viz"></div>
+      <div class="result-box" id="t2-result"></div>
+    </div>
+  </section>
+
+  <!-- ============ TRICK 3 ============ -->
+  <section class="trick" id="trick3">
+    <h2>
+      <span class="trick-number">٣</span>
+      تصفير البِت رقم k (جعله 0)
+      <button class="info-badge" onclick="openTrickInfo('trick3')" title="اضغط لمعرفة متى تُستخدم هذه الحيلة">ⓘ</button>
+    </h2>
+    <p class="tagline">Clear bit k</p>
+
+    <div class="code-block">
+<pre><span class="code-line" data-line="t3-1">x <span class="clickable tk-op" data-concept="and-assign">&amp;=</span> <span class="clickable tk-op" data-concept="not">~</span>(<span class="tk-num">1</span> &lt;&lt; k);</span></pre>
+    </div>
+
+    <div class="explanation">
+      <strong>الفكرة:</strong>
+      <ul class="steps">
+        <li>نبدأ بقناع فيه البِت رقم <code>k</code> فقط مساوٍ لـ <code>1</code>.</li>
+        <li>نعكس القناع باستخدام <code>~</code> ليصبح البِت رقم <code>k</code> هو <code>0</code> وباقي البِتّات <code>1</code>.</li>
+        <li>عملية <code>AND</code> مع القناع المعكوس تصفّر البِت رقم <code>k</code> فقط وتُبقي الباقي.</li>
+      </ul>
+    </div>
+
+    <p><strong>مثال:</strong></p>
+    <div class="code-block">
+<pre><span class="code-line" data-line="t3-2"><span class="tk-type">int</span> x = <span class="tk-num">13</span>;         <span class="tk-com">// 1101</span></span>
+<span class="code-line" data-line="t3-3">x &amp;= ~(<span class="tk-num">1</span> &lt;&lt; <span class="tk-num">2</span>);     <span class="tk-com">// ~(0100) = ...1011</span></span>
+<span class="code-line no-hover">                    <span class="tk-com">// 1101 &amp; 1011 = 1001 (9)</span></span></pre>
+    </div>
+    <p>الآن البِت رقم <code>2</code> أصبح <code>0</code>.</p>
+
+    <div class="demo">
+      <div class="demo-title">جرّب بنفسك</div>
+      <div class="controls">
+        <div class="control-group">
+          <label>x =</label>
+          <input type="number" id="t3-x" value="13" min="0" max="255">
+        </div>
+        <div class="control-group">
+          <label>k =</label>
+          <input type="number" id="t3-k" value="2" min="0" max="7">
+        </div>
+        <button class="action" onclick="runTrick3()">نفّذ 🚀</button>
+      </div>
+      <div class="bit-viz" id="t3-viz"></div>
+      <div class="result-box" id="t3-result"></div>
+    </div>
+  </section>
+
+  <!-- ============ TRICK 4 ============ -->
+  <section class="trick" id="trick4">
+    <h2>
+      <span class="trick-number">٤</span>
+      قلب (تبديل) البِت رقم k
+      <button class="info-badge" onclick="openTrickInfo('trick4')" title="اضغط لمعرفة متى تُستخدم هذه الحيلة">ⓘ</button>
+    </h2>
+    <p class="tagline">Toggle bit k</p>
+
+    <div class="code-block">
+<pre><span class="code-line" data-line="t4-1">x <span class="clickable tk-op" data-concept="xor-assign">^=</span> (<span class="tk-num">1</span> &lt;&lt; k);</span></pre>
+    </div>
+
+    <div class="explanation">
+      <strong>الفكرة:</strong>
+      <p>العامل <code>^</code> (XOR) يقلب البِت عندما يكون القناع فيه <code>1</code>:</p>
+      <ul class="steps">
+        <li>الصفر المُقارن بواحد يصبح واحدًا.</li>
+        <li>الواحد المُقارن بواحد يصبح صفرًا.</li>
+      </ul>
+    </div>
+
+    <p><strong>مثال:</strong></p>
+    <div class="code-block">
+<pre><span class="code-line" data-line="t4-2"><span class="tk-type">int</span> x = <span class="tk-num">5</span>;     <span class="tk-com">// 0101</span></span>
+<span class="code-line" data-line="t4-3">x ^= (<span class="tk-num">1</span> &lt;&lt; <span class="tk-num">2</span>); <span class="tk-com">// 0101 ^ 0100 = 0001 (1)</span></span></pre>
+    </div>
+    <p>البِت رقم <code>2</code> كان <code>1</code> ← أصبح الآن <code>0</code>.</p>
+
+    <div class="demo">
+      <div class="demo-title">جرّب بنفسك</div>
+      <div class="controls">
+        <div class="control-group">
+          <label>x =</label>
+          <input type="number" id="t4-x" value="5" min="0" max="255">
+        </div>
+        <div class="control-group">
+          <label>k =</label>
+          <input type="number" id="t4-k" value="2" min="0" max="7">
+        </div>
+        <button class="action" onclick="runTrick4()">نفّذ 🚀</button>
+      </div>
+      <div class="bit-viz" id="t4-viz"></div>
+      <div class="result-box" id="t4-result"></div>
+    </div>
+  </section>
+
+  <!-- ============ TRICK 5 ============ -->
+  <section class="trick" id="trick5">
+    <h2>
+      <span class="trick-number">٥</span>
+      إزالة أقل بِت معيّن
+      <button class="info-badge" onclick="openTrickInfo('trick5')" title="اضغط لمعرفة متى تُستخدم هذه الحيلة">ⓘ</button>
+    </h2>
+    <p class="tagline">Remove the lowest set bit</p>
+    <p>هذه حيلة مشهورة جدًّا:</p>
+
+    <div class="code-block">
+<pre><span class="code-line" data-line="t5-1">x = x <span class="clickable tk-op" data-concept="bitwise-and">&amp;</span> (x <span class="tk-op">-</span> <span class="tk-num">1</span>);</span></pre>
+    </div>
+    <p>هذا السطر يزيل (يُصفّر) أقل بِت معيّن (أول <code>1</code> من جهة اليمين) في <code>x</code>.</p>
+
+    <div class="explanation">
+      <strong>لماذا تعمل هذه الحيلة؟</strong>
+      <p>فكّر ماذا يحدث للبِتّات عندما نطرح <code>1</code>:</p>
+      <ul class="steps">
+        <li>عند تنفيذ <code>x - 1</code>، نمشي من اليمين حتى نجد أول بِت قيمته <code>1</code>.</li>
+        <li>هذا البِت الأقل (أقرب <code>1</code> لليمين) يتحوّل إلى <code>0</code>.</li>
+        <li>كل البِتّات التي على يمينه (والتي كانت <code>0</code>) تتحوّل إلى <code>1</code> بسبب الاقتراض في الطرح.</li>
+      </ul>
+      <p>إذًا حول أقل بِت معيّن، النمط يكون بهذا الشكل:</p>
+      <div class="code-block">
+<pre><span class="code-line no-hover">x:       .... 1 0 0 0 0</span>
+<span class="code-line no-hover">x - 1:   .... 0 1 1 1 1</span></pre>
+      </div>
+      <p>عند إجراء AND:</p>
+      <div class="code-block">
+<pre><span class="code-line no-hover">x        = .... 1 0 0 0 0</span>
+<span class="code-line no-hover">x - 1    = .... 0 1 1 1 1</span>
+<span class="code-line no-hover">-------------------------</span>
+<span class="code-line no-hover">x&amp;(x-1)  = .... 0 0 0 0 0</span></pre>
+      </div>
+      <ul class="steps">
+        <li>أقل بِت معيّن يصبح <code>0</code> بسبب حاصل ضرب بِتّي <code>1 &amp; 0</code>.</li>
+        <li>كل البِتّات التي على يمينه كانت <code>0</code> في <code>x</code> الأصلية، وبالتالي ناتج الـ AND هو <code>0</code>.</li>
+        <li>كل البِتّات التي على يساره لا تتأثر، لأن الطرح لم يغيّرها، فتبقى كما هي بعد AND.</li>
+      </ul>
+      <p>لذلك <code>x &amp; (x - 1)</code> تساوي قيمة <code>x</code> نفسها لكن مع أقل بِت معيّن مصفّرًا.</p>
+    </div>
+
+    <p><strong>مثال:</strong></p>
+    <div class="code-block">
+<pre><span class="code-line no-hover">x           = 12 = 1100</span>
+<span class="code-line no-hover">x - 1       = 11 = 1011</span>
+<span class="code-line no-hover">x &amp; (x - 1) =  8 = 1000</span></pre>
+    </div>
+    <p>إذًا قمنا بإزالة أقل بِت معيّن (البِت رقم <code>2</code>).</p>
+
+    <div class="demo">
+      <div class="demo-title">جرّب بنفسك</div>
+      <div class="controls">
+        <div class="control-group">
+          <label>x =</label>
+          <input type="number" id="t5-x" value="12" min="0" max="255">
+        </div>
+        <button class="action" onclick="runTrick5()">نفّذ 🚀</button>
+      </div>
+      <div class="bit-viz" id="t5-viz"></div>
+      <div class="result-box" id="t5-result"></div>
+    </div>
+  </section>
+
+  <!-- ============ TRICK 6 ============ -->
+  <section class="trick" id="trick6">
+    <h2>
+      <span class="trick-number">٦</span>
+      فحص ما إذا كان x قوة للعدد 2
+      <button class="info-badge" onclick="openTrickInfo('trick6')" title="اضغط لمعرفة متى تُستخدم هذه الحيلة">ⓘ</button>
+    </h2>
+    <p class="tagline">Check if x is a power of 2</p>
+
+    <p>سنفترض أن <code>x</code> عدد موجب، ونستخدم الحيلة السابقة:</p>
+    <div class="code-block">
+<pre><span class="code-line" data-line="t6-1"><span class="tk-type">bool</span> isPowerOfTwo = (x &amp; (x - <span class="tk-num">1</span>)) == <span class="tk-num">0</span>;</span></pre>
+    </div>
+
+    <div class="explanation">
+      <strong>لماذا تعمل هذه الحيلة؟</strong>
+      <ul class="steps">
+        <li>العدد الذي هو قوة للعدد 2 يحتوي في الثنائي على بِت واحد فقط مُعيَّن.</li>
+        <li>عند تنفيذ <code>x &amp; (x - 1)</code> نقوم بإزالة أقل بِت معيّن.</li>
+        <li>إذا كان هناك بِت واحد فقط معيّن، فبعد إزالته تصبح القيمة <code>0</code>.</li>
+      </ul>
+      <p>إذًا النتيجة تكون صفرًا إذا وفقط إذا كان <code>x</code> يمتلك بِتًا واحدًا معيّنًا، أي أنه قوة للعدد 2.</p>
+    </div>
+
+    <p><strong>أمثلة:</strong></p>
+    <div class="code-block">
+<pre><span class="code-line no-hover">x = 8  (1000)  ->  x &amp; (x-1) = 1000 &amp; 0111 = 0000   power of 2</span>
+<span class="code-line no-hover">x = 12 (1100)  ->  x &amp; (x-1) = 1100 &amp; 1011 = 1000   NOT power of 2</span></pre>
+    </div>
+
+    <div class="demo">
+      <div class="demo-title">جرّب بنفسك</div>
+      <div class="controls">
+        <div class="control-group">
+          <label>x =</label>
+          <input type="number" id="t6-x" value="8" min="1" max="255">
+        </div>
+        <button class="action" onclick="runTrick6()">افحص 🚀</button>
+      </div>
+      <div class="bit-viz" id="t6-viz"></div>
+      <div class="result-box" id="t6-result"></div>
+    </div>
+  </section>
+
+  <!-- ============ TRICK 7 ============ -->
+  <section class="trick" id="trick7">
+    <h2>
+      <span class="trick-number">٧</span>
+      الحصول على أقل بِت معيّن فقط
+      <button class="info-badge" onclick="openTrickInfo('trick7')" title="اضغط لمعرفة متى تُستخدم هذه الحيلة">ⓘ</button>
+    </h2>
+    <p class="tagline">Isolate the lowest set bit</p>
+
+    <div class="code-block">
+<pre><span class="code-line" data-line="t7-1"><span class="tk-type">int</span> lowest = x <span class="clickable tk-op" data-concept="bitwise-and">&amp;</span> <span class="clickable" data-concept="two-complement">-x</span>;</span></pre>
+    </div>
+    <p>هنا <code>-x</code> هو المتمّم الثنائي (two's complement) للعدد <code>x</code>.</p>
+
+    <div class="explanation">
+      <strong>الفكرة:</strong>
+      <p>التعبير <code>x &amp; -x</code> يعزل أقل بِت معيّن (أول <code>1</code> من جهة اليمين) ويصفّر جميع البِتّات الأخرى.</p>
+    </div>
+
+    <p><strong>مثال:</strong></p>
+    <div class="code-block">
+<pre><span class="code-line no-hover">x                     = 12 = ...00001100</span>
+<span class="code-line no-hover">-x (two's complement) =      ...11110100</span>
+<span class="code-line no-hover">x &amp; -x                =      ...00000100 = 4</span></pre>
+    </div>
+    <p>أقل بِت معيّن في <code>x</code> يمثّل القيمة <code>4</code> (أي البِت رقم <code>2</code>).</p>
+
+    <div class="demo">
+      <div class="demo-title">جرّب بنفسك</div>
+      <div class="controls">
+        <div class="control-group">
+          <label>x =</label>
+          <input type="number" id="t7-x" value="12" min="1" max="255">
+        </div>
+        <button class="action" onclick="runTrick7()">نفّذ 🚀</button>
+      </div>
+      <div class="bit-viz" id="t7-viz"></div>
+      <div class="result-box" id="t7-result"></div>
+    </div>
+  </section>
+
+  <!-- ============ SUMMARY ============ -->
+  <div class="summary">
+    <h2>ملخّص سريع</h2>
+    <table class="summary-table">
+      <thead>
+        <tr>
+          <th>العملية</th>
+          <th>الصيغة</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>فحص البِت رقم k</td><td>isSet = (x &gt;&gt; k) &amp; 1;</td></tr>
+        <tr><td>ضبط البِت رقم k إلى 1</td><td>x |= (1 &lt;&lt; k);</td></tr>
+        <tr><td>تصفير البِت رقم k</td><td>x &amp;= ~(1 &lt;&lt; k);</td></tr>
+        <tr><td>قلب (تبديل) البِت رقم k</td><td>x ^= (1 &lt;&lt; k);</td></tr>
+        <tr><td>إزالة أقل بِت معيّن</td><td>x &amp;= (x - 1);</td></tr>
+        <tr><td>فحص إذا كان x قوة للعدد 2</td><td>x &gt; 0 &amp;&amp; (x &amp; (x - 1)) == 0</td></tr>
+        <tr><td>الحصول على أقل بِت معيّن فقط</td><td>lowest = x &amp; -x;</td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top:18px; color: var(--text-soft);">هذه هي أهم وأشهر حيل التعامل مع البِتّات في البرمجة.</p>
+  </div>
+
+</div>
+
+<!-- MODAL -->
+<div class="modal-backdrop" id="modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-header">
+      <div class="modal-icon" id="modalIcon">ⓘ</div>
+      <h3 id="modalTitle"></h3>
+    </div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<footer>
+  <div class="author">محمد مجممي</div>
+  <p>صفحة تفاعلية لشرح حيل التعامل مع البِتّات</p>
+</footer>
+
+<script>
+/* ============ TRICK INFO (why + when + problems) ============ */
+const trickInfo = {
+  trick1: {
+    icon: '🔍',
+    title: 'متى نستخدم: فحص البِت رقم k؟',
+    when: [
+      'عندما نمثّل مجموعة من الحالات الثنائية (مُفعّل / مُعطّل) داخل عدد واحد.',
+      'عند الحاجة لمعرفة هل عنصر موجود في مجموعة صغيرة دون استخدام هياكل بيانات ضخمة.',
+      'في خوارزميات البرمجة الديناميكية التي تعتمد على تمثيل الحالات (bitmask DP).',
+      'عند قراءة الأعلام (flags) في أنظمة التشغيل أو بروتوكولات الشبكات.'
+    ],
+    problems: [
+      { title: 'Subsets', desc: 'توليد جميع المجموعات الجزئية: نحدّد لكل عنصر هل بِته في القناع مُعيَّن أم لا لنقرّر إدراجه.' },
+      { title: 'Single Number II / III', desc: 'حسابيات البِت لكشف العناصر الفريدة عبر فحص بِت بِت.' },
+      { title: 'Counting Bits', desc: 'عدّ البِتّات المعيّنة في عدد عبر المرور على فهارسها.' },
+      { title: 'Bitmask DP', desc: 'مثل مسألة البائع المتجوّل بعدد مدن صغير، حيث نفحص هل تم زيارة مدينة معيّنة.' }
+    ]
+  },
+  trick2: {
+    icon: '⚡',
+    title: 'متى نستخدم: ضبط البِت إلى 1؟',
+    when: [
+      'عند تفعيل خاصية أو علم (flag) ضمن إعدادات مُجمَّعة في عدد واحد.',
+      'عند إضافة عنصر إلى مجموعة ممثّلة بـ bitmask.',
+      'في تكوين الأقنعة تدريجيًا أثناء معالجة البيانات.',
+      'لتفعيل بكسلات في صورة ثنائية أو خلايا في شبكة لعبة.'
+    ],
+    problems: [
+      { title: 'Subsets (بناء الحل تزايديًا)', desc: 'إضافة عنصر جديد إلى المجموعة الجزئية الحالية بضبط بِته.' },
+      { title: 'Bitmask Graph Coloring', desc: 'تعليم رؤوس الرسم على أنها مزارة بضبط بِتّاتها.' },
+      { title: 'Feature Flags', desc: 'في الأنظمة الحقيقية، تفعيل ميزة معيّنة للمستخدم عبر ضبط بِت واحد.' },
+      { title: 'Chess Bitboards', desc: 'تمثيل رقعة الشطرنج عبر 64 بِت وتحريك القطع بضبط بِتّات المربّعات.' }
+    ]
+  },
+  trick3: {
+    icon: '🧹',
+    title: 'متى نستخدم: تصفير البِت؟',
+    when: [
+      'عند إلغاء تفعيل خاصية أو علم معيّن.',
+      'عند إزالة عنصر من مجموعة ممثّلة بـ bitmask.',
+      'لتنظيف حقول محجوزة في بروتوكولات الشبكة قبل الكتابة عليها.',
+      'في أقنعة الصلاحيات عند إلغاء إذن معيّن.'
+    ],
+    problems: [
+      { title: 'Permission Systems', desc: 'سحب صلاحية معيّنة من مستخدم عبر تصفير بِتّها في قناع الصلاحيات.' },
+      { title: 'Graph Traversal Bitmask', desc: 'إلغاء تعليم عقدة بعد التراجع في خوارزميات backtracking.' },
+      { title: 'Clear Bits in IP Masking', desc: 'تصفير بِتّات الشبكة الفرعية عند حساب عنوان الشبكة.' },
+      { title: 'Reset Flag in Embedded Systems', desc: 'إعادة تعيين بِت في سجلّ جهاز بدون التأثير على باقي البِتّات.' }
+    ]
+  },
+  trick4: {
+    icon: '🔄',
+    title: 'متى نستخدم: قلب البِت؟',
+    when: [
+      'عندما لا نعرف الحالة الحالية للبِت ونريد عكسها ببساطة.',
+      'في أنماط التبديل المتكرّر (toggle) مثل مفتاح إضاءة.',
+      'في خوارزميات XOR-based لكشف العناصر المُكرَّرة أو المفقودة.',
+      'في تمثيل حركات عكسية في الألعاب والألغاز.'
+    ],
+    problems: [
+      { title: 'Single Number', desc: 'XOR لكل عناصر المصفوفة يعطي العنصر الفريد، بسبب أن كل مكرَّر يلغي نفسه.' },
+      { title: 'Missing Number', desc: 'XOR للفهارس مع القيم يكشف الرقم المفقود في سلسلة متتالية.' },
+      { title: 'Bulb Switcher', desc: 'كل دورة تقلب حالة لمبات معيّنة، والـ XOR يحاكي ذلك تمامًا.' },
+      { title: 'Flip Game', desc: 'تبديل حالات لوح ثنائي لحساب عدد الحركات.' }
+    ]
+  },
+  trick5: {
+    icon: '✂️',
+    title: 'متى نستخدم: إزالة أقل بِت معيّن؟',
+    when: [
+      'عند عدّ عدد البِتّات المعيّنة بكفاءة عالية.',
+      'في التكرار على البِتّات المعيّنة فقط دون المرور على كل البِتّات.',
+      'كأساس لفحص قوى العدد 2 في سطر واحد.',
+      'في خوارزميات التجميع التي تعالج مجموعات جزئية واحدة تلو الأخرى.'
+    ],
+    problems: [
+      { title: 'Number of 1 Bits (Hamming Weight)', desc: 'عدّ البِتّات المعيّنة بتكرار الحيلة حتى يصبح العدد صفرًا، وهو أسرع من المرور على كل البِتّات.' },
+      { title: 'Counting Bits', desc: 'بناء جدول بعدد البِتّات لكل عدد باستخدام هذه الحيلة كخطوة تكرارية.' },
+      { title: 'Subset Sum over Submasks', desc: 'التكرار على المجموعات الجزئية لقناع معيّن بكفاءة.' },
+      { title: 'Hamming Distance', desc: 'حساب عدد البِتّات المختلفة بين عددين عبر تطبيق XOR ثم عدّ البِتّات المعيّنة.' }
+    ]
+  },
+  trick6: {
+    icon: '⚖️',
+    title: 'متى نستخدم: فحص قوة الـ 2؟',
+    when: [
+      'عند التحقق من أن حجم مصفوفة أو بافر مناسب لعمليات سريعة (مثل hash tables).',
+      'في أنظمة التشغيل عند التأكد من أن حجم الصفحة قوة للعدد 2.',
+      'في الرسوميات عند فحص أحجام الأنسجة (textures).',
+      'في هياكل البيانات مثل الأشجار الثنائية الكاملة وتحسينات التخزين المؤقت.'
+    ],
+    problems: [
+      { title: 'Power of Two', desc: 'المسألة الشهيرة: هل العدد قوة للعدد 2 في زمن ثابت O(1).' },
+      { title: 'Power of Four', desc: 'مع إضافة فحص موقع البِت المعيّن (يجب أن يكون في موقع زوجي).' },
+      { title: 'Reorder Power of 2', desc: 'هل يمكن ترتيب أرقام العدد بحيث يصبح قوة للعدد 2.' },
+      { title: 'Memory Alignment', desc: 'التحقق من أن عنوان ذاكرة محاذٍ لحدّ قوة العدد 2.' }
+    ]
+  },
+  trick7: {
+    icon: '🎯',
+    title: 'متى نستخدم: عزل أقل بِت معيّن؟',
+    when: [
+      'عند الحاجة لقيمة أقل بِت معيّن (وليس فقط إزالته).',
+      'في هيكل بيانات Fenwick Tree (Binary Indexed Tree) لحساب الآباء والأبناء.',
+      'لاستخراج البِتّات المعيّنة واحدة تلو الأخرى في التكرار.',
+      'في الخوارزميات التي تحتاج تعريف القيمة العشرية لأقل بِت.'
+    ],
+    problems: [
+      { title: 'Fenwick Tree (BIT)', desc: 'العملية الأساسية فيها هي عزل أقل بِت معيّن للانتقال بين العُقد.' },
+      { title: 'Iterate Set Bits', desc: 'المرور على البِتّات المعيّنة واستخراج قيمة كل منها للمعالجة.' },
+      { title: 'Rightmost Different Bit', desc: 'إيجاد أقل بِت مختلف بين عددين عبر تطبيق XOR ثم عزل أقل بِت.' },
+      { title: 'Submask Enumeration (variation)', desc: 'استخراج أدنى بِت في قناع لتحليله في خوارزميات DP المتقدّمة.' }
+    ]
+  }
+};
+
+function openTrickInfo(key){
+  const t = trickInfo[key];
+  if(!t) return;
+  document.getElementById('modalIcon').textContent = t.icon;
+  document.getElementById('modalTitle').textContent = t.title;
+  let html = '';
+  html += `<div class="section-title">📌 متى تُستخدم هذه الحيلة؟</div><ul>`;
+  t.when.forEach(w => { html += `<li>${w}</li>`; });
+  html += `</ul>`;
+  html += `<div class="section-title">🧩 المشاكل البرمجية الشهيرة التي تحلّها</div>`;
+  t.problems.forEach(p => {
+    html += `<div class="problem-card">
+      <div class="problem-title">${p.title}</div>
+      <div class="problem-desc">${p.desc}</div>
+    </div>`;
+  });
+  document.getElementById('modalBody').innerHTML = html;
+  document.getElementById('modal').classList.add('show');
+}
+
+/* ============ CONCEPT EXPLANATIONS ============ */
+const concepts = {
+  'var-x': {
+    icon: '📦',
+    title: 'المتغير x',
+    body: `
+      <p>عدد صحيح غير سالب سنطبّق عليه الحيل البِتّية.</p>
+      <p>في الذاكرة يُخزَّن كسلسلة من البِتّات (أصفار وواحدات)، وكل حيلة ستتعامل مع بِت أو مجموعة من بِتّاته.</p>
+      <div class="modal-code">int x = 10;
+// binary: 1010</div>
+    `
+  },
+  'var-k': {
+    icon: '🔢',
+    title: 'فهرس البِت k',
+    body: `
+      <p>رقم البِت الذي نريد العمل عليه، ويبدأ من الصفر وليس من الواحد.</p>
+      <p>البِت رقم صفر هو البِت الأقل أهمية، ويقع في أقصى يمين العدد.</p>
+      <div class="modal-code">Bit index:  7 6 5 4 3 2 1 0
+Value     : ? ? ? ? ? ? ? ?
+                          ^
+                       k = 0</div>
+    `
+  },
+  'shift-right': {
+    icon: '➡️',
+    title: 'عامل الإزاحة لليمين',
+    body: `
+      <p>يُزيح بِتّات العدد إلى اليمين بمقدار معيّن، ويُهمل البِتّات التي تخرج من الطرف الأيمن.</p>
+      <p>الإزاحة لليمين بمقدار <code>k</code> تعادل القسمة الصحيحة على قوى العدد 2.</p>
+      <div class="modal-code">1010 >> 1  =  0101
+1010 >> 2  =  0010
+1010 >> 3  =  0001</div>
+    `
+  },
+  'shift-left': {
+    icon: '⬅️',
+    title: 'عامل الإزاحة لليسار',
+    body: `
+      <p>يُزيح بِتّات العدد إلى اليسار بمقدار معيّن، ويملأ الخانات اليمنى بأصفار.</p>
+      <p>الإزاحة لليسار بمقدار <code>k</code> تعادل الضرب في قوى العدد 2.</p>
+      <div class="modal-code">1 << 0  =  0001   (= 1)
+1 << 1  =  0010   (= 2)
+1 << 2  =  0100   (= 4)
+1 << 3  =  1000   (= 8)</div>
+      <p>لهذا السبب التعبير ينتج قناعًا فيه البِت رقم <code>k</code> فقط مساوٍ للقيمة واحد.</p>
+    `
+  },
+  'bitwise-and': {
+    icon: '&',
+    title: 'عامل AND البِتّي',
+    body: `
+      <p>يُجري العملية المنطقية AND على كل زوج من البِتّات المتقابلة.</p>
+      <p>الناتج يكون واحدًا فقط إذا كان كلا البِتّين يساوي واحدًا، وإلا فالناتج صفر.</p>
+      <div class="modal-code">  1 0 1 1
+& 1 1 0 1
+---------
+  1 0 0 1</div>
+      <p>يُستخدم لفحص بِت معيّن، أو تصفير بِتّات، أو عزل مجموعة من البِتّات.</p>
+    `
+  },
+  'or-assign': {
+    icon: '|=',
+    title: 'العامل OR مع الإسناد',
+    body: `
+      <p>يعادل كتابة: <code>x = x | mask;</code></p>
+      <p>العامل <code>|</code> يضع واحدًا في البِت إذا كان أي من الطرفين يساوي واحدًا.</p>
+      <div class="modal-code">  0 1 0 0
+| 0 0 0 1
+---------
+  0 1 0 1</div>
+      <p>يُستخدم لتفعيل بِت معيّن دون التأثير على باقي البِتّات.</p>
+    `
+  },
+  'and-assign': {
+    icon: '&=',
+    title: 'العامل AND مع الإسناد',
+    body: `
+      <p>يعادل كتابة: <code>x = x &amp; mask;</code></p>
+      <p>يُستخدم مع قناع يحتوي صفرًا في الموقع المراد تصفيره وواحدًا في باقي المواقع.</p>
+      <div class="modal-code">  1 1 0 1
+& 1 0 1 1
+---------
+  1 0 0 1</div>
+    `
+  },
+  'xor-assign': {
+    icon: '^=',
+    title: 'العامل XOR مع الإسناد',
+    body: `
+      <p>يعادل كتابة: <code>x = x ^ mask;</code></p>
+      <p>عامل XOR له خاصية مميّزة: إذا قارنّا البِت مع واحد نحصل على عكسه، وإذا قارنّاه مع صفر يبقى كما هو.</p>
+      <div class="modal-code">0 ^ 0 = 0
+0 ^ 1 = 1
+1 ^ 0 = 1
+1 ^ 1 = 0</div>
+      <p>لذا نستخدمه لقلب البِت رقم <code>k</code> دون الحاجة لمعرفة قيمته الحالية.</p>
+    `
+  },
+  'not': {
+    icon: '~',
+    title: 'عامل NOT البِتّي',
+    body: `
+      <p>يقلب كل بِتّات العدد: كل صفر يصبح واحدًا وكل واحد يصبح صفرًا.</p>
+      <div class="modal-code">  0 1 0 0
+~ ---------
+  1 0 1 1</div>
+      <p>في حيلة تصفير البِت، نستخدم هذا العامل للحصول على قناع فيه صفر في موقع واحد فقط.</p>
+    `
+  },
+  'two-complement': {
+    icon: '±',
+    title: 'المتمّم الثنائي',
+    body: `
+      <p>في أنظمة الحاسوب، الأعداد السالبة تُمثَّل باستخدام Two's Complement.</p>
+      <p>للحصول على <code>-x</code>:</p>
+      <ul>
+        <li>اقلب كل البِتّات باستخدام عامل <code>~</code>.</li>
+        <li>ثم أضف واحدًا إلى الناتج.</li>
+      </ul>
+      <div class="modal-code">x   =  0000 1100   (= 12)
+~x  =  1111 0011
+~x+1 = 1111 0100   (= -12)</div>
+      <p>وبسبب هذا التمثيل، التعبير <code>x &amp; -x</code> يعزل أقل بِت معيّن بدقّة.</p>
+    `
+  }
+};
+
+/* ============ LINE-BY-LINE EXPLANATIONS ============ */
+const lineExplanations = {
+  't1-1': {
+    icon: '🔍',
+    title: 'شرح السطر: فحص البِت',
+    lines: [
+      { code: 'bool isSet', text: 'نُعرِّف متغيرًا منطقيًا اسمه isSet يحمل نتيجة الفحص (صح أو خطأ).' },
+      { code: 'x >> k', text: 'نُزيح بِتّات x إلى اليمين بمقدار k خانة، فينتقل البِت المطلوب إلى أقصى اليمين.' },
+      { code: '& 1', text: 'نُجري عملية AND مع الرقم واحد، وهذا يُبقي البِت الأيمن فقط ويُصفّر جميع البِتّات الأخرى.' },
+      { code: '= result', text: 'الناتج النهائي هو صفر أو واحد، ويُخزَّن في isSet على أنه قيمة منطقية.' }
+    ]
+  },
+  't1-2': {
+    icon: '📝',
+    title: 'شرح السطر: تعريف x',
+    lines: [
+      { code: 'int x = 10;', text: 'نُعرِّف متغيرًا صحيحًا اسمه x ونُسنِد إليه القيمة العشرية 10.' },
+      { code: '// 1010', text: 'في النظام الثنائي، الرقم 10 يُكتب 1010 وفيه البِتّان رقم 1 ورقم 3 معيّنان.' }
+    ]
+  },
+  't1-3': {
+    icon: '📝',
+    title: 'شرح السطر: تعريف k',
+    lines: [
+      { code: 'int k = 1;', text: 'نُحدِّد أن البِت الذي نريد فحصه هو البِت رقم 1 (الثاني من اليمين).' }
+    ]
+  },
+  't1-4': {
+    icon: '🧪',
+    title: 'شرح السطر: تطبيق الفحص',
+    lines: [
+      { code: 'x >> 1', text: 'إزاحة 1010 إلى اليمين بمقدار خانة واحدة تُعطي القيمة 0101.' },
+      { code: '0101 & 1', text: 'عملية AND مع الواحد تحتفظ بالبِت الأيمن فقط، وهو في هذه الحالة الرقم واحد.' },
+      { code: 'isSet = 1', text: 'النتيجة النهائية هي واحد، أي أن البِت رقم 1 في العدد 10 كان مُعيَّنًا فعلًا.' }
+    ]
+  },
+  't1-5': {
+    icon: '🏗️',
+    title: 'شرح السطر: توقيع الدالة',
+    lines: [
+      { code: 'bool kthBitIsSet', text: 'اسم الدالة، ونوع القيمة التي تُعيدها منطقي (صح أو خطأ).' },
+      { code: '(int n, int k)', text: 'مُعاملان: n هو العدد الذي نفحصه، وk هو فهرس البِت المراد فحصه.' }
+    ]
+  },
+  't1-6': {
+    icon: '↩️',
+    title: 'شرح السطر: جسم الدالة',
+    lines: [
+      { code: 'n >> k', text: 'إزاحة العدد n إلى اليمين بمقدار k لتصل قيمة البِت المطلوبة إلى الخانة الأقل.' },
+      { code: '&& 1', text: 'ملاحظة: في الكود الأصلي استُخدم عامل && المنطقي الذي يُرجع true لأي قيمة غير صفرية.' },
+      { code: 'return', text: 'الدالة تُعيد القيمة المنطقية الناتجة مباشرةً للمستدعي.' }
+    ]
+  },
+
+  't2-1': {
+    icon: '⚡',
+    title: 'شرح السطر: ضبط البِت',
+    lines: [
+      { code: '1 << k', text: 'ننشئ قناعًا عن طريق إزاحة الرقم واحد إلى اليسار بمقدار k خانة.' },
+      { code: 'x |= mask', text: 'نُطبِّق عامل OR بين x والقناع، ثم نُسنِد النتيجة إلى x نفسه.' },
+      { code: 'effect', text: 'البِت رقم k يصبح واحدًا بالتأكيد، وكل البِتّات الأخرى تبقى كما هي دون تغيير.' }
+    ]
+  },
+  't2-2': {
+    icon: '📝',
+    title: 'شرح السطر: قيمة x الابتدائية',
+    lines: [
+      { code: 'int x = 4;', text: 'نُسنِد القيمة 4 إلى x، وهي في الثنائي 0100 (البِت رقم 2 فقط معيّن).' }
+    ]
+  },
+  't2-3': {
+    icon: '🧪',
+    title: 'شرح السطر: تطبيق الضبط',
+    lines: [
+      { code: '1 << 0', text: 'الإزاحة بمقدار صفر لا تُغيّر شيئًا، فالقناع يساوي 0001.' },
+      { code: '0100 | 0001', text: 'عملية OR تجمع البِتّات المعيّنة من الطرفين فينتج 0101.' },
+      { code: 'x = 5', text: 'الناتج هو 5 في النظام العشري، أي أن البِت رقم صفر أصبح معيّنًا.' }
+    ]
+  },
+
+  't3-1': {
+    icon: '🧹',
+    title: 'شرح السطر: تصفير البِت',
+    lines: [
+      { code: '1 << k', text: 'ننشئ قناعًا فيه البِت رقم k فقط معيّنًا، وكل الباقي أصفار.' },
+      { code: '~(1 << k)', text: 'نعكس القناع، فيصبح البِت رقم k هو صفر، وكل الباقي يصبح واحدات.' },
+      { code: 'x &= mask', text: 'عملية AND مع القناع المعكوس تُصفّر البِت رقم k وتُبقي الباقي.' }
+    ]
+  },
+  't3-2': {
+    icon: '📝',
+    title: 'شرح السطر: قيمة x الابتدائية',
+    lines: [
+      { code: 'int x = 13;', text: 'نُسنِد القيمة 13 إلى x، وهي في الثنائي 1101.' }
+    ]
+  },
+  't3-3': {
+    icon: '🧪',
+    title: 'شرح السطر: تطبيق التصفير',
+    lines: [
+      { code: '1 << 2', text: 'ننشئ القناع 0100 (البِت رقم 2 معيّن فقط).' },
+      { code: '~0100', text: 'نعكس القناع، فيصبح ...1011 (البِت رقم 2 هو صفر).' },
+      { code: '1101 & 1011', text: 'عملية AND تُنتج 1001، أي القيمة 9.' },
+      { code: 'result', text: 'البِت رقم 2 الذي كان معيّنًا، صار مصفّرًا، وباقي البِتّات لم تتغيّر.' }
+    ]
+  },
+
+  't4-1': {
+    icon: '🔄',
+    title: 'شرح السطر: قلب البِت',
+    lines: [
+      { code: '1 << k', text: 'ننشئ قناعًا فيه البِت رقم k فقط معيّنًا.' },
+      { code: 'x ^= mask', text: 'عملية XOR مع القناع تقلب البِت رقم k فقط، وتُبقي الباقي كما هو.' },
+      { code: 'toggle', text: 'الميزة هنا أننا لسنا بحاجة لمعرفة القيمة الحالية للبِت قبل تبديله.' }
+    ]
+  },
+  't4-2': {
+    icon: '📝',
+    title: 'شرح السطر: قيمة x الابتدائية',
+    lines: [
+      { code: 'int x = 5;', text: 'القيمة 5 في الثنائي هي 0101 (البِت صفر والبِت 2 معيّنان).' }
+    ]
+  },
+  't4-3': {
+    icon: '🧪',
+    title: 'شرح السطر: تطبيق القلب',
+    lines: [
+      { code: '1 << 2', text: 'القناع 0100 (البِت رقم 2 فقط).' },
+      { code: '0101 ^ 0100', text: 'عملية XOR تقلب البِت رقم 2، فينتج 0001.' },
+      { code: 'x = 1', text: 'البِت رقم 2 كان واحدًا فصار صفرًا، فأصبحت قيمة x هي 1.' }
+    ]
+  },
+
+  't5-1': {
+    icon: '✂️',
+    title: 'شرح السطر: إزالة أقل بِت معيّن',
+    lines: [
+      { code: 'x - 1', text: 'نطرح واحدًا، فيتحوّل أقل بِت معيّن إلى صفر، وكل الأصفار على يمينه تصبح واحدات.' },
+      { code: 'x & (x-1)', text: 'عملية AND بين القيمتين تحذف البِت المعيّن الذي اختلف بينهما، وتُبقي الباقي.' },
+      { code: 'result', text: 'النتيجة هي x نفسها ولكن بعد حذف أقل بِت معيّن منها.' }
+    ]
+  },
+
+  't6-1': {
+    icon: '⚖️',
+    title: 'شرح السطر: فحص قوة الـ 2',
+    lines: [
+      { code: 'x & (x-1)', text: 'نُطبِّق حيلة إزالة أقل بِت معيّن على العدد x.' },
+      { code: '== 0', text: 'إذا كانت النتيجة صفرًا، فهذا يعني أن x كان يحتوي على بِت واحد فقط معيّنًا.' },
+      { code: 'power of 2', text: 'الأعداد التي تحتوي على بِت واحد فقط معيّن هي بالضبط قوى العدد 2.' }
+    ]
+  },
+
+  't7-1': {
+    icon: '🎯',
+    title: 'شرح السطر: عزل أقل بِت معيّن',
+    lines: [
+      { code: '-x', text: 'نحسب المتمّم الثنائي، وهو يعكس كل البِتّات في x ثم يُضيف واحدًا.' },
+      { code: 'x & -x', text: 'التعبير هذا يبقي البِت الأيمن المعيّن فقط ويُصفّر كل الباقي.' },
+      { code: 'lowest', text: 'النتيجة قيمة عشرية تُمثّل أقل بِت معيّن في العدد x.' }
+    ]
+  }
+};
+
+function openLineModal(key){
+  const l = lineExplanations[key];
+  if(!l) return;
+  document.getElementById('modalIcon').textContent = l.icon;
+  document.getElementById('modalTitle').textContent = l.title;
+  let html = '';
+  l.lines.forEach((ln, i) => {
+    html += `<div class="trace-line">
+      <div class="trace-num">${i+1}</div>
+      <div class="trace-content">
+        <span class="trace-code">${ln.code}</span>
+        <div>${ln.text}</div>
+      </div>
+    </div>`;
+  });
+  document.getElementById('modalBody').innerHTML = html;
+  document.getElementById('modal').classList.add('show');
+}
+
+function openConceptModal(key){
+  const c = concepts[key];
+  if(!c) return;
+  document.getElementById('modalIcon').textContent = c.icon;
+  document.getElementById('modalTitle').textContent = c.title;
+  document.getElementById('modalBody').innerHTML = c.body;
+  document.getElementById('modal').classList.add('show');
+}
+
+function closeModal(){
+  document.getElementById('modal').classList.remove('show');
+}
+document.getElementById('modal').addEventListener('click', (e)=>{
+  if(e.target.id === 'modal') closeModal();
+});
+document.addEventListener('keydown', (e)=>{
+  if(e.key === 'Escape') closeModal();
+});
+
+/* ============ BIND CLICKS ============ */
+document.querySelectorAll('.clickable').forEach(el=>{
+  el.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    const concept = el.getAttribute('data-concept');
+    openConceptModal(concept);
+  });
+});
+
+document.querySelectorAll('.code-line').forEach(el=>{
+  if(el.classList.contains('no-hover')) return;
+  el.addEventListener('click', (e)=>{
+    // avoid firing when clicking a concept span inside the line
+    if(e.target.classList.contains('clickable')) return;
+    const lineKey = el.getAttribute('data-line');
+    if(lineKey) openLineModal(lineKey);
+  });
+});
+
+/* ============ PROGRESS ============ */
+window.addEventListener('scroll', ()=>{
+  const scrolled = window.scrollY;
+  const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+  const pct = Math.min(100, (scrolled / maxScroll) * 100);
+  document.getElementById('progressBar').style.width = pct + '%';
+});
+
+/* ============ BIT VIZ HELPERS ============ */
+const BITS = 8;
+
+function toBin(n, bits=BITS){
+  if(n < 0){
+    return ((1 << bits) + n).toString(2).padStart(bits, '0');
+  }
+  return (n & ((1<<bits)-1)).toString(2).padStart(bits, '0');
+}
+
+function renderBitRow(label, value, highlightIndex=-1){
+  const bin = toBin(value);
+  const bits = bin.split('');
+  let html = `<div class="bit-row">`;
+  html += `<span class="bit-label">${label}</span>`;
+  html += `<span class="bit-value-display">= ${value}</span>`;
+  for(let i=0; i<bits.length; i++){
+    const actualIndex = bits.length - 1 - i;
+    const bit = bits[i];
+    const classes = ['bit-cell'];
+    if(bit === '1') classes.push('on');
+    if(actualIndex === highlightIndex) classes.push('highlight');
+    html += `<div style="display:flex;flex-direction:column;align-items:center;">
+      <div class="${classes.join(' ')}">${bit}</div>
+      <div class="bit-index">${actualIndex}</div>
+    </div>`;
+  }
+  html += `</div>`;
+  return html;
+}
+
+function showResult(id, text, isFalse=false){
+  const el = document.getElementById(id);
+  el.innerHTML = text;
+  el.classList.remove('false');
+  if(isFalse) el.classList.add('false');
+  el.classList.add('show');
+}
+
+/* ============ STEP-BY-STEP TRACING ENGINE ============ */
+const stepStates = {}; // تخزين حالة التتبع لكل قسم
+
+function playSteps(trickId, vizId, resultId, rows, resultMsg, isFalse = false) {
+  const viz = document.getElementById(vizId);
+  const res = document.getElementById(resultId);
+  const controls = viz.previousElementSibling; // الحصول على عنصر controls الذي يسبق صندوق العرض
+  
+  // تصفير الشاشة قبل البدء
+  viz.innerHTML = '';
+  res.classList.remove('show');
+  
+  // إيجاد أو إنشاء زر "الخطوة التالية"
+  let nextBtn = controls.querySelector('.next-step-btn');
+  if(!nextBtn) {
+    nextBtn = document.createElement('button');
+    nextBtn.className = 'action next-step-btn';
+    nextBtn.innerHTML = 'الخطوة التالية ⏭';
+    controls.appendChild(nextBtn);
+  }
+  nextBtn.style.display = 'inline-block';
+  
+  // تسجيل الحالة الحالية
+  stepStates[trickId] = {
+    rows: rows,
+    idx: 0,
+    viz: viz,
+    res: res,
+    msg: resultMsg,
+    isFalse: isFalse,
+    btn: nextBtn
+  };
+  
+  // إعداد حدث النقر للزر
+  nextBtn.onclick = () => {
+    const s = stepStates[trickId];
+    // إذا كان هناك صفوف متبقية، قم بإضافتها
+    if(s.idx < s.rows.length) {
+      s.viz.insertAdjacentHTML('beforeend', s.rows[s.idx]);
+      s.idx++;
+    }
+    // إذا وصلنا للنهاية، أخفِ الزر واعرض النتيجة
+    if(s.idx >= s.rows.length) {
+      s.btn.style.display = 'none';
+      showResult(s.res.id, s.msg, s.isFalse);
+    }
+  };
+  
+  // تشغيل الخطوة الأولى تلقائياً لكي لا تكون الشاشة فارغة
+  nextBtn.click();
+}
+
+function hideNextBtn(vizId) {
+  const viz = document.getElementById(vizId);
+  if(viz && viz.previousElementSibling) {
+    const btn = viz.previousElementSibling.querySelector('.next-step-btn');
+    if(btn) btn.style.display = 'none';
+  }
+}
+
+/* ============ TRICKS ============ */
+function runTrick1(){
+  const x = parseInt(document.getElementById('t1-x').value) || 0;
+  const k = parseInt(document.getElementById('t1-k').value) || 0;
+  const shifted = x >> k;
+  const result = shifted & 1;
+  
+  const rows = [
+    renderBitRow(`x`, x, k),
+    renderBitRow(`x >> ${k}`, shifted, 0),
+    renderBitRow(`(x >> ${k}) & 1`, result, 0)
+  ];
+  const msg = `النتيجة: <strong>isSet = ${result ? 'true' : 'false'}</strong> — البِت رقم <code>${k}</code> في العدد <code>${x}</code> ${result ? 'مُعيَّن، أي يساوي 1 ✅' : 'غير معيَّن، أي يساوي 0 ❌'}`;
+  
+  playSteps('t1', 't1-viz', 't1-result', rows, msg, !result);
+}
+
+function runTrick2(){
+  const x = parseInt(document.getElementById('t2-x').value) || 0;
+  const k = parseInt(document.getElementById('t2-k').value) || 0;
+  const mask = 1 << k;
+  const result = x | mask;
+  
+  const rows = [
+    renderBitRow(`x`, x, k),
+    renderBitRow(`1 << ${k}`, mask, k),
+    renderBitRow(`x | mask`, result, k)
+  ];
+  const msg = `النتيجة: <strong>x = ${result}</strong> — تم ضبط البِت رقم <code>${k}</code> إلى القيمة 1.`;
+  
+  playSteps('t2', 't2-viz', 't2-result', rows, msg);
+}
+
+function runTrick3(){
+  const x = parseInt(document.getElementById('t3-x').value) || 0;
+  const k = parseInt(document.getElementById('t3-k').value) || 0;
+  const mask = 1 << k;
+  const invMask = ~mask;
+  const result = x & invMask;
+  
+  const rows = [
+    renderBitRow(`x`, x, k),
+    renderBitRow(`1 << ${k}`, mask, k),
+    renderBitRow(`~(1 << ${k})`, invMask & 0xFF, k),
+    renderBitRow(`x & ~mask`, result, k)
+  ];
+  const msg = `النتيجة: <strong>x = ${result}</strong> — تم تصفير البِت رقم <code>${k}</code>.`;
+  
+  playSteps('t3', 't3-viz', 't3-result', rows, msg);
+}
+
+function runTrick4(){
+  const x = parseInt(document.getElementById('t4-x').value) || 0;
+  const k = parseInt(document.getElementById('t4-k').value) || 0;
+  const mask = 1 << k;
+  const result = x ^ mask;
+  const wasSet = (x >> k) & 1;
+  
+  const rows = [
+    renderBitRow(`x`, x, k),
+    renderBitRow(`1 << ${k}`, mask, k),
+    renderBitRow(`x ^ mask`, result, k)
+  ];
+  const msg = `النتيجة: <strong>x = ${result}</strong> — البِت رقم <code>${k}</code> كان ${wasSet ? 'يساوي 1' : 'يساوي 0'} فأصبح ${wasSet ? 'يساوي 0' : 'يساوي 1'}.`;
+  
+  playSteps('t4', 't4-viz', 't4-result', rows, msg);
+}
+
+function runTrick5(){
+  const x = parseInt(document.getElementById('t5-x').value) || 0;
+  if(x === 0){
+    document.getElementById('t5-viz').innerHTML = '';
+    showResult('t5-result', 'عند قيمة x تساوي صفرًا لا يوجد بِت معيّن لإزالته.', true);
+    hideNextBtn('t5-viz');
+    return;
+  }
+  const xm1 = x - 1;
+  const result = x & xm1;
+  let lsb = -1;
+  for(let i=0; i<BITS; i++){ if((x >> i) & 1){ lsb = i; break; } }
+  
+  const rows = [
+    renderBitRow(`x`, x, lsb),
+    renderBitRow(`x - 1`, xm1, lsb),
+    renderBitRow(`x & (x-1)`, result, lsb)
+  ];
+  const msg = `النتيجة: <strong>x = ${result}</strong> — أُزيل أقل بِت معيّن، وهو البِت رقم <code>${lsb}</code>.`;
+  
+  playSteps('t5', 't5-viz', 't5-result', rows, msg);
+}
+
+function runTrick6(){
+  const x = parseInt(document.getElementById('t6-x').value) || 0;
+  if(x <= 0){
+    document.getElementById('t6-viz').innerHTML = '';
+    showResult('t6-result', 'يجب أن تكون قيمة x موجبة.', true);
+    hideNextBtn('t6-viz');
+    return;
+  }
+  const xm1 = x - 1;
+  const result = x & xm1;
+  const isPow = (result === 0);
+  
+  const rows = [
+    renderBitRow(`x`, x),
+    renderBitRow(`x - 1`, xm1),
+    renderBitRow(`x & (x-1)`, result)
+  ];
+  const msg = isPow
+      ? `النتيجة: العدد <strong>${x}</strong> هو قوة للعدد 2 ✅ لأنه يحتوي على بِت واحد فقط معيّنًا.`
+      : `النتيجة: العدد <strong>${x}</strong> ليس قوة للعدد 2 ❌ لأنه يحتوي على أكثر من بِت معيّن.`;
+      
+  playSteps('t6', 't6-viz', 't6-result', rows, msg, !isPow);
+}
+
+function runTrick7(){
+  const x = parseInt(document.getElementById('t7-x').value) || 0;
+  if(x <= 0){
+    document.getElementById('t7-viz').innerHTML = '';
+    showResult('t7-result', 'يجب أن تكون قيمة x موجبة.', true);
+    hideNextBtn('t7-viz');
+    return;
+  }
+  const negX = -x;
+  const result = x & negX;
+  let lsb = -1;
+  for(let i=0; i<BITS; i++){ if((x >> i) & 1){ lsb = i; break; } }
+  
+  const rows = [
+    renderBitRow(`x`, x, lsb),
+    renderBitRow(`-x`, negX, lsb),
+    renderBitRow(`x & -x`, result, lsb)
+  ];
+  const msg = `النتيجة: <strong>lowest = ${result}</strong> — عزلنا أقل بِت معيّن وهو البِت رقم <code>${lsb}</code> الذي يمثّل القيمة <code>${result}</code>.`;
+  
+  playSteps('t7', 't7-viz', 't7-result', rows, msg);
+}
+
+window.addEventListener('DOMContentLoaded', ()=>{
+  runTrick1(); runTrick2(); runTrick3(); runTrick4();
+  runTrick5(); runTrick6(); runTrick7();
+});
+</script>
+
+</body>
+</html>
