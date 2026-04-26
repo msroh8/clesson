@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>توليد المجموعات الجزئية باستخدام الأقنعة الثنائية</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  /* ============ NAVY & SILVER THEME ============ */
+  :root {
+    --bg: #121d33;
+    --card: rgba(23, 37, 65, 0.65);
+    --text: #F8FAFC;
+    --text-soft: #CBD5E1;
+    --muted: #94A3B8;
+    --accent: #E2E8F0;
+    --primary: #94A3B8;
+    --border: rgba(148, 163, 184, 0.2);
+    
+    --code-bg: #05080f;
+    --code-text: #E2E8F0;
+    --code-active: rgba(148, 163, 184, 0.25);
+    
+    --tk-keyword: #93C5FD;
+    --tk-type: #6EE7B7;
+    --tk-number: #F8FAFC;
+    --tk-string: #a5d6ff;
+
+    --success: #10B981;
+    --danger: #EF4444;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; scroll-behavior: smooth; }
+  
+  body {
+    font-family: 'Tajawal', sans-serif;
+    background-color: var(--bg);
+    color: var(--text);
+    line-height: 1.9;
+    font-size: 17px;
+    min-height: 100vh;
+    padding-bottom: 60px;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background-image: 
+      linear-gradient(rgba(148, 163, 184, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+    z-index: -1;
+  }
+
+  /* حماية اتجاهات النصوص المختلطة بشكل جذري */
+  .en-block {
+    direction: ltr;
+    display: inline-block;
+    unicode-bidi: isolate;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--accent);
+    background: rgba(255, 255, 255, 0.05);
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin: 0 4px;
+    font-size: 15px;
+  }
+
+  .container {
+    max-width: 1100px;
+    margin: 40px auto;
+    padding: 0 20px;
+  }
+
+  /* ============ HEADER ============ */
+  header {
+    text-align: center;
+    padding: 60px 20px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(18, 29, 51, 0.8) 0%, var(--bg) 100%);
+  }
+  header h1 { margin: 0 0 16px; font-size: clamp(28px, 4vw, 42px); color: #fff; }
+  header p { margin: 0; color: var(--text-soft); font-size: 18px; }
+
+  /* ============ CONTENT CARDS ============ */
+  .section-card {
+    background: var(--card);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px;
+    margin-bottom: 32px;
+  }
+  
+  h2 {
+    font-size: 24px;
+    margin: 0 0 20px 0;
+    color: #fff;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 12px;
+  }
+
+  p { margin: 0 0 16px 0; }
+
+  .note-box {
+    background: rgba(148, 163, 184, 0.1);
+    border-right: 4px solid var(--primary);
+    padding: 16px 20px;
+    border-radius: 8px;
+    margin: 20px 0;
+  }
+
+  /* ============ TABLE ============ */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 24px 0;
+    border: 1px solid var(--border);
+    background: rgba(0,0,0,0.2);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .data-table th, .data-table td {
+    padding: 14px 16px;
+    text-align: center;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .data-table th { background: rgba(148, 163, 184, 0.15); color: #fff; font-weight: 700; }
+  .data-table td { color: var(--text-soft); }
+
+  /* ============ TRACER ENGINE UI ============ */
+  .tracer-wrapper {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 24px;
+    align-items: start;
+  }
+
+  @media (max-width: 900px) {
+    .tracer-wrapper { grid-template-columns: 1fr; }
+  }
+
+  /* Code Window */
+  .code-window {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    direction: ltr;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14.5px;
+    line-height: 1.7;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  }
+  
+  .code-header {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 10px 16px;
+    color: var(--muted);
+    font-size: 13px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .code-content { padding: 16px 0; }
+  
+  .code-line {
+    padding: 2px 16px;
+    border-left: 3px solid transparent;
+    transition: background 0.2s, border-color 0.2s;
+    white-space: pre;
+    color: var(--code-text);
+  }
+  
+  .code-line.active {
+    background: var(--code-active);
+    border-left-color: var(--accent);
+  }
+
+  /* Log & Console Window */
+  .panel-window {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .controls-box {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .btn {
+    background: var(--primary-soft);
+    color: var(--text);
+    border: 1px solid var(--primary);
+    padding: 8px 20px;
+    border-radius: 6px;
+    font-family: 'Tajawal', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn:hover { background: var(--accent); color: #000; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .vars-display {
+    display: flex;
+    gap: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    direction: ltr;
+    font-size: 15px;
+    background: rgba(0,0,0,0.5);
+    padding: 10px 16px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.05);
+    flex-wrap: wrap;
+  }
+  .var-item { color: var(--text-soft); }
+  .var-val { color: var(--accent); font-weight: bold; }
+
+  /* ============ VISUALIZER BOX (المحاكي البصري للذاكرة) ============ */
+  .visualizer-box {
+    background: rgba(0,0,0,0.4);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+  }
+  
+  .vis-header {
+    font-size: 14px;
+    color: var(--muted);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    padding-bottom: 8px;
+    text-align: center;
+  }
+
+  .vis-mask-row {
+    text-align: center;
+    color: var(--text);
+    font-size: 15px;
+  }
+
+  .vis-array-row {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    direction: ltr; /* من اليسار لليمين ليتوافق مع البتات */
+    margin-top: 10px;
+  }
+
+  .vis-cell {
+    background: var(--code-bg);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 10px;
+    text-align: center;
+    width: 80px;
+    position: relative;
+    transition: all 0.3s;
+  }
+
+  .vis-cell.active {
+    border-color: var(--tk-keyword);
+    box-shadow: 0 0 15px rgba(147, 197, 253, 0.3);
+    transform: translateY(-5px);
+  }
+
+  .vis-cell.included {
+    border-color: var(--success);
+    background: rgba(16, 185, 129, 0.1);
+  }
+
+  .vis-cell.ignored {
+    border-color: var(--danger);
+    opacity: 0.4;
+  }
+
+  .vis-bit {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
+    font-weight: bold;
+    color: var(--accent);
+    border-bottom: 1px dashed var(--muted);
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+  }
+
+  .vis-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--text-soft);
+  }
+
+  .vis-pointer {
+    position: absolute;
+    top: -28px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--tk-keyword);
+    font-size: 20px;
+    display: none;
+  }
+
+  .vis-cell.active .vis-pointer {
+    display: block;
+    animation: bounce 0.5s infinite alternate;
+  }
+
+  @keyframes bounce {
+    from { top: -28px; }
+    to { top: -22px; }
+  }
+
+  .vis-status {
+    text-align: center;
+    font-size: 15px;
+    color: var(--text-soft);
+    height: 24px;
+    font-weight: 500;
+  }
+
+  /* السجل المتمرر */
+  .log-box {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    height: 200px;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .log-entry {
+    background: rgba(255,255,255,0.03);
+    border-right: 3px solid var(--primary);
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 15px;
+    animation: fadeIn 0.3s;
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateX(-5px); } to { opacity: 1; transform: translateX(0); } }
+
+  .log-entry.loop-outer { border-right-color: #6EE7B7; background: rgba(110, 231, 183, 0.05); }
+  .log-entry.loop-inner { border-right-color: #93C5FD; background: rgba(147, 197, 253, 0.05); }
+  .log-entry.action { border-right-color: #E2E8F0; }
+
+  /* شاشة المخرجات (الكونسول) */
+  .console-box {
+    background: #000;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    color: #10B981;
+    direction: ltr;
+    text-align: left;
+    font-size: 15px;
+    min-height: 120px;
+    white-space: pre-wrap;
+    box-shadow: inset 0 0 20px rgba(16, 185, 129, 0.05);
+  }
+  .console-title {
+    color: var(--muted);
+    font-size: 12px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding-bottom: 4px;
+    font-family: 'Tajawal', sans-serif;
+    direction: rtl;
+    text-align: right;
+  }
+
+  /* Custom Scrollbar for Log */
+  .log-box::-webkit-scrollbar { width: 6px; }
+  .log-box::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+  .log-box::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+  
+</style>
+</head>
+<body>
+
+<header>
+  <h1>توليد المجموعات الجزئية</h1>
+  <p>شرح رياضي وبرمجي لعملية بناء المجموعات باستخدام الأقنعة الثنائية</p>
+</header>
+
+<div class="container">
+
+  <!-- القسم الأول: المفاهيم -->
+  <div class="section-card">
+    <h2>المجموعات الجزئية</h2>
+    <p>المجموعة الجزئية لأي مصفوفة هي مجموعة يتم إنشاؤها من بعض عناصر المصفوفة (ربما بدون أي عنصر).</p>
+    <p>على سبيل المثال، بالنسبة للمصفوفة <span class="en-block">{1, 3, 5, 6, 7}</span>:</p>
+    <ul>
+      <li>المجموعات مثل <span class="en-block">{1, 3}</span>، <span class="en-block">{3, 5, 7}</span>، و <span class="en-block">{1, 3, 5, 6, 7}</span> هي مجموعات جزئية من المصفوفة.</li>
+      <li>بينما المجموعات مثل <span class="en-block">{1, 4}</span>، <span class="en-block">{2, 7}</span> ليست مجموعات جزئية من المصفوفة.</li>
+    </ul>
+  </div>
+
+  <!-- القسم الثاني: الترميز الثنائي -->
+  <div class="section-card">
+    <h2>ترميز المجموعات الجزئية كأعداد ثنائية</h2>
+    <p>بالنسبة لمصفوفة طولها <span class="en-block">n</span>، يمكن تمثيل كل مجموعة جزئية باستخدام عدد ثنائي مكون من <span class="en-block">n</span> بت حيث كل عنصر في المصفوفة لديه بت يقابله في العدد الثنائي.</p>
+    <p>في هذا الترميز، يكون البت قيمته 1 إذا كان العنصر المقابل ضمن المجموعة الجزئية، و0 إذا لم يكن ضمن المجموعة.</p>
+    <p>على سبيل المثال، المصفوفة <span class="en-block">{5, 3, 1}</span>. الترميزات الثنائية لمجموعاتها الجزئية هي:</p>
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>مجموعة جزئية من <span class="en-block">{5, 3, 1}</span></th>
+          <th>الترميز (ثنائي)</th>
+          <th>الترميز (عشري)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="en-block">{}</span></td><td><span class="en-block">000</span></td><td>0</td></tr>
+        <tr><td><span class="en-block">{5}</span></td><td><span class="en-block">001</span></td><td>1</td></tr>
+        <tr><td><span class="en-block">{3}</span></td><td><span class="en-block">010</span></td><td>2</td></tr>
+        <tr><td><span class="en-block">{5, 3}</span></td><td><span class="en-block">011</span></td><td>3</td></tr>
+        <tr><td><span class="en-block">{1}</span></td><td><span class="en-block">100</span></td><td>4</td></tr>
+        <tr><td><span class="en-block">{5, 1}</span></td><td><span class="en-block">101</span></td><td>5</td></tr>
+        <tr><td><span class="en-block">{3, 1}</span></td><td><span class="en-block">110</span></td><td>6</td></tr>
+        <tr><td><span class="en-block">{5, 3, 1}</span></td><td><span class="en-block">111</span></td><td>7</td></tr>
+      </tbody>
+    </table>
+
+    <div class="note-box">
+      ملحوظة: بالنسبة لمصفوفة طولها <span class="en-block">n</span>، عدد المجموعات الجزئية المختلفة هو <span class="en-block">2^n</span>.
+    </div>
+  </div>
+
+  <!-- القسم الثالث: التتبع والتنفيذ -->
+  <div class="section-card">
+    <h2>توليد المجموعات الجزئية برمجياً</h2>
+    <p>يمكننا ملاحظة أنه بالنسبة لمصفوفة طولها <span class="en-block">n</span>، يمكن ترقيم كل المجموعات الجزئية من 0 إلى <span class="en-block">2^n - 1</span>. باستخدام هذا الترقيم، يمكننا المرور عبر جميع الأعداد الصحيحة من 0 إلى <span class="en-block">2^n - 1</span> وتوليد كل مجموعة جزئية عن طريق التحقق من البتات.</p>
+    <p>استخدم لوحة التحكم أدناه لتتبع كيفية تنفيذ الكود المكتوب بلغة C++ سطراً بسطر.</p>
+
+    <div class="tracer-wrapper">
+      
+      <!-- نافذة الكود -->
+      <div class="code-window">
+        <div class="code-header"><span>main.cpp</span><span>C++</span></div>
+        <div class="code-content" id="code-content">
+<div class="code-line" id="l-1"><span class="tk-key">#include</span> <span class="tk-str">&lt;iostream&gt;</span></div>
+<div class="code-line" id="l-2"><span class="tk-key">using namespace</span> std;</div>
+<div class="code-line" id="l-3"></div>
+<div class="code-line" id="l-4"><span class="tk-type">int</span> main() {</div>
+<div class="code-line" id="l-5">  <span class="tk-type">int</span> n = <span class="tk-num">3</span>;</div>
+<div class="code-line" id="l-6">  <span class="tk-type">int</span> a[<span class="tk-num">3</span>] = {<span class="tk-num">5</span>, <span class="tk-num">3</span>, <span class="tk-num">1</span>};</div>
+<div class="code-line" id="l-7"></div>
+<div class="code-line" id="l-8">  <span class="tk-key">for</span>(<span class="tk-type">int</span> i = <span class="tk-num">0</span>; i &lt; (<span class="tk-num">1</span> &lt;&lt; n); i++) {</div>
+<div class="code-line" id="l-9">    cout &lt;&lt; i &lt;&lt; <span class="tk-str">": "</span>;</div>
+<div class="code-line" id="l-10">    <span class="tk-key">for</span>(<span class="tk-type">int</span> j = <span class="tk-num">0</span>; j &lt; n; j++) {</div>
+<div class="code-line" id="l-11">      <span class="tk-type">bool</span> set = (i &amp; (<span class="tk-num">1</span> &lt;&lt; j)) != <span class="tk-num">0</span>;</div>
+<div class="code-line" id="l-12">      <span class="tk-key">if</span>(set) {</div>
+<div class="code-line" id="l-13">        cout &lt;&lt; a[j] &lt;&lt; <span class="tk-str">' '</span>;</div>
+<div class="code-line" id="l-14">      }</div>
+<div class="code-line" id="l-15">    }</div>
+<div class="code-line" id="l-16">    cout &lt;&lt; endl;</div>
+<div class="code-line" id="l-17">  }</div>
+<div class="code-line" id="l-18">}</div>
+        </div>
+      </div>
+
+      <!-- لوحة التحكم والسجل والمحاكي -->
+      <div class="panel-window">
+        
+        <div class="controls-box">
+          <button class="btn" id="btn-next">خطوة تالية ⏭</button>
+          <button class="btn" id="btn-auto">تشغيل تلقائي ▶</button>
+          <button class="btn" id="btn-reset">إعادة من البداية 🔄</button>
+          
+          <div class="vars-display">
+            <div class="var-item">i: <span class="var-val" id="var-i">-</span></div>
+            <div class="var-item">j: <span class="var-val" id="var-j">-</span></div>
+            <div class="var-item">set: <span class="var-val" id="var-set">-</span></div>
+          </div>
+        </div>
+
+        <!-- المحاكي البصري للذاكرة (Memory Visualizer) -->
+        <div class="visualizer-box" id="visualizer">
+          <div class="vis-header">المحاكي البصري للذاكرة والفحص</div>
+          <div class="vis-mask-row">
+            القناع الحالي <span class="en-block">i</span> : <span class="en-block" id="vis-i-val">000</span>
+          </div>
+          <div class="vis-array-row">
+            <!-- Box for j=2 -->
+            <div class="vis-cell" id="vis-cell-2">
+              <div class="vis-pointer">↓</div>
+              <div class="vis-bit" id="vis-bit-2">0</div>
+              <div class="vis-val">a[2] = 1</div>
+            </div>
+            <!-- Box for j=1 -->
+            <div class="vis-cell" id="vis-cell-1">
+              <div class="vis-pointer">↓</div>
+              <div class="vis-bit" id="vis-bit-1">0</div>
+              <div class="vis-val">a[1] = 3</div>
+            </div>
+            <!-- Box for j=0 -->
+            <div class="vis-cell" id="vis-cell-0">
+              <div class="vis-pointer">↓</div>
+              <div class="vis-bit" id="vis-bit-0">0</div>
+              <div class="vis-val">a[0] = 5</div>
+            </div>
+          </div>
+          <div class="vis-status" id="vis-status">بانتظار بدء المعالجة...</div>
+        </div>
+
+        <div class="log-box" id="trace-log">
+          <div class="log-entry">اضغط على "خطوة تالية" للبدء بتتبع البرنامج.</div>
+        </div>
+
+        <div class="console-box">
+          <div class="console-title">شاشة المخرجات (Console)</div>
+          <span id="console-output"></span>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+  /* ============ State Machine for Code Execution ============ */
+  // مصفوفة تحتوي على تسلسل التنفيذ الدقيق لبرنامج C++
+  
+  let executionSteps = [];
+  const n = 3;
+  const a = [5, 3, 1];
+  
+  // 1. التهيئة
+  executionSteps.push({ line: 'l-4', log: 'بدء دالة main', vars: {i: '-', j: '-', set: '-'} });
+  executionSteps.push({ line: 'l-5', log: 'تعريف المتغير n = 3', vars: {i: '-', j: '-', set: '-'} });
+  executionSteps.push({ line: 'l-6', log: 'تعريف المصفوفة a = {5, 3, 1}', vars: {i: '-', j: '-', set: '-'} });
+
+  // 2. الحلقات
+  for (let i = 0; i < (1 << n); i++) {
+    // بداية حلقة i
+    executionSteps.push({ 
+      line: 'l-8', 
+      type: 'loop-outer',
+      log: `الحلقة الخارجية: تعيين المتغير i بالقيمة ${i}. (الرقم الثنائي: ${i.toString(2).padStart(3,'0')})`, 
+      vars: {i: i, j: '-', set: '-'} 
+    });
+    
+    executionSteps.push({ 
+      line: 'l-9', 
+      log: `طباعة قيمة i (${i}) متبوعة بنقطتين.`, 
+      vars: {i: i, j: '-', set: '-'},
+      output: `${i}: ` 
+    });
+
+    for (let j = 0; j < n; j++) {
+      // بداية حلقة j
+      executionSteps.push({ 
+        line: 'l-10', 
+        type: 'loop-inner',
+        log: `الحلقة الداخلية: تعيين j بالقيمة ${j} (لفحص البت رقم ${j} والعنصر a[${j}]).`, 
+        vars: {i: i, j: j, set: '-'} 
+      });
+
+      let isSet = (i & (1 << j)) !== 0;
+      executionSteps.push({ 
+        line: 'l-11', 
+        type: 'action',
+        log: `فحص هل البت رقم ${j} يساوي 1 في الرقم ${i}. النتيجة: ${isSet ? 'True' : 'False'}.`, 
+        vars: {i: i, j: j, set: isSet ? 'True' : 'False'} 
+      });
+
+      executionSteps.push({ 
+        line: 'l-12', 
+        log: `التحقق من الشرط if(set)...`, 
+        vars: {i: i, j: j, set: isSet ? 'True' : 'False'} 
+      });
+
+      if (isSet) {
+        executionSteps.push({ 
+          line: 'l-13', 
+          type: 'action',
+          log: `الشرط صحيح. ستتم إضافة وطباعة العنصر a[${j}] والذي قيمته (${a[j]}).`, 
+          vars: {i: i, j: j, set: 'True'},
+          output: `${a[j]} ` 
+        });
+      }
+    }
+    
+    executionSteps.push({ 
+      line: 'l-16', 
+      log: `نهاية فحص البتات للرقم i=${i}. طباعة سطر جديد.`, 
+      vars: {i: i, j: '-', set: '-'},
+      output: `\n` 
+    });
+  }
+
+  executionSteps.push({ line: 'l-18', log: 'انتهاء البرنامج بنجاح.', vars: {i: '-', j: '-', set: '-'} });
+
+  /* ============ Controller Logic ============ */
+  let currentStepIndex = 0;
+  let autoPlayInterval = null;
+
+  const btnNext = document.getElementById('btn-next');
+  const btnAuto = document.getElementById('btn-auto');
+  const btnReset = document.getElementById('btn-reset');
+  const traceLog = document.getElementById('trace-log');
+  const consoleOutput = document.getElementById('console-output');
+  const varI = document.getElementById('var-i');
+  const varJ = document.getElementById('var-j');
+  const varSet = document.getElementById('var-set');
+  const visStatus = document.getElementById('vis-status');
+
+  function updateActiveLine(lineId) {
+    document.querySelectorAll('.code-line').forEach(el => el.classList.remove('active'));
+    if(lineId) {
+      const activeEl = document.getElementById(lineId);
+      if(activeEl) activeEl.classList.add('active');
+    }
+  }
+
+  function appendLog(text, type) {
+    const div = document.createElement('div');
+    div.className = 'log-entry';
+    if(type) div.classList.add(type);
+    div.textContent = text;
+    traceLog.appendChild(div);
+    traceLog.scrollTop = traceLog.scrollHeight;
+  }
+
+  function executeStep() {
+    if (currentStepIndex >= executionSteps.length) {
+      stopAutoPlay();
+      btnNext.disabled = true;
+      appendLog("تم الوصول لنهاية التنفيذ.", "");
+      visStatus.textContent = "انتهى التنفيذ.";
+      return;
+    }
+
+    const step = executionSteps[currentStepIndex];
+
+    // Highlight Code
+    updateActiveLine(step.line);
+
+    // Update Vars
+    varI.textContent = step.vars.i;
+    varJ.textContent = step.vars.j;
+    varSet.textContent = step.vars.set;
+
+    // ----------------------------------------------------
+    // تحديث المحاكي البصري للذاكرة (Memory Visualizer)
+    // ----------------------------------------------------
+    // تصفير التأثيرات النشطة
+    document.querySelectorAll('.vis-cell').forEach(el => {
+        el.classList.remove('active');
+    });
+
+    if(step.vars.i !== '-') {
+        let binStr = parseInt(step.vars.i).toString(2).padStart(3, '0');
+        document.getElementById('vis-i-val').textContent = binStr;
+        // ملاحظة: binStr من اليسار لليمين. binStr[0] هو البت 2, binStr[1] هو البت 1, binStr[2] هو البت 0.
+        document.getElementById('vis-bit-2').textContent = binStr[0];
+        document.getElementById('vis-bit-1').textContent = binStr[1];
+        document.getElementById('vis-bit-0').textContent = binStr[2];
+
+        // إذا كنا في بداية حلقة i جديدة (j غير محدد بعد) نُعيد تهيئة ألوان الخلايا
+        if(step.vars.j === '-') {
+            document.querySelectorAll('.vis-cell').forEach(el => {
+                el.classList.remove('included', 'ignored');
+            });
+            visStatus.textContent = `تهيئة القناع i = ${step.vars.i} ...`;
+            visStatus.style.color = "var(--text-soft)";
+        }
+    }
+
+    if(step.vars.j !== '-') {
+        let j = parseInt(step.vars.j);
+        let cell = document.getElementById(`vis-cell-${j}`);
+        cell.classList.add('active'); // إظهار السهم والتحديد
+
+        if(step.vars.set === '-') {
+            visStatus.textContent = `مؤشر j = ${j}. جاري فحص البت...`;
+            visStatus.style.color = "var(--tk-keyword)";
+        } else if (step.vars.set === 'True') {
+            cell.classList.add('included');
+            visStatus.textContent = `البت ${j} يساوي 1: سيتم تضمين a[${j}] في المجموعة!`;
+            visStatus.style.color = "var(--success)";
+        } else if (step.vars.set === 'False') {
+            cell.classList.add('ignored');
+            visStatus.textContent = `البت ${j} يساوي 0: سيتم تجاهل a[${j}].`;
+            visStatus.style.color = "var(--danger)";
+        }
+    }
+
+    // Append Log
+    appendLog(step.log, step.type);
+
+    // Append Console Output
+    if (step.output) {
+      consoleOutput.textContent += step.output;
+    }
+
+    currentStepIndex++;
+  }
+
+  function resetExecution() {
+    stopAutoPlay();
+    currentStepIndex = 0;
+    traceLog.innerHTML = '<div class="log-entry">تمت إعادة التهيئة. اضغط على "خطوة تالية".</div>';
+    consoleOutput.textContent = '';
+    varI.textContent = '-';
+    varJ.textContent = '-';
+    varSet.textContent = '-';
+    
+    // تصفير المحاكي
+    document.getElementById('vis-i-val').textContent = '000';
+    document.getElementById('vis-bit-2').textContent = '0';
+    document.getElementById('vis-bit-1').textContent = '0';
+    document.getElementById('vis-bit-0').textContent = '0';
+    document.querySelectorAll('.vis-cell').forEach(el => {
+        el.classList.remove('active', 'included', 'ignored');
+    });
+    visStatus.textContent = "بانتظار بدء المعالجة...";
+    visStatus.style.color = "var(--text-soft)";
+
+    updateActiveLine(null);
+    btnNext.disabled = false;
+  }
+
+  function toggleAutoPlay() {
+    if (autoPlayInterval) {
+      stopAutoPlay();
+    } else {
+      if (currentStepIndex >= executionSteps.length) resetExecution();
+      btnAuto.textContent = 'إيقاف التلقائي ⏸';
+      btnNext.disabled = true;
+      autoPlayInterval = setInterval(executeStep, 600); // 600ms للسرعة المناسبة للملاحظة
+    }
+  }
+
+  function stopAutoPlay() {
+    if (autoPlayInterval) {
+      clearInterval(autoPlayInterval);
+      autoPlayInterval = null;
+      btnAuto.textContent = 'تشغيل تلقائي ▶';
+      btnNext.disabled = currentStepIndex >= executionSteps.length;
+    }
+  }
+
+  /* ============ Event Listeners ============ */
+  btnNext.addEventListener('click', executeStep);
+  btnAuto.addEventListener('click', toggleAutoPlay);
+  btnReset.addEventListener('click', resetExecution);
+
+</script>
+</body>
+</html>
