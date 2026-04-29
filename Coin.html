@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> تحليل أكواد البرمجة التنافسية (Coin Combinations I)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Fira+Code:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #f1f5f9;
+        }
+        .font-code {
+            font-family: 'Fira Code', monospace;
+            direction: ltr;
+            text-align: left;
+        }
+        
+        /* تأثير تبويبات الشرح والأمثلة */
+        .tab-btn.active {
+            border-bottom: 3px solid;
+            font-weight: 700;
+            background-color: #f8fafc;
+        }
+        
+        /* تلوين أجزاء الكود (Syntax Highlighting مبسط) */
+        .kwd { color: #f472b6; } /* pink-400 - Keywords */
+        .typ { color: #93c5fd; } /* blue-300 - Types */
+        .str { color: #86efac; } /* green-300 - Strings/Includes */
+        .num { color: #d8b4fe; } /* purple-300 - Numbers */
+        .fnc { color: #fef08a; } /* yellow-200 - Functions */
+        .cmt { color: #94a3b8; font-style: italic; } /* slate-400 - Comments */
+        .sys { color: #67e8f9; } /* cyan-300 - System/Math Funcs */
+
+        /* إصلاح تداخل اتجاه النصوص (LTR داخل RTL) */
+        .inline-code {
+            direction: ltr;
+            unicode-bidi: isolate;
+            display: inline-block;
+            font-family: 'Fira Code', monospace;
+            background-color: #f8fafc;
+            color: #d94841;
+            padding: 0 6px;
+            border-radius: 4px;
+            border: 1px solid #e2e8f0;
+            margin: 0 2px;
+            font-size: 0.9em;
+        }
+        .en-term {
+            direction: ltr;
+            unicode-bidi: isolate;
+            display: inline-block;
+            font-weight: 700;
+        }
+
+        /* حركات التبديل للكود */
+        .fade-in {
+            animation: fadeIn 0.4s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #e2e8f0; }
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col text-slate-800">
+
+    <!-- شريط الرأس (Header) -->
+    <header class="bg-white shadow-sm border-b-4 border-[#21244d] p-4 sticky top-0 z-50">
+        <div class="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-4">
+       
+                <div>
+                    <h1 class="text-xl md:text-2xl font-black text-[#21244d] tracking-tight">أولمبياد العلوم والرياضيات الوطني تحليل هيكلي لأكواد<span class="font-bold text-[#d94841]">NSMO</span></h1>
+                    <p class="text-sm text-slate-500 font-semibold mt-1">التحليل الهيكلي لخوارزميات البرمجة التنافسية</p>
+                </div>
+            </div>
+            <div class="bg-[#f8fafc] border border-slate-200 px-4 py-2 rounded-lg text-sm font-bold text-[#4d7ca6] flex items-center gap-2">
+                <i class="fab fa-cuttlefish text-lg"></i>
+                مسألة: Coin Combinations I
+            </div>
+        </div>
+    </header>
+
+    <!-- المحتوى الرئيسي -->
+    <main class="flex-1 max-w-5xl mx-auto w-full p-4 space-y-8 my-6">
+
+        <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 text-blue-800 text-sm leading-relaxed font-medium">
+            <i class="fas fa-info-circle ml-2 text-blue-600"></i>
+            هذا المستند يحلل مسألة <b><span class="en-term">Coin Combinations I</span></b>. عند الضغط على <b>أمثلة مشابهة</b>، سيتغير الكود ليوضح الفرق الدقيق جداً بينها وبين مسائل أُخرى تعتمد على نفس المعطيات مثل (<span class="en-term">Coin Combinations II</span>) أو (<span class="en-term">Minimizing Coins</span>).
+        </div>
+
+        <!-- الجزء 1: الإعدادات والقراءة -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-[#21244d] text-white px-5 py-3 flex items-center gap-3">
+                <div class="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center font-bold">1</div>
+                <h2 class="text-lg font-bold">الإعدادات وقراءة المعطيات (Setup)</h2>
+            </div>
+            
+            <div class="flex flex-col md:flex-row">
+                <div class="md:w-1/2 bg-[#0f172a] p-5 overflow-x-auto border-b md:border-b-0 md:border-l border-slate-700 relative min-h-[150px]">
+                    <div id="code-orig-1" class="fade-in">
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+<span class="kwd">#include</span> <span class="str">&lt;iostream&gt;</span>
+<span class="kwd">#include</span> <span class="str">&lt;vector&gt;</span>
+<span class="kwd">using</span> <span class="typ">namespace</span> std;
+
+<span class="kwd">const</span> <span class="typ">int</span> MOD = <span class="num">1e9</span> + <span class="num">7</span>;
+
+<span class="typ">int</span> <span class="fnc">main</span>() {
+    ios::sync_with_stdio(<span class="kwd">false</span>); cin.tie(<span class="kwd">nullptr</span>);
+
+    <span class="typ">int</span> n, target;
+    cin >> n >> target;
+
+    <span class="typ">vector</span>&lt;<span class="typ">int</span>&gt; coins(n);
+    <span class="kwd">for</span> (<span class="typ">int</span> i = <span class="num">0</span>; i < n; i++) {
+        cin >> coins[i];
+    }
+</pre>
+                    </div>
+                    <div id="code-sim-1" class="hidden fade-in">
+                        <div class="text-xs text-red-400 mb-3 font-bold bg-red-400/10 inline-block px-2 py-1 rounded border border-red-400/20"><i class="fas fa-code-branch ml-1"></i> كود معدل: مسألة Minimizing Coins</div>
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+<span class="kwd">#include</span> <span class="str">&lt;iostream&gt;</span>
+<span class="kwd">#include</span> <span class="str">&lt;vector&gt;</span>
+<span class="kwd">using</span> <span class="typ">namespace</span> std;
+
+<span class="cmt">// بما أننا نبحث عن "الحد الأدنى" للعملات وليس "عدد الطرق"</span>
+<span class="cmt">// فنحن لا نحتاج إلى معامل الـ MOD إطلاقاً! بل نحتاج لـ INF</span>
+<span class="kwd">const</span> <span class="typ">int</span> INF = <span class="num">1e9</span>;
+
+<span class="typ">int</span> <span class="fnc">main</span>() {
+    ios::sync_with_stdio(<span class="kwd">false</span>); cin.tie(<span class="kwd">nullptr</span>);
+    <span class="cmt">/* ... (قراءة n و target والعملات نفس الكود) ... */</span>
+</pre>
+                    </div>
+                </div>
+                <div class="md:w-1/2 flex flex-col">
+                    <div class="flex border-b border-slate-200 bg-slate-50">
+                        <button class="tab-btn active flex-1 py-3 text-sm transition text-[#4d7ca6] border-[#4d7ca6]" onclick="switchTab(this, 1, 'orig')">الشرح الوظيفي</button>
+                        <button class="tab-btn flex-1 py-3 text-sm transition text-slate-500 hover:text-[#d94841]" onclick="switchTab(this, 1, 'sim')">أمثلة مشابهة (ماذا يتغير؟)</button>
+                    </div>
+                    <div class="p-5 flex-1 bg-white">
+                        <div id="desc-orig-1" class="text-slate-600 text-[15px] leading-loose fade-in">
+                            نعرّف الثابت <code class="inline-code">MOD = 1e9 + 7</code> لأن الإجابة (عدد التوافيق) قد تكون ضخمة جداً ويُطلب طباعتها مع باقي القسمة. نقرأ عدد العملات <code class="inline-code">n</code>، والمجموع المستهدف <code class="inline-code">target</code>، ثم نملأ مصفوفة <code class="inline-code">coins</code> بفئات العملات المتاحة.
+                        </div>
+                        <div id="desc-sim-1" class="hidden text-slate-600 text-[15px] leading-loose fade-in">
+                            <span class="inline-block bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold mb-2">تغير المعطيات</span><br>
+                            في مسألة <b><span class="en-term">Minimizing Coins</span></b>، الهدف يختلف. نحن لا نريد "كم طريقة للوصول للهدف"، بل "ما هو أقل عدد ممكن من العملات للوصول للهدف". لذلك لا نحتاج للـ <code class="inline-code">MOD</code> لأن الناتج سيكون رقماً صغيراً (أقل من <code class="inline-code">target</code>)، بل نُعرف ثابت <code class="inline-code">INF</code> ليمثل رقماً كبيراً جداً (المالانهاية).
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- الجزء 2: تهيئة المصفوفة -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-[#d94841] text-white px-5 py-3 flex items-center gap-3">
+                <div class="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center font-bold">2</div>
+                <h2 class="text-lg font-bold">تهيئة مصفوفة الحفظ (DP State & Base Case)</h2>
+            </div>
+            
+            <div class="flex flex-col md:flex-row">
+                <div class="md:w-1/2 bg-[#0f172a] p-5 overflow-x-auto border-b md:border-b-0 md:border-l border-slate-700 min-h-[150px]">
+                    <div id="code-orig-2" class="fade-in">
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+    <span class="cmt">// dp[w] = number of ways to make sum w</span>
+    <span class="typ">vector</span>&lt;<span class="typ">int</span>&gt; dp(target + <span class="num">1</span>, <span class="num">0</span>);
+    
+    <span class="cmt">// Base Case: طريقة واحدة للحصول على المجموع 0</span>
+    dp[<span class="num">0</span>] = <span class="num">1</span>;
+</pre>
+                    </div>
+                    <div id="code-sim-2" class="hidden fade-in">
+                        <div class="text-xs text-red-400 mb-3 font-bold bg-red-400/10 inline-block px-2 py-1 rounded border border-red-400/20"><i class="fas fa-code-branch ml-1"></i> كود معدل: التهيئة لمسألة Minimizing Coins</div>
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+    <span class="cmt">// dp[w] = minimum coins needed to make sum w</span>
+    <span class="cmt">// نهيئ الجميع بقيمة ضخمة (INF) لأننا سنستخدم دالة min لاحقاً</span>
+    <span class="typ">vector</span>&lt;<span class="typ">int</span>&gt; dp(target + <span class="num">1</span>, INF);
+    
+    <span class="cmt">// Base Case: نحتاج لـ 0 عملات لتكوين المجموع 0</span>
+    dp[<span class="num">0</span>] = <span class="num">0</span>;
+</pre>
+                    </div>
+                </div>
+                <div class="md:w-1/2 flex flex-col">
+                    <div class="flex border-b border-slate-200 bg-slate-50">
+                        <button class="tab-btn active flex-1 py-3 text-sm transition text-[#4d7ca6] border-[#4d7ca6]" onclick="switchTab(this, 2, 'orig')">الشرح الوظيفي</button>
+                        <button class="tab-btn flex-1 py-3 text-sm transition text-slate-500 hover:text-[#d94841]" onclick="switchTab(this, 2, 'sim')">أمثلة مشابهة (ماذا يتغير؟)</button>
+                    </div>
+                    <div class="p-5 flex-1 bg-white">
+                        <div id="desc-orig-2" class="text-slate-600 text-[15px] leading-loose fade-in">
+                            نهيئ مصفوفة <code class="inline-code">dp</code> بحجم <code class="inline-code">target + 1</code> لنصل إلى الخلية الأخيرة بنجاح. ونضع بداخل كل خلية <code class="inline-code">0</code> لأننا سنقوم بحساب عملية <b>الجمع التراكمي</b>.<br>
+                            الحالة الأساسية <code class="inline-code">dp[0] = 1</code> تعني: "هناك طريقة واحدة صحيحة للحصول على المجموع صفر، وهي المجموعة الفارغة (عدم أخذ أي عملة)".
+                        </div>
+                        <div id="desc-sim-2" class="hidden text-slate-600 text-[15px] leading-loose fade-in">
+                            <span class="inline-block bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold mb-2">تغير المعطيات</span><br>
+                            في مسألة البحث عن الحد الأدنى <b><span class="en-term">Minimizing Coins</span></b>، يتغير المعنى بالكامل. نحن نهيئ المصفوفة برقم المالانهاية <code class="inline-code">INF</code> لأننا سنبحث عن القيمة <b>الأقل (<span class="en-term">min</span>)</b> (ولو وضعنا <code class="inline-code">0</code> فستكون الدالة <code class="inline-code">min</code> دائماً صِفراً وهو خطأ). وتصبح الحالة الأساسية <code class="inline-code">dp[0] = 0</code> وتعني: عدد العملات اللازم للحصول على 0 هو 0 عملة.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- الجزء 3: ترتيب الحلقات (السر الحقيقي) -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-[#e4a835] text-white px-5 py-3 flex items-center gap-3">
+                <div class="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center font-bold">3</div>
+                <h2 class="text-lg font-bold">ترتيب الحلقات (Loops Order) - جوهر المسألة</h2>
+            </div>
+            
+            <div class="flex flex-col md:flex-row">
+                <div class="md:w-1/2 bg-[#0f172a] p-5 overflow-x-auto border-b md:border-b-0 md:border-l border-slate-700 min-h-[150px]">
+                    <div id="code-orig-3" class="fade-in">
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+    <span class="cmt">// الحلقة الخارجية: الأوزان (من 1 إلى target)</span>
+    <span class="kwd">for</span> (<span class="typ">int</span> w = <span class="num">1</span>; w <= target; w++) {
+        
+        <span class="cmt">// الحلقة الداخلية: العملات المتاحة</span>
+        <span class="kwd">for</span> (<span class="typ">int</span> c : coins) {
+            
+            <span class="cmt">// ... (الشرط بالداخل) ...</span>
+</pre>
+                    </div>
+                    <div id="code-sim-3" class="hidden fade-in">
+                        <div class="text-xs text-yellow-400 mb-3 font-bold bg-yellow-400/10 inline-block px-2 py-1 rounded border border-yellow-400/20"><i class="fas fa-code-branch ml-1"></i> كود معدل: مسألة (Coin Combinations II)</div>
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+    <span class="cmt">// في النسخة الثانية يُمنع التبديل (Permutations)</span>
+    <span class="cmt">// التبديل السحري: نجعل حلقة العملات هي (الخارجية)</span>
+    <span class="kwd">for</span> (<span class="typ">int</span> c : coins) {
+        
+        <span class="cmt">// حلقة الأوزان تصبح هي (الداخلية)</span>
+        <span class="kwd">for</span> (<span class="typ">int</span> w = <span class="num">1</span>; w <= target; w++) {
+            
+            <span class="cmt">// ... (نفس الشرط بالداخل) ...</span>
+</pre>
+                    </div>
+                </div>
+                <div class="md:w-1/2 flex flex-col">
+                    <div class="flex border-b border-slate-200 bg-slate-50">
+                        <button class="tab-btn active flex-1 py-3 text-sm transition text-[#4d7ca6] border-[#4d7ca6]" onclick="switchTab(this, 3, 'orig')">الشرح الوظيفي</button>
+                        <button class="tab-btn flex-1 py-3 text-sm transition text-slate-500 hover:text-[#d94841]" onclick="switchTab(this, 3, 'sim')">أمثلة مشابهة (ماذا يتغير؟)</button>
+                    </div>
+                    <div class="p-5 flex-1 bg-white">
+                        <div id="desc-orig-3" class="text-slate-600 text-[15px] leading-loose fade-in">
+                            هذا هو <b>السر الأكبر</b> لهذه المسألة! <br>
+                            في مسألة (<span class="en-term">Combinations I</span>) الترتيب <b>مهم</b> (يعني $2+3$ يُعتبر مختلفاً عن $3+2$). لذلك نضع حلقة الوزن <code class="inline-code">w</code> في الخارج، وفي كل خطوة للوزن نمر على <b>جميع العملات من جديد</b> لتوليد كل التباديل (<span class="en-term">Permutations</span>) الممكنة.
+                        </div>
+                        <div id="desc-sim-3" class="hidden text-slate-600 text-[15px] leading-loose fade-in">
+                            <span class="inline-block bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold mb-2">تغير المعطيات</span><br>
+                            في مسألة <b><span class="en-term">Coin Combinations II</span></b> الترتيب <b>غير مهم</b> (التركيبة $2+3$ هي نفسها $3+2$). <br>
+                            برمجياً، التغيير الوحيد الذي تحتاجه هو <b class="text-red-500">تبديل أماكن الحلقتين!</b> تجعل حلقة العملات في الخارج وحلقة الوزن في الداخل. هكذا أنت تُجبر الخوارزمية على إنهاء العملة الأولى بالكامل قبل استخدام العملة الثانية، مما يمنع توليد تكرارات بترتيب مختلف!
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- الجزء 4: معادلة الانتقال الأساسية -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-[#65a363] text-white px-5 py-3 flex items-center gap-3">
+                <div class="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center font-bold">4</div>
+                <h2 class="text-lg font-bold">معادلة الانتقال (Transition Equation)</h2>
+            </div>
+            
+            <div class="flex flex-col md:flex-row">
+                <div class="md:w-1/2 bg-[#0f172a] p-5 overflow-x-auto border-b md:border-b-0 md:border-l border-slate-700 min-h-[150px]">
+                    <div id="code-orig-4" class="fade-in">
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+            <span class="cmt">// هل يمكن استخدام هذه العملة؟</span>
+            <span class="kwd">if</span> (w - c >= <span class="num">0</span>) {
+                <span class="cmt">// عدد طرق الوزن (w) = مجموع طرق الأوزان (w-c)</span>
+                dp[w] = (dp[w] + dp[w - c]) % MOD;
+            }
+        }
+    }
+</pre>
+                    </div>
+                    <div id="code-sim-4" class="hidden fade-in">
+                        <div class="text-xs text-green-400 mb-3 font-bold bg-green-400/10 inline-block px-2 py-1 rounded border border-green-400/20"><i class="fas fa-code-branch ml-1"></i> كود معدل: معادلة Minimizing Coins</div>
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+            <span class="cmt">// هل يمكن استخدام هذه العملة؟</span>
+            <span class="kwd">if</span> (w - c >= <span class="num">0</span>) {
+                <span class="cmt">// أقل عدد عملات للوزن (w) = </span>
+                <span class="cmt">// الأصغر بين القيمة الحالية و (الوزن السابق + 1 عملة)</span>
+                dp[w] = <span class="sys">min</span>(dp[w], dp[w - c] + <span class="num">1</span>);
+            }
+        }
+    }
+</pre>
+                    </div>
+                </div>
+                <div class="md:w-1/2 flex flex-col">
+                    <div class="flex border-b border-slate-200 bg-slate-50">
+                        <button class="tab-btn active flex-1 py-3 text-sm transition text-[#4d7ca6] border-[#4d7ca6]" onclick="switchTab(this, 4, 'orig')">الشرح الوظيفي</button>
+                        <button class="tab-btn flex-1 py-3 text-sm transition text-slate-500 hover:text-[#d94841]" onclick="switchTab(this, 4, 'sim')">أمثلة مشابهة (ماذا يتغير؟)</button>
+                    </div>
+                    <div class="p-5 flex-1 bg-white">
+                        <div id="desc-orig-4" class="text-slate-600 text-[15px] leading-loose fade-in">
+                            هذه هي نواة الـ <span class="en-term">DP</span>. نتحقق أولاً أن العملة <code class="inline-code">c</code> لا تجعل الوزن سالباً <code class="inline-code">w - c >= 0</code>.<br>
+                            إذا كانت صالحة، فإننا نضيف عدد طرق الوصول للوزن السابق <code class="inline-code">dp[w - c]</code> إلى الخلية الحالية <code class="inline-code">dp[w]</code>. مع أخذ الـ <code class="inline-code">MOD</code> في كل خطوة لتجنب خطأ التجاوز الحسابي (<span class="en-term">Overflow</span>).
+                        </div>
+                        <div id="desc-sim-4" class="hidden text-slate-600 text-[15px] leading-loose fade-in">
+                            <span class="inline-block bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold mb-2">تغير المعطيات</span><br>
+                            بالعودة لمسألة البحث عن الحد الأدنى للعملات <b><span class="en-term">Minimizing Coins</span></b>، سنستبدل عملية الجمع بعملية التفضيل للحد الأدنى <b><code class="inline-code">min</code></b>. وسنقوم بإضافة <code class="inline-code">+ 1</code> للخلية السابقة لأننا "صرفنا" عملة واحدة إضافية الآن من نوع <code class="inline-code">c</code> للانتقال من <code class="inline-code">dp[w - c]</code> إلى <code class="inline-code">dp[w]</code>.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- الجزء 5: تخزين الحالة والطباعة -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-[#4d7ca6] text-white px-5 py-3 flex items-center gap-3">
+                <div class="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center font-bold">5</div>
+                <h2 class="text-lg font-bold">طباعة الحل (Output Final State)</h2>
+            </div>
+            
+            <div class="flex flex-col md:flex-row">
+                <div class="md:w-1/2 bg-[#0f172a] p-5 overflow-x-auto border-b md:border-b-0 md:border-l border-slate-700 min-h-[150px]">
+                    <div id="code-orig-5" class="fade-in">
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+    <span class="cmt">// طباعة الناتج النهائي للمجموع المستهدف</span>
+    cout << dp[target] << <span class="str">'\n'</span>;
+    
+    <span class="kwd">return</span> <span class="num">0</span>;
+}
+</pre>
+                    </div>
+                    <div id="code-sim-5" class="hidden fade-in">
+                        <div class="text-xs text-blue-400 mb-3 font-bold bg-blue-400/10 inline-block px-2 py-1 rounded border border-blue-400/20"><i class="fas fa-code-branch ml-1"></i> كود معدل: التعامل مع الحالات المستحيلة (Unreachable States)</div>
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+    <span class="cmt">// في مسائل الـ Minimization إذا بقيت الخلية بقيمتها الابتدائية INF</span>
+    <span class="cmt">// فهذا يعني أنه من المستحيل الوصول للمجموع المستهدف</span>
+    <span class="kwd">if</span> (dp[target] == INF) {
+        cout << -<span class="num">1</span> << <span class="str">'\n'</span>;
+    } <span class="kwd">else</span> {
+        cout << dp[target] << <span class="str">'\n'</span>;
+    }
+    
+    <span class="kwd">return</span> <span class="num">0</span>;
+}
+</pre>
+                    </div>
+                </div>
+                <div class="md:w-1/2 flex flex-col">
+                    <div class="flex border-b border-slate-200 bg-slate-50">
+                        <button class="tab-btn active flex-1 py-3 text-sm transition text-[#4d7ca6] border-[#4d7ca6]" onclick="switchTab(this, 5, 'orig')">الشرح الوظيفي</button>
+                        <button class="tab-btn flex-1 py-3 text-sm transition text-slate-500 hover:text-[#d94841]" onclick="switchTab(this, 5, 'sim')">أمثلة مشابهة (ماذا يتغير؟)</button>
+                    </div>
+                    <div class="p-5 flex-1 bg-white">
+                        <div id="desc-orig-5" class="text-slate-600 text-[15px] leading-loose fade-in">
+                            بما أننا اعتمدنا أسلوب <b><span class="en-term">Bottom-Up</span></b> في بناء الحل بدءاً من 1 وصولاً إلى <code class="inline-code">target</code>، فإن الإجابة النهائية ستكون ببساطة هي قيمة الخلية الأخيرة في المصفوفة <code class="inline-code">dp[target]</code>. وإذا كان من المستحيل الوصول للهدف، ستكون قيمتها تلقائياً الصفر الذي وضعناه في البداية.
+                        </div>
+                        <div id="desc-sim-5" class="hidden text-slate-600 text-[15px] leading-loose fade-in">
+                            <span class="inline-block bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold mb-2">تغير المعطيات</span><br>
+                            في مسألة <b><span class="en-term">Minimizing Coins</span></b>، يُطلب عادةً طباعة <code class="inline-code">-1</code> إذا كان من المستحيل تكوين المجموع باستخدام العملات المعطاة. لمعرفة ذلك برمجياً، نتحقق هل الخلية الأخيرة <code class="inline-code">dp[target]</code> لا تزال تحتفظ بقيمة <code class="inline-code">INF</code> التي وضعناها في البداية؟ إذا نعم، نطبع -1، وإلا نطبع الناتج الفعلي.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- التذييل المخصص -->
+    <footer class="bg-white border-t border-slate-200 mt-auto">
+        <div class="max-w-5xl mx-auto p-6 text-center">
+            <p class="text-sm font-bold text-slate-600">
+                تصميم محمد مجممي - وهي جهد شخصي لا يغني عن الرجوع للمنصات الرسمية
+            </p>
+            <p class="text-xs text-slate-400 mt-2">
+                &copy; أداة تعليمية مساعدة مخصصة لطلاب الأولمبياد.
+            </p>
+        </div>
+    </footer>
+
+    <!-- سكربت التحكم الديناميكي -->
+    <script>
+        function switchTab(clickedBtn, sectionId, mode) {
+            // الحصول على حاوية الأزرار وإعادة تعيين التنسيقات
+            const btnContainer = clickedBtn.parentElement;
+            const buttons = btnContainer.querySelectorAll('button');
+            buttons.forEach(btn => {
+                btn.classList.remove('active', 'text-[#4d7ca6]', 'border-[#4d7ca6]');
+                btn.classList.add('text-slate-500');
+                btn.style.borderBottom = 'none';
+            });
+
+            // تفعيل الزر المضغوط
+            clickedBtn.classList.add('active', 'text-[#4d7ca6]');
+            clickedBtn.classList.remove('text-slate-500');
+            clickedBtn.style.borderBottom = '3px solid #4d7ca6';
+
+            // جلب عناصر الشرح
+            const descOrig = document.getElementById(`desc-orig-${sectionId}`);
+            const descSim = document.getElementById(`desc-sim-${sectionId}`);
+            
+            // جلب عناصر الكود
+            const codeOrig = document.getElementById(`code-orig-${sectionId}`);
+            const codeSim = document.getElementById(`code-sim-${sectionId}`);
+
+            // تبديل العرض بناءً على الوضع المختار
+            if (mode === 'orig') {
+                descOrig.classList.remove('hidden');
+                descSim.classList.add('hidden');
+                
+                codeOrig.classList.remove('hidden');
+                codeSim.classList.add('hidden');
+            } else {
+                descOrig.classList.add('hidden');
+                descSim.classList.remove('hidden');
+                
+                codeOrig.classList.add('hidden');
+                codeSim.classList.remove('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
