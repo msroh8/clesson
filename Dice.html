@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> تحليل أكواد البرمجة التنافسية (Combinatorics DP)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Fira+Code:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #f1f5f9;
+        }
+        .font-code {
+            font-family: 'Fira Code', monospace;
+            direction: ltr;
+            text-align: left;
+        }
+        
+        /* تأثير تبويبات الشرح والأمثلة */
+        .tab-btn.active {
+            border-bottom: 3px solid;
+            font-weight: 700;
+            background-color: #f8fafc;
+        }
+        
+        /* تلوين أجزاء الكود (Syntax Highlighting مبسط) */
+        .kwd { color: #f472b6; } /* pink-400 - Keywords */
+        .typ { color: #93c5fd; } /* blue-300 - Types */
+        .str { color: #86efac; } /* green-300 - Strings/Includes */
+        .num { color: #d8b4fe; } /* purple-300 - Numbers */
+        .fnc { color: #fef08a; } /* yellow-200 - Functions */
+        .cmt { color: #94a3b8; font-style: italic; } /* slate-400 - Comments */
+        .sys { color: #67e8f9; } /* cyan-300 - System/Math Funcs */
+
+        /* إصلاح تداخل اتجاه النصوص (LTR داخل RTL) */
+        .inline-code {
+            direction: ltr;
+            unicode-bidi: isolate;
+            display: inline-block;
+            font-family: 'Fira Code', monospace;
+            background-color: #f8fafc;
+            color: #d94841;
+            padding: 0 6px;
+            border-radius: 4px;
+            border: 1px solid #e2e8f0;
+            margin: 0 2px;
+            font-size: 0.9em;
+        }
+        .en-term {
+            direction: ltr;
+            unicode-bidi: isolate;
+            display: inline-block;
+            font-weight: 700;
+        }
+
+        /* حركات التبديل للكود */
+        .fade-in {
+            animation: fadeIn 0.4s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #e2e8f0; }
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col text-slate-800">
+
+    <!-- شريط الرأس (Header) -->
+    <header class="bg-white shadow-sm border-b-4 border-[#21244d] p-4 sticky top-0 z-50">
+        <div class="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-4">
+                                <div>
+                    <h1 class="text-xl md:text-2xl font-black text-[#21244d] tracking-tight">تحليل هيكلي لأكواد أولمبياد العلوم والرياضيات الوطني <span class="font-bold text-[#d94841]">NSMO</span></h1>
+                    <p class="text-sm text-slate-500 font-semibold mt-1">التحليل الهيكلي لخوارزميات البرمجة التنافسية</p>
+                </div>
+            </div>
+            <div class="bg-[#f8fafc] border border-slate-200 px-4 py-2 rounded-lg text-sm font-bold text-[#4d7ca6] flex items-center gap-2">
+                <i class="fab fa-cuttlefish text-lg"></i>
+                مسألة: Dice Combinations (Bottom-Up DP)
+            </div>
+        </div>
+    </header>
+
+    <!-- المحتوى الرئيسي -->
+    <main class="flex-1 max-w-5xl mx-auto w-full p-4 space-y-8 my-6">
+
+        <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 text-blue-800 text-sm leading-relaxed font-medium">
+            <i class="fas fa-info-circle ml-2 text-blue-600"></i>
+            هذا المستند يحلل مسألة تعتمد على التكرار التصاعدي <b>(<span class="en-term">Bottom-Up DP / Iterative</span>)</b> لحساب <b>عدد الطرق الممكنة</b> (Combinatorics). عند الضغط على <b>أمثلة مشابهة</b>، سيتغير الكود ليوضح كيف يمكن تكييف هذا الأسلوب لمسائل أخرى.
+        </div>
+
+        <!-- الجزء 1: الإعدادات والثوابت -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-[#21244d] text-white px-5 py-3 flex items-center gap-3">
+                <div class="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center font-bold">1</div>
+                <h2 class="text-lg font-bold">الإعدادات ومعامل القسمة (Modulo)</h2>
+            </div>
+            
+            <div class="flex flex-col md:flex-row">
+                <div class="md:w-1/2 bg-[#0f172a] p-5 overflow-x-auto border-b md:border-b-0 md:border-l border-slate-700 relative min-h-[150px]">
+                    <div id="code-orig-1" class="fade-in">
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+<span class="kwd">#include</span> <span class="str">&lt;iostream&gt;</span>
+<span class="kwd">#include</span> <span class="str">&lt;vector&gt;</span>
+<span class="kwd">using</span> <span class="typ">namespace</span> std;
+
+<span class="kwd">const</span> <span class="typ">int</span> MOD = <span class="num">1'000'000'007</span>;
+
+<span class="typ">int</span> <span class="fnc">main</span>() {
+    ios::sync_with_stdio(<span class="kwd">false</span>);
+    cin.tie(<span class="kwd">nullptr</span>);
+</pre>
+                    </div>
+                    <div id="code-sim-1" class="hidden fade-in">
+                        <div class="text-xs text-red-400 mb-3 font-bold bg-red-400/10 inline-block px-2 py-1 rounded border border-red-400/20"><i class="fas fa-code-branch ml-1"></i> كود معدل: مسائل البحث عن الأقل (Minimization) بدون Modulo</div>
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+<span class="kwd">#include</span> <span class="str">&lt;iostream&gt;</span>
+<span class="kwd">#include</span> <span class="str">&lt;vector&gt;</span>
+<span class="kwd">using</span> <span class="typ">namespace</span> std;
+
+<span class="cmt">// لا نحتاج لـ MOD هنا لأننا لا نحسب عدد طرق بل نبحث عن حد أدنى</span>
+<span class="kwd">const</span> <span class="typ">int</span> INF = <span class="num">1e9</span>;
+
+<span class="typ">int</span> <span class="fnc">main</span>() {
+    ios::sync_with_stdio(<span class="kwd">false</span>);
+    cin.tie(<span class="kwd">nullptr</span>);
+</pre>
+                    </div>
+                </div>
+                <div class="md:w-1/2 flex flex-col">
+                    <div class="flex border-b border-slate-200 bg-slate-50">
+                        <button class="tab-btn active flex-1 py-3 text-sm transition text-[#4d7ca6] border-[#4d7ca6]" onclick="switchTab(this, 1, 'orig')">الشرح الوظيفي</button>
+                        <button class="tab-btn flex-1 py-3 text-sm transition text-slate-500 hover:text-[#d94841]" onclick="switchTab(this, 1, 'sim')">أمثلة مشابهة (ماذا يتغير؟)</button>
+                    </div>
+                    <div class="p-5 flex-1 bg-white">
+                        <div id="desc-orig-1" class="text-slate-600 text-[15px] leading-loose fade-in">
+                            استخدام <code class="inline-code">MOD = 1e9+7</code> ضروري جداً في مسائل التوافيق (<span class="en-term">Combinatorics</span>) لأن عدد الطرق الممكنة ينمو بشكل أسي وقد يتجاوز سعة المتغير <code class="inline-code">long long</code> بسرعة. كما يتضمن الكود السطرين السحريين لتسريع الإدخال والإخراج في لغة ++C لتجنب الـ <span class="en-term">TLE</span>.
+                        </div>
+                        <div id="desc-sim-1" class="hidden text-slate-600 text-[15px] leading-loose fade-in">
+                            <span class="inline-block bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold mb-2">تغير المعطيات</span><br>
+                            إذا تحولت المسألة من "حساب عدد الطرق" إلى "إيجاد أقل عدد من الخطوات" (مثل مسألة <span class="en-term">Min Coin Change</span>)، فإننا نستغني عن الـ <code class="inline-code">MOD</code> تماماً ونُعرّف بدلاً منه ثابت <code class="inline-code">INF</code> يمثل المالانهاية (رقم ضخم مثل <code class="inline-code">1e9</code>) لاستخدامه في التهيئة الأولية للمصفوفة لاحقاً.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- الجزء 2: تعريف الحالة والحالة الأساسية -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-[#d94841] text-white px-5 py-3 flex items-center gap-3">
+                <div class="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center font-bold">2</div>
+                <h2 class="text-lg font-bold">تهيئة الـ DP والحالة الأساسية (Base Case)</h2>
+            </div>
+            
+            <div class="flex flex-col md:flex-row">
+                <div class="md:w-1/2 bg-[#0f172a] p-5 overflow-x-auto border-b md:border-b-0 md:border-l border-slate-700 min-h-[150px]">
+                    <div id="code-orig-2" class="fade-in">
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+    <span class="typ">int</span> n;
+    cin >> n;
+
+    <span class="typ">vector</span>&lt;<span class="typ">int</span>&gt; dp(n + <span class="num">1</span>, <span class="num">0</span>);
+    dp[<span class="num">0</span>] = <span class="num">1</span>;  <span class="cmt">// one way to make sum 0: empty sequence</span>
+</pre>
+                    </div>
+                    <div id="code-sim-2" class="hidden fade-in">
+                        <div class="text-xs text-red-400 mb-3 font-bold bg-red-400/10 inline-block px-2 py-1 rounded border border-red-400/20"><i class="fas fa-code-branch ml-1"></i> كود معدل: التهيئة في مسائل (أطول سلسلة متزايدة - LIS)</div>
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+    <span class="typ">int</span> n;
+    cin >> n;
+
+    <span class="cmt">// في مسألة LIS، أقل طول لأي سلسلة متزايدة هو 1 (العنصر نفسه)</span>
+    <span class="typ">vector</span>&lt;<span class="typ">int</span>&gt; dp(n, <span class="num">1</span>);
+    <span class="cmt">// لا يوجد حالة dp[0] خاصة هنا، كل العناصر تبدأ بقيمة 1</span>
+</pre>
+                    </div>
+                </div>
+                <div class="md:w-1/2 flex flex-col">
+                    <div class="flex border-b border-slate-200 bg-slate-50">
+                        <button class="tab-btn active flex-1 py-3 text-sm transition text-[#4d7ca6] border-[#4d7ca6]" onclick="switchTab(this, 2, 'orig')">الشرح الوظيفي</button>
+                        <button class="tab-btn flex-1 py-3 text-sm transition text-slate-500 hover:text-[#d94841]" onclick="switchTab(this, 2, 'sim')">أمثلة مشابهة (ماذا يتغير؟)</button>
+                    </div>
+                    <div class="p-5 flex-1 bg-white">
+                        <div id="desc-orig-2" class="text-slate-600 text-[15px] leading-loose fade-in">
+                            استخدام <code class="inline-code">vector</code> أفضل وأكثر أماناً من المصفوفات العادية من ناحية الذاكرة الديناميكية. <br>
+                            تمت تهيئة جميع القيم بـ <code class="inline-code">0</code>، باستثناء <code class="inline-code">dp[0] = 1</code>. وهذا شرط أساسي منطقي جداً: <b>هناك طريقة واحدة فقط للحصول على المجموع صفر، وهي "عدم فعل أي شيء" (المجموعة الفارغة).</b>
+                        </div>
+                        <div id="desc-sim-2" class="hidden text-slate-600 text-[15px] leading-loose fade-in">
+                            <span class="inline-block bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold mb-2">تغير المعطيات</span><br>
+                            التهيئة الابتدائية تعتمد على طبيعة السؤال. في مسألة <b>أطول سلسلة متزايدة (<span class="en-term">LIS</span>)</b>، كل عنصر في المصفوفة يمكن أن يُشكل سلسلة متزايدة بنفسه (طولها 1)، لذلك نقوم بتهيئة المصفوفة كلها بالقيمة <code class="inline-code">1</code> بدلاً من <code class="inline-code">0</code> ولا يوجد حالة خاصة لـ <code class="inline-code">dp[0]</code> كطريقة وحيدة.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- الجزء 3: الحلقة الخارجية (بناء الحل تصاعدياً) -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-[#e4a835] text-white px-5 py-3 flex items-center gap-3">
+                <div class="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center font-bold">3</div>
+                <h2 class="text-lg font-bold">بناء الحل تصاعدياً (Outer Loop)</h2>
+            </div>
+            
+            <div class="flex flex-col md:flex-row">
+                <div class="md:w-1/2 bg-[#0f172a] p-5 overflow-x-auto border-b md:border-b-0 md:border-l border-slate-700 min-h-[150px]">
+                    <div id="code-orig-3" class="fade-in">
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+    <span class="kwd">for</span> (<span class="typ">int</span> x = <span class="num">1</span>; x <= n; x++) {
+        <span class="typ">long long</span> ways = <span class="num">0</span>;
+        
+        <span class="cmt">// ... (الكود الداخلي هنا) ...</span>
+</pre>
+                    </div>
+                    <div id="code-sim-3" class="hidden fade-in">
+                        <div class="text-xs text-yellow-400 mb-3 font-bold bg-yellow-400/10 inline-block px-2 py-1 rounded border border-yellow-400/20"><i class="fas fa-code-branch ml-1"></i> كود معدل: التفكير العكسي (Top-Down Recursion)</div>
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+<span class="cmt">// نفس المنطق، لكن بأسلوب الدالة الاستدعائية (Top-Down)</span>
+<span class="typ">long long</span> <span class="fnc">solve</span>(<span class="typ">int</span> x) {
+    <span class="kwd">if</span> (x == <span class="num">0</span>) <span class="kwd">return</span> <span class="num">1</span>;
+    <span class="kwd">if</span> (x &lt; <span class="num">0</span>) <span class="kwd">return</span> <span class="num">0</span>;
+    <span class="kwd">if</span> (dp[x] != -<span class="num">1</span>) <span class="kwd">return</span> dp[x];
+    
+    <span class="typ">long long</span> ways = <span class="num">0</span>;
+    <span class="cmt">// ... (الكود الداخلي هنا) ...</span>
+}
+</pre>
+                    </div>
+                </div>
+                <div class="md:w-1/2 flex flex-col">
+                    <div class="flex border-b border-slate-200 bg-slate-50">
+                        <button class="tab-btn active flex-1 py-3 text-sm transition text-[#4d7ca6] border-[#4d7ca6]" onclick="switchTab(this, 3, 'orig')">الشرح الوظيفي</button>
+                        <button class="tab-btn flex-1 py-3 text-sm transition text-slate-500 hover:text-[#d94841]" onclick="switchTab(this, 3, 'sim')">أمثلة مشابهة (ماذا يتغير؟)</button>
+                    </div>
+                    <div class="p-5 flex-1 bg-white">
+                        <div id="desc-orig-3" class="text-slate-600 text-[15px] leading-loose fade-in">
+                            هذا هو أساس الـ <span class="en-term">Bottom-Up DP</span>. بدلاً من التفرع بالاستدعاء الذاتي (Recursion)، نقوم بحل المشكلة تدريجياً. نبدأ بالبحث عن طرق الوصول للمجموع <code class="inline-code">1</code>، ثم <code class="inline-code">2</code>، وهكذا حتى نصل للهدف <code class="inline-code">n</code>. <br>
+                            المتغير <code class="inline-code">ways</code> يعمل كـ (مُجمِّع) لعدد الطرق الممكنة للمجموع <code class="inline-code">x</code> الحالي.
+                        </div>
+                        <div id="desc-sim-3" class="hidden text-slate-600 text-[15px] leading-loose fade-in">
+                            <span class="inline-block bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold mb-2">تغير المعطيات</span><br>
+                            يمكن كتابة نفس الفكرة بالضبط باستخدام دالة استدعاء ذاتي <span class="en-term">Top-Down</span>. في هذه الحالة يختفي الـ <code class="inline-code">for loop</code> الخارجي، ونستبدله بدالة <code class="inline-code">solve(x)</code> مع إضافة شروط التوقف <span class="en-term">Base Cases</span> للتحقق من المجموع إذا كان صفر أو أصبح سالباً، ثم شرط التأكد من المصفوفة (Memoization).
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- الجزء 4: الحلقة الداخلية (معادلة الانتقال والخيارات) -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-[#65a363] text-white px-5 py-3 flex items-center gap-3">
+                <div class="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center font-bold">4</div>
+                <h2 class="text-lg font-bold">الخيارات والتحسين (Inner Loop & Micro-Optimization)</h2>
+            </div>
+            
+            <div class="flex flex-col md:flex-row">
+                <div class="md:w-1/2 bg-[#0f172a] p-5 overflow-x-auto border-b md:border-b-0 md:border-l border-slate-700 min-h-[150px]">
+                    <div id="code-orig-4" class="fade-in">
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+        <span class="kwd">for</span> (<span class="typ">int</span> k = <span class="num">1</span>; k <= <span class="num">6</span>; k++) {
+            <span class="kwd">if</span> (x - k >= <span class="num">0</span>) {
+                ways += dp[x - k];
+                
+                <span class="cmt">// small optimization: Subtraction is faster than % MOD</span>
+                <span class="kwd">if</span> (ways >= MOD) ways -= MOD; 
+            }
+        }
+</pre>
+                    </div>
+                    <div id="code-sim-4" class="hidden fade-in">
+                        <div class="text-xs text-green-400 mb-3 font-bold bg-green-400/10 inline-block px-2 py-1 rounded border border-green-400/20"><i class="fas fa-code-branch ml-1"></i> كود معدل: لو كانت الخيارات مصفوفة عملات (Coin Change)</div>
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+        <span class="cmt">// الخيارات ليست الأرقام من 1 لـ 6، بل مصفوفة ديناميكية (coins)</span>
+        <span class="kwd">for</span> (<span class="typ">int</span> coin : coins) {
+            <span class="kwd">if</span> (x - coin >= <span class="num">0</span>) {
+                <span class="cmt">// حساب عدد الطرق (Coin Change - Combinations)</span>
+                ways += dp[x - coin];
+                <span class="kwd">if</span> (ways >= MOD) ways -= MOD; 
+            }
+        }
+</pre>
+                    </div>
+                </div>
+                <div class="md:w-1/2 flex flex-col">
+                    <div class="flex border-b border-slate-200 bg-slate-50">
+                        <button class="tab-btn active flex-1 py-3 text-sm transition text-[#4d7ca6] border-[#4d7ca6]" onclick="switchTab(this, 4, 'orig')">الشرح الوظيفي</button>
+                        <button class="tab-btn flex-1 py-3 text-sm transition text-slate-500 hover:text-[#d94841]" onclick="switchTab(this, 4, 'sim')">أمثلة مشابهة (ماذا يتغير؟)</button>
+                    </div>
+                    <div class="p-5 flex-1 bg-white">
+                        <div id="desc-orig-4" class="text-slate-600 text-[15px] leading-loose fade-in">
+                            هنا نستكشف الخيارات الممكنة (رمي النرد يعطي رقماً من 1 إلى 6). للوصول للهدف <code class="inline-code">x</code>، نضيف جميع طرق الوصول للأهداف السابقة <code class="inline-code">x - k</code>.<br>
+                            <b class="text-green-600">نقطة احترافية:</b> بدلاً من كتابة <code class="inline-code">ways %= MOD</code> المكلفة في الزمن، الكود يستخدم عملية <b>الطرح <code class="inline-code">-=</code></b> وهي أسرع بكثير على المعالج (Micro-optimization).
+                        </div>
+                        <div id="desc-sim-4" class="hidden text-slate-600 text-[15px] leading-loose fade-in">
+                            <span class="inline-block bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold mb-2">تغير المعطيات</span><br>
+                            في مسألة النرد الكلاسيكية خياراتك ثابتة (1 إلى 6). لكن لو كانت المسألة هي <b><span class="en-term">Coin Change</span></b> (حيث لديك فئات معينة من العملات مثل 2، 5، 10)، فإن الحلقة الداخلية تتغير لتمر على مصفوفة العملات المُدخلة <code class="inline-code">coins</code> بدلاً من المرور على أرقام ثابتة.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- الجزء 5: تخزين الحالة والطباعة -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-[#4d7ca6] text-white px-5 py-3 flex items-center gap-3">
+                <div class="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center font-bold">5</div>
+                <h2 class="text-lg font-bold">تخزين الناتج وطباعة الحل (Finalizing State)</h2>
+            </div>
+            
+            <div class="flex flex-col md:flex-row">
+                <div class="md:w-1/2 bg-[#0f172a] p-5 overflow-x-auto border-b md:border-b-0 md:border-l border-slate-700 min-h-[150px]">
+                    <div id="code-orig-5" class="fade-in">
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+        <span class="cmt">// تخزين الناتج بعد اكتمال جميع الخيارات للمجموع x</span>
+        dp[x] = (<span class="typ">int</span>)ways;
+    }
+
+    <span class="cmt">// طباعة الناتج النهائي للمجموع المطلوب n</span>
+    cout << dp[n] << <span class="str">'\n'</span>;
+    <span class="kwd">return</span> <span class="num">0</span>;
+}
+</pre>
+                    </div>
+                    <div id="code-sim-5" class="hidden fade-in">
+                        <div class="text-xs text-blue-400 mb-3 font-bold bg-blue-400/10 inline-block px-2 py-1 rounded border border-blue-400/20"><i class="fas fa-code-branch ml-1"></i> كود معدل: عندما لا يكون الحل في الخلية الأخيرة (مثل LIS)</div>
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+        <span class="cmt">// (نهاية الحلقتين في مسألة LIS)</span>
+    }
+
+    <span class="cmt">// في LIS الحل ليس بالضرورة dp[n]، يجب البحث عن Max</span>
+    <span class="typ">int</span> max_ans = <span class="num">0</span>;
+    <span class="kwd">for</span> (<span class="typ">int</span> x = <span class="num">0</span>; x < n; x++) {
+        max_ans = <span class="sys">max</span>(max_ans, dp[x]);
+    }
+    
+    cout << max_ans << <span class="str">'\n'</span>;
+</pre>
+                    </div>
+                </div>
+                <div class="md:w-1/2 flex flex-col">
+                    <div class="flex border-b border-slate-200 bg-slate-50">
+                        <button class="tab-btn active flex-1 py-3 text-sm transition text-[#4d7ca6] border-[#4d7ca6]" onclick="switchTab(this, 5, 'orig')">الشرح الوظيفي</button>
+                        <button class="tab-btn flex-1 py-3 text-sm transition text-slate-500 hover:text-[#d94841]" onclick="switchTab(this, 5, 'sim')">أمثلة مشابهة (ماذا يتغير؟)</button>
+                    </div>
+                    <div class="p-5 flex-1 bg-white">
+                        <div id="desc-orig-5" class="text-slate-600 text-[15px] leading-loose fade-in">
+                            بعد انتهاء الحلقة الداخلية من جمع كل الطرق للوصول للرقم <code class="inline-code">x</code>، نقوم بحفظ الناتج في المصفوفة <code class="inline-code">dp[x]</code>. بما أننا تأكدنا طوال الوقت أن الرقم لا يتجاوز الـ <code class="inline-code">MOD</code>، فمن الآمن عمل <span class="en-term">Cast</span> إلى <code class="inline-code">int</code> لتوفير المساحة. وفي النهاية نطبع الخلية التي تمثل الهدف النهائي <code class="inline-code">dp[n]</code>.
+                        </div>
+                        <div id="desc-sim-5" class="hidden text-slate-600 text-[15px] leading-loose fade-in">
+                            <span class="inline-block bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold mb-2">تغير المعطيات</span><br>
+                            في مسألتنا (النرد)، نحن مهتمون بقيمة محددة وهي المجموع <code class="inline-code">n</code> ولذلك الحل هو حصراً <code class="inline-code">dp[n]</code>. لكن في مسائل أخرى مثل <b>أطول سلسلة متزايدة (<span class="en-term">LIS</span>)</b>، الإجابة (أطول سلسلة) قد تنتهي عند أي عنصر في المصفوفة، وليس بالضرورة العنصر الأخير. لذلك بدلاً من طباعة <code class="inline-code">dp[n]</code>، يجب عمل حلقة إضافية للمرور على المصفوفة واستخراج القيمة العظمى <span class="en-term">Max</span>.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- التذييل المخصص -->
+    <footer class="bg-white border-t border-slate-200 mt-auto">
+        <div class="max-w-5xl mx-auto p-6 text-center">
+            <p class="text-sm font-bold text-slate-600">
+                تصميم محمد مجممي - وهي جهد شخصي لا يغني عن الرجوع للمنصات الرسمية
+            </p>
+            <p class="text-xs text-slate-400 mt-2">
+                &copy; أداة تعليمية مساعدة مخصصة لطلاب الأولمبياد.
+            </p>
+        </div>
+    </footer>
+
+    <!-- سكربت التحكم الديناميكي -->
+    <script>
+        function switchTab(clickedBtn, sectionId, mode) {
+            // الحصول على حاوية الأزرار وإعادة تعيين التنسيقات
+            const btnContainer = clickedBtn.parentElement;
+            const buttons = btnContainer.querySelectorAll('button');
+            buttons.forEach(btn => {
+                btn.classList.remove('active', 'text-[#4d7ca6]', 'border-[#4d7ca6]');
+                btn.classList.add('text-slate-500');
+                btn.style.borderBottom = 'none';
+            });
+
+            // تفعيل الزر المضغوط
+            clickedBtn.classList.add('active', 'text-[#4d7ca6]');
+            clickedBtn.classList.remove('text-slate-500');
+            clickedBtn.style.borderBottom = '3px solid #4d7ca6';
+
+            // جلب عناصر الشرح
+            const descOrig = document.getElementById(`desc-orig-${sectionId}`);
+            const descSim = document.getElementById(`desc-sim-${sectionId}`);
+            
+            // جلب عناصر الكود
+            const codeOrig = document.getElementById(`code-orig-${sectionId}`);
+            const codeSim = document.getElementById(`code-sim-${sectionId}`);
+
+            // تبديل العرض بناءً على الوضع المختار
+            if (mode === 'orig') {
+                descOrig.classList.remove('hidden');
+                descSim.classList.add('hidden');
+                
+                codeOrig.classList.remove('hidden');
+                codeSim.classList.add('hidden');
+            } else {
+                descOrig.classList.add('hidden');
+                descSim.classList.remove('hidden');
+                
+                codeOrig.classList.add('hidden');
+                codeSim.classList.remove('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
