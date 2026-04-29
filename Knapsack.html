@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> تحليل أكواد البرمجة التنافسية (Knapsack 0/1)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Fira+Code:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #f1f5f9;
+        }
+        .font-code {
+            font-family: 'Fira Code', monospace;
+            direction: ltr;
+            text-align: left;
+        }
+        
+        /* تأثير تبويبات الشرح والأمثلة */
+        .tab-btn.active {
+            border-bottom: 3px solid;
+            font-weight: 700;
+            background-color: #f8fafc;
+        }
+        
+        /* تلوين أجزاء الكود (Syntax Highlighting مبسط) */
+        .kwd { color: #f472b6; } /* pink-400 - Keywords */
+        .typ { color: #93c5fd; } /* blue-300 - Types */
+        .str { color: #86efac; } /* green-300 - Strings/Includes */
+        .num { color: #d8b4fe; } /* purple-300 - Numbers */
+        .fnc { color: #fef08a; } /* yellow-200 - Functions */
+        .cmt { color: #94a3b8; font-style: italic; } /* slate-400 - Comments */
+        .sys { color: #67e8f9; } /* cyan-300 - System/Math Funcs */
+
+        /* إصلاح تداخل اتجاه النصوص (LTR داخل RTL) */
+        .inline-code {
+            direction: ltr;
+            unicode-bidi: isolate;
+            display: inline-block;
+            font-family: 'Fira Code', monospace;
+            background-color: #f8fafc;
+            color: #d94841;
+            padding: 0 6px;
+            border-radius: 4px;
+            border: 1px solid #e2e8f0;
+            margin: 0 2px;
+            font-size: 0.9em;
+        }
+        .en-term {
+            direction: ltr;
+            unicode-bidi: isolate;
+            display: inline-block;
+            font-weight: 700;
+        }
+
+        /* حركات التبديل للكود */
+        .fade-in {
+            animation: fadeIn 0.4s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #e2e8f0; }
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col text-slate-800">
+
+    <!-- شريط الرأس (Header) -->
+    <header class="bg-white shadow-sm border-b-4 border-[#21244d] p-4 sticky top-0 z-50">
+        <div class="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-4">
+                               <div>
+                    <h1 class="text-xl md:text-2xl font-black text-[#21244d] tracking-tight">تحليل هيكلي لأكواد أولمبياد العلوم والرياضيات الوطني <span class="font-bold text-[#d94841]">NSMO</span></h1>
+                    <p class="text-sm text-slate-500 font-semibold mt-1">التحليل الهيكلي لخوارزميات البرمجة التنافسية</p>
+                </div>
+            </div>
+            <div class="bg-[#f8fafc] border border-slate-200 px-4 py-2 rounded-lg text-sm font-bold text-[#4d7ca6] flex items-center gap-2">
+                <i class="fab fa-cuttlefish text-lg"></i>
+                مسألة: حقيبة الظهر (Knapsack 0/1)
+            </div>
+        </div>
+    </header>
+
+    <!-- المحتوى الرئيسي -->
+    <main class="flex-1 max-w-5xl mx-auto w-full p-4 space-y-8 my-6">
+
+        <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 text-blue-800 text-sm leading-relaxed font-medium">
+            <i class="fas fa-info-circle ml-2 text-blue-600"></i>
+            هذا المستند يحلل مسألة <b>حقيبة الظهر الكلاسيكية (<span class="en-term">0/1 Knapsack DP</span>)</b>. عند الضغط على <b>أمثلة مشابهة</b>، سيتغير الكود البرمجي أمامك ليوضح كيف تختلف كتابة هذا الجزء لجعله أكثر ديناميكية أو ليناسب قيوداً مختلفة.
+        </div>
+
+        <!-- الجزء 1: الاستدعاءات والمتغيرات -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-[#21244d] text-white px-5 py-3 flex items-center gap-3">
+                <div class="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center font-bold">1</div>
+                <h2 class="text-lg font-bold">المتغيرات وحالة المسألة (State)</h2>
+            </div>
+            
+            <div class="flex flex-col md:flex-row">
+                <!-- الكود الديناميكي -->
+                <div class="md:w-1/2 bg-[#0f172a] p-5 overflow-x-auto border-b md:border-b-0 md:border-l border-slate-700 relative min-h-[150px]">
+                    <div id="code-orig-1" class="fade-in">
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+<span class="kwd">#include</span> <span class="str">&lt;iostream&gt;</span>
+<span class="kwd">using</span> <span class="typ">namespace</span> std;
+
+<span class="typ">long long</span> dp[<span class="num">200</span>][<span class="num">200000</span>];
+<span class="typ">int</span> v[<span class="num">200</span>], w[<span class="num">200</span>];
+</pre>
+                    </div>
+                    <div id="code-sim-1" class="hidden fade-in">
+                        <div class="text-xs text-red-400 mb-3 font-bold bg-red-400/10 inline-block px-2 py-1 rounded border border-red-400/20"><i class="fas fa-code-branch ml-1"></i> كود معدل: مسألة الحقيبة غير المحدودة (Unbounded Knapsack)</div>
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+<span class="kwd">#include</span> <span class="str">&lt;iostream&gt;</span>
+<span class="kwd">using</span> <span class="typ">namespace</span> std;
+
+<span class="cmt">// يمكننا أخذ العنصر مرات لا نهائية، لا نحتاج لتتبع الـ Index</span>
+<span class="cmt">// المصفوفة تصبح أحادية البعد (1D Array) للحجم فقط!</span>
+<span class="typ">long long</span> dp[<span class="num">200000</span>]; 
+<span class="typ">int</span> v[<span class="num">200</span>], w[<span class="num">200</span>];
+</pre>
+                    </div>
+                </div>
+                <!-- الشرح والتبويبات -->
+                <div class="md:w-1/2 flex flex-col">
+                    <div class="flex border-b border-slate-200 bg-slate-50">
+                        <button class="tab-btn active flex-1 py-3 text-sm transition text-[#4d7ca6] border-[#4d7ca6]" onclick="switchTab(this, 1, 'orig')">
+                            <i class="fas fa-book-open ml-1"></i> الشرح الوظيفي
+                        </button>
+                        <button class="tab-btn flex-1 py-3 text-sm transition text-slate-500 hover:text-[#d94841]" onclick="switchTab(this, 1, 'sim')">
+                            <i class="fas fa-exchange-alt ml-1"></i> أمثلة مشابهة (ماذا يتغير؟)
+                        </button>
+                    </div>
+                    <div class="p-5 flex-1 bg-white">
+                        <div id="desc-orig-1" class="text-slate-600 text-[15px] leading-loose fade-in">
+                            نستخدم <code class="inline-code">long long</code> لمصفوفة <code class="inline-code">dp</code> لأن مجموع قيم العناصر المأخوذة (<span class="en-term">Values</span>) قد يتجاوز الحد الأقصى للمتغير <code class="inline-code">int</code>. المصفوفة ثنائية الأبعاد <code class="inline-code">dp[i][capacity]</code> تمثل: "أقصى قيمة يمكن تحقيقها باستخدام العناصر من <code class="inline-code">0</code> إلى <code class="inline-code">i</code> بوزن متبقي <code class="inline-code">capacity</code>".
+                        </div>
+                        <div id="desc-sim-1" class="hidden text-slate-600 text-[15px] leading-loose fade-in">
+                            <span class="inline-block bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold mb-2">تغير المعطيات</span><br>
+                            في مسألة <b>الحقيبة غير المحدودة (<span class="en-term">Unbounded Knapsack</span>)</b> حيث يمكنك أخذ نفس العنصر أكثر من مرة، لا نحتاج لتذكر "عند أي عنصر نحن الآن"، فالحالة تعتمد فقط على "كم تبقى من الوزن؟". لذلك يتم الاستغناء عن البعد الأول وتتحول المصفوفة لـ <span class="en-term">1D</span>.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- الجزء 2: الحالات الأساسية -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-[#d94841] text-white px-5 py-3 flex items-center gap-3">
+                <div class="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center font-bold">2</div>
+                <h2 class="text-lg font-bold">الحالات الأساسية (Base Cases)</h2>
+            </div>
+            
+            <div class="flex flex-col md:flex-row">
+                <div class="md:w-1/2 bg-[#0f172a] p-5 overflow-x-auto border-b md:border-b-0 md:border-l border-slate-700 min-h-[150px]">
+                    <div id="code-orig-2" class="fade-in">
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+<span class="typ">long long</span> <span class="fnc">f</span> (<span class="typ">int</span> i, <span class="typ">int</span> capacity) {
+
+    <span class="kwd">if</span> (i == <span class="num">0</span>) {
+        <span class="kwd">if</span> (capacity < w[i]) {
+            <span class="kwd">return</span> <span class="num">0</span>;
+        }
+        <span class="kwd">else</span> {
+            <span class="kwd">return</span> v[i];
+        }
+    }
+</pre>
+                    </div>
+                    <div id="code-sim-2" class="hidden fade-in">
+                        <div class="text-xs text-red-400 mb-3 font-bold bg-red-400/10 inline-block px-2 py-1 rounded border border-red-400/20"><i class="fas fa-code-branch ml-1"></i> كود معدل: تبسيط الحالات الأساسية</div>
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+<span class="typ">long long</span> <span class="fnc">f</span> (<span class="typ">int</span> i, <span class="typ">int</span> capacity) {
+
+    <span class="cmt">// الاستغناء عن التحقق من i == 0 بأسلوب أنظف وأشمل</span>
+    <span class="kwd">if</span> (i &lt; <span class="num">0</span>) {
+        <span class="kwd">return</span> <span class="num">0</span>; <span class="cmt">// لم يتبق عناصر لنأخذها</span>
+    }
+    
+    <span class="cmt">// (ملاحظة: التحقق من capacity &gt;= w[i] سيتم في الأسفل)</span>
+</pre>
+                    </div>
+                </div>
+                <div class="md:w-1/2 flex flex-col">
+                    <div class="flex border-b border-slate-200 bg-slate-50">
+                        <button class="tab-btn active flex-1 py-3 text-sm transition text-[#4d7ca6] border-[#4d7ca6]" onclick="switchTab(this, 2, 'orig')">الشرح الوظيفي</button>
+                        <button class="tab-btn flex-1 py-3 text-sm transition text-slate-500 hover:text-[#d94841]" onclick="switchTab(this, 2, 'sim')">أمثلة مشابهة (ماذا يتغير؟)</button>
+                    </div>
+                    <div class="p-5 flex-1 bg-white">
+                        <div id="desc-orig-2" class="text-slate-600 text-[15px] leading-loose fade-in">
+                            عندما نصل للعنصر الأول (الفهرس <code class="inline-code">0</code>)، فإننا مجبرون على اتخاذ قرار نهائي بشأنه لأنه لم يعد هناك عناصر أخرى لنستدعيها. <br>
+                            إذا كانت الحقيبة تتسع لوزنه، نأخذه ونرجع قيمته. إذا كانت لا تتسع، نتركه ونرجع <code class="inline-code">0</code>.
+                        </div>
+                        <div id="desc-sim-2" class="hidden text-slate-600 text-[15px] leading-loose fade-in">
+                            <span class="inline-block bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold mb-2">تغير المعطيات</span><br>
+                            في الأكواد الاحترافية (<span class="en-term">Clean Code</span>)، يتم غالباً تبسيط شرط التوقف. بدلاً من التعامل الخاص مع العنصر <code class="inline-code">0</code>، نسمح للدالة باستدعاء <code class="inline-code">f(-1, cap)</code>، ويكون الـ <span class="en-term">Base Case</span> هو: "إذا أصبحت <code class="inline-code">i < 0</code> فهذا يعني انتهاء العناصر، أرجع صفر". هذا يقلل من تكرار الشروط البرمجية.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- الجزء 3: تقنية الحفظ -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-[#e4a835] text-white px-5 py-3 flex items-center gap-3">
+                <div class="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center font-bold">3</div>
+                <h2 class="text-lg font-bold">تقنية الحفظ (Memoization)</h2>
+            </div>
+            
+            <div class="flex flex-col md:flex-row">
+                <div class="md:w-1/2 bg-[#0f172a] p-5 overflow-x-auto border-b md:border-b-0 md:border-l border-slate-700 min-h-[150px]">
+                    <div id="code-orig-3" class="fade-in">
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+    <span class="kwd">if</span> (dp[i][capacity] != -<span class="num">1</span>) {
+        <span class="kwd">return</span> dp[i][capacity];
+    }
+</pre>
+                    </div>
+                    <div id="code-sim-3" class="hidden fade-in">
+                        <div class="text-xs text-yellow-400 mb-3 font-bold bg-yellow-400/10 inline-block px-2 py-1 rounded border border-yellow-400/20"><i class="fas fa-code-branch ml-1"></i> كود معدل: مسائل البحث عن الحد الأدنى (Minimization)</div>
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+    <span class="cmt">// في مسائل الـ (Minimum) مثل Coin Change</span>
+    <span class="cmt">// نهيئ المصفوفة برقم ضخم كـ 1e18، ونتحقق بناءً عليه</span>
+    <span class="kwd">if</span> (dp[i][capacity] != <span class="num">1e18</span>) {
+        <span class="kwd">return</span> dp[i][capacity];
+    }
+</pre>
+                    </div>
+                </div>
+                <div class="md:w-1/2 flex flex-col">
+                    <div class="flex border-b border-slate-200 bg-slate-50">
+                        <button class="tab-btn active flex-1 py-3 text-sm transition text-[#4d7ca6] border-[#4d7ca6]" onclick="switchTab(this, 3, 'orig')">الشرح الوظيفي</button>
+                        <button class="tab-btn flex-1 py-3 text-sm transition text-slate-500 hover:text-[#d94841]" onclick="switchTab(this, 3, 'sim')">أمثلة مشابهة (ماذا يتغير؟)</button>
+                    </div>
+                    <div class="p-5 flex-1 bg-white">
+                        <div id="desc-orig-3" class="text-slate-600 text-[15px] leading-loose fade-in">
+                            الخطوة الأهم لمنع <span class="en-term">Time Limit Exceeded (TLE)</span>. إذا كانت الحالة الحالية (العنصر <code class="inline-code">i</code> بوزن متبقي <code class="inline-code">capacity</code>) قد حُسبت مسبقاً وتم تغيير قيمتها من <code class="inline-code">-1</code>، نعيد القيمة فوراً دون استدعاءات إضافية.
+                        </div>
+                        <div id="desc-sim-3" class="hidden text-slate-600 text-[15px] leading-loose fade-in">
+                            <span class="inline-block bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold mb-2">تغير المعطيات</span><br>
+                            في مسألتنا نبحث عن <b>الحد الأقصى (<span class="en-term">Maximize Value</span>)</b> لذلك استخدمنا <code class="inline-code">-1</code> كقيمة أولية.<br>
+                            أما في مسائل مثل <b>أقل عدد عملات لتكوين مبلغ (<span class="en-term">Coin Change - Min</span>)</b>، سنقوم بتهيئة المصفوفة برقم كبير جداً (<span class="en-term">Infinity</span>) لكي ينجح تطبيق دالة الـ <code class="inline-code">min</code>، وسيصبح شرط التحقق مطابقاً للكود المجاور.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- الجزء 4: معادلة الانتقال (Transition) -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-[#65a363] text-white px-5 py-3 flex items-center gap-3">
+                <div class="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center font-bold">4</div>
+                <h2 class="text-lg font-bold">معادلة الانتقال (Transition) - خياران فقط</h2>
+            </div>
+            
+            <div class="flex flex-col md:flex-row">
+                <div class="md:w-1/2 bg-[#0f172a] p-5 overflow-x-auto border-b md:border-b-0 md:border-l border-slate-700 min-h-[150px]">
+                    <div id="code-orig-4" class="fade-in">
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+    <span class="cmt">// i في حالة إستبعاد العنصر </span>
+    dp[i][capacity] = <span class="fnc">f</span>(i - <span class="num">1</span>, capacity);
+
+    <span class="cmt">// i في حالة أخذ العنصر (يجب التحقق من السعة أولاً)</span>
+    <span class="kwd">if</span> (capacity &gt;= w[i]) {
+        dp[i][capacity] = <span class="sys">max</span>(
+            dp[i][capacity], 
+            <span class="fnc">f</span>(i - <span class="num">1</span>, capacity - w[i]) + v[i]
+        );
+    }
+
+    <span class="kwd">return</span> dp[i][capacity];
+}
+</pre>
+                    </div>
+                    <div id="code-sim-4" class="hidden fade-in">
+                        <div class="text-xs text-green-400 mb-3 font-bold bg-green-400/10 inline-block px-2 py-1 rounded border border-green-400/20"><i class="fas fa-code-branch ml-1"></i> كود معدل: حساب "عدد الطرق" الممكنة بدلاً من الحد الأقصى</div>
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+    <span class="cmt">// استبعاد العنصر</span>
+    <span class="typ">long long</span> ways = <span class="fnc">f</span>(i - <span class="num">1</span>, capacity);
+
+    <span class="cmt">// في حالة حساب عدد الطرق (Ways)، نستبدل max بعملية الجمع +</span>
+    <span class="kwd">if</span> (capacity &gt;= w[i]) {
+        ways = (ways + <span class="fnc">f</span>(i - <span class="num">1</span>, capacity - w[i])) % MOD;
+    }
+
+    dp[i][capacity] = ways;
+    <span class="kwd">return</span> dp[i][capacity];
+}
+</pre>
+                    </div>
+                </div>
+                <div class="md:w-1/2 flex flex-col">
+                    <div class="flex border-b border-slate-200 bg-slate-50">
+                        <button class="tab-btn active flex-1 py-3 text-sm transition text-[#4d7ca6] border-[#4d7ca6]" onclick="switchTab(this, 4, 'orig')">الشرح الوظيفي</button>
+                        <button class="tab-btn flex-1 py-3 text-sm transition text-slate-500 hover:text-[#d94841]" onclick="switchTab(this, 4, 'sim')">أمثلة مشابهة (ماذا يتغير؟)</button>
+                    </div>
+                    <div class="p-5 flex-1 bg-white">
+                        <div id="desc-orig-4" class="text-slate-600 text-[15px] leading-loose fade-in">
+                            هذا هو الجوهر الكامل لمسألة الحقيبة (<span class="en-term">Take or Leave</span>). لكل عنصر خياران:<br>
+                            1. <b>استبعاده:</b> ننتقل للعنصر <code class="inline-code">i-1</code> ونحتفظ بنفس السعة المتبقية.<br>
+                            2. <b>أخذه:</b> إذا كانت الحقيبة تتسع لوزنه، ننتقل للعنصر <code class="inline-code">i-1</code>، ونخصم وزنه من السعة، ونجمع قيمته <code class="inline-code">v[i]</code> للناتج.<br>
+                            نختار المسار الذي يُعطي <b>القيمة الأكبر (<span class="en-term">max</span>)</b>.
+                        </div>
+                        <div id="desc-sim-4" class="hidden text-slate-600 text-[15px] leading-loose fade-in">
+                            <span class="inline-block bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold mb-2">تغير المعطيات</span><br>
+                            إذا تغير صيغة السؤال إلى: <b>"بكم طريقة مختلفة يمكننا ملء الحقيبة بوزن محدد بالضبط؟"</b>، فلن نبحث عن الحد الأقصى <code class="inline-code">max</code>. بل سنستخدم <b>عملية الجمع <code class="inline-code">+</code></b> لنجمع عدد الطرق الناتجة عن "استبعاد العنصر" مع عدد الطرق الناتجة عن "أخذ العنصر" (مع تطبيق <span class="en-term">Modulo</span> إذا كانت الأرقام ضخمة).
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- الجزء 5: الدالة الرئيسية والتهيئة -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-[#4d7ca6] text-white px-5 py-3 flex items-center gap-3">
+                <div class="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center font-bold">5</div>
+                <h2 class="text-lg font-bold">التهيئة والدالة الرئيسية (Main)</h2>
+            </div>
+            
+            <div class="flex flex-col md:flex-row">
+                <div class="md:w-1/2 bg-[#0f172a] p-5 overflow-x-auto border-b md:border-b-0 md:border-l border-slate-700 min-h-[150px]">
+                    <div id="code-orig-5" class="fade-in">
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+<span class="typ">int</span> <span class="fnc">main</span>() {
+  
+    <span class="cmt">// تهيئة المصفوفة ثنائية الأبعاد بـ 1-</span>
+    <span class="kwd">for</span> (<span class="typ">int</span> i = <span class="num">0</span>; i < <span class="num">200</span>; i++) {
+    <span class="kwd">for</span> (<span class="typ">int</span> j = <span class="num">0</span>; j < <span class="num">200000</span>; j++) {
+          dp[i][j] = -<span class="num">1</span>;
+    }
+    }
+
+    <span class="typ">int</span> n, weight;
+    cin >> n >> weight;
+  
+    <span class="kwd">for</span> (<span class="typ">int</span> i = <span class="num">0</span>; i < n; i++) {
+        cin >> w[i] >> v[i];
+    }
+
+    <span class="cmt">// استدعاء الدالة لآخر عنصر بكامل سعة الحقيبة</span>
+    cout << <span class="fnc">f</span>(n - <span class="num">1</span>, weight) << endl;
+}
+</pre>
+                    </div>
+                    <div id="code-sim-5" class="hidden fade-in">
+                        <div class="text-xs text-blue-400 mb-3 font-bold bg-blue-400/10 inline-block px-2 py-1 rounded border border-blue-400/20"><i class="fas fa-code-branch ml-1"></i> كود معدل: التهيئة السريعة واستخدام Bottom-Up 1D</div>
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+<span class="kwd">#include</span> <span class="str">&lt;cstring&gt;</span> <span class="cmt">// من أجل memset</span>
+
+<span class="typ">int</span> <span class="fnc">main</span>() {
+    <span class="cmt">/* ... (قراءة المعطيات) ... */</span>
+
+    <span class="cmt">// تحسين المساحة (Space Optimization) لـ O(W)</span>
+    <span class="typ">long long</span> dp[<span class="num">200005</span>] = {<span class="num">0</span>};
+    
+    <span class="kwd">for</span> (<span class="typ">int</span> i = <span class="num">0</span>; i < n; i++) {
+        <span class="cmt">// يجب المرور بشكل عكسي (من النهاية للبداية) في حالة 0/1</span>
+        <span class="kwd">for</span> (<span class="typ">int</span> j = weight; j >= w[i]; j--) {
+            dp[j] = <span class="sys">max</span>(dp[j], dp[j - w[i]] + v[i]);
+        }
+    }
+
+    cout << dp[weight] << endl;
+}
+</pre>
+                    </div>
+                </div>
+                <div class="md:w-1/2 flex flex-col">
+                    <div class="flex border-b border-slate-200 bg-slate-50">
+                        <button class="tab-btn active flex-1 py-3 text-sm transition text-[#4d7ca6] border-[#4d7ca6]" onclick="switchTab(this, 5, 'orig')">الشرح الوظيفي</button>
+                        <button class="tab-btn flex-1 py-3 text-sm transition text-slate-500 hover:text-[#d94841]" onclick="switchTab(this, 5, 'sim')">أمثلة مشابهة (ماذا يتغير؟)</button>
+                    </div>
+                    <div class="p-5 flex-1 bg-white">
+                        <div id="desc-orig-5" class="text-slate-600 text-[15px] leading-loose fade-in">
+                            نهيئ مصفوفة الحفظ بالقيمة <code class="inline-code">-1</code> عبر حلقتين متداخلتين. ثم نقوم بقراءة عدد العناصر <code class="inline-code">n</code> والوزن الأقصى <code class="inline-code">weight</code>، تليها أوزان وقيم كل عنصر. في النهاية نطبع ناتج استدعاء الدالة الرئيسية التي تبدأ من العنصر الأخير وتتراجع.
+                        </div>
+                        <div id="desc-sim-5" class="hidden text-slate-600 text-[15px] leading-loose fade-in">
+                            <span class="inline-block bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold mb-2">تغير المعطيات</span><br>
+                            في المسائل التي تعاني من ضيق شديد في الذاكرة (<span class="en-term">Memory Limit</span>)، يتم الاستغناء تماماً عن المصفوفة ثنائية الأبعاد والدالة التراجعية! بدلاً من ذلك، نستخدم أسلوب <span class="en-term">Bottom-Up</span> بمصفوفة أحادية البعد <span class="en-term">1D</span> يتم تحديثها <b>بشكل عكسي</b> مع كل عنصر جديد لتوفير الذاكرة لتصبح <span class="en-term">O(W)</span> بدلاً من <span class="en-term">O(N*W)</span>.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- التذييل المخصص -->
+    <footer class="bg-white border-t border-slate-200 mt-auto">
+        <div class="max-w-5xl mx-auto p-6 text-center">
+            <p class="text-sm font-bold text-slate-600">
+                تصميم محمد مجممي - وهي جهد شخصي لا يغني عن الرجوع للمنصات الرسمية
+            </p>
+            <p class="text-xs text-slate-400 mt-2">
+                &copy; أداة تعليمية مساعدة مخصصة لطلاب الأولمبياد.
+            </p>
+        </div>
+    </footer>
+
+    <!-- سكربت التحكم الديناميكي -->
+    <script>
+        function switchTab(clickedBtn, sectionId, mode) {
+            // الحصول على حاوية الأزرار وإعادة تعيين التنسيقات
+            const btnContainer = clickedBtn.parentElement;
+            const buttons = btnContainer.querySelectorAll('button');
+            buttons.forEach(btn => {
+                btn.classList.remove('active', 'text-[#4d7ca6]', 'border-[#4d7ca6]');
+                btn.classList.add('text-slate-500');
+                btn.style.borderBottom = 'none';
+            });
+
+            // تفعيل الزر المضغوط
+            clickedBtn.classList.add('active', 'text-[#4d7ca6]');
+            clickedBtn.classList.remove('text-slate-500');
+            clickedBtn.style.borderBottom = '3px solid #4d7ca6';
+
+            // جلب عناصر الشرح
+            const descOrig = document.getElementById(`desc-orig-${sectionId}`);
+            const descSim = document.getElementById(`desc-sim-${sectionId}`);
+            
+            // جلب عناصر الكود
+            const codeOrig = document.getElementById(`code-orig-${sectionId}`);
+            const codeSim = document.getElementById(`code-sim-${sectionId}`);
+
+            // تبديل العرض بناءً على الوضع المختار
+            if (mode === 'orig') {
+                descOrig.classList.remove('hidden');
+                descSim.classList.add('hidden');
+                
+                codeOrig.classList.remove('hidden');
+                codeSim.classList.add('hidden');
+            } else {
+                descOrig.classList.add('hidden');
+                descSim.classList.remove('hidden');
+                
+                codeOrig.classList.add('hidden');
+                codeSim.classList.remove('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
