@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> تحليل أكواد البرمجة التنافسية (Intervals Intersection)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Fira+Code:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #f1f5f9;
+        }
+        .font-code {
+            font-family: 'Fira Code', monospace;
+            direction: ltr;
+            text-align: left;
+        }
+        
+        /* تأثير تبويبات الشرح والأمثلة */
+        .tab-btn.active {
+            border-bottom: 3px solid;
+            font-weight: 700;
+            background-color: #f8fafc;
+        }
+        
+        /* تلوين أجزاء الكود (Syntax Highlighting مبسط) */
+        .kwd { color: #f472b6; } /* pink-400 - Keywords */
+        .typ { color: #93c5fd; } /* blue-300 - Types */
+        .str { color: #86efac; } /* green-300 - Strings/Includes */
+        .num { color: #d8b4fe; } /* purple-300 - Numbers */
+        .fnc { color: #fef08a; } /* yellow-200 - Functions */
+        .cmt { color: #94a3b8; font-style: italic; } /* slate-400 - Comments */
+        .sys { color: #67e8f9; } /* cyan-300 - System/Math Funcs */
+
+        /* إصلاح تداخل اتجاه النصوص (LTR داخل RTL) */
+        .inline-code {
+            direction: ltr;
+            unicode-bidi: isolate;
+            display: inline-block;
+            font-family: 'Fira Code', monospace;
+            background-color: #f8fafc;
+            color: #d94841;
+            padding: 0 6px;
+            border-radius: 4px;
+            border: 1px solid #e2e8f0;
+            margin: 0 2px;
+            font-size: 0.9em;
+        }
+        .en-term {
+            direction: ltr;
+            unicode-bidi: isolate;
+            display: inline-block;
+            font-weight: 700;
+        }
+
+        /* حركات التبديل للكود */
+        .fade-in {
+            animation: fadeIn 0.4s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #e2e8f0; }
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col text-slate-800">
+
+    <!-- شريط الرأس (Header) -->
+    <header class="bg-white shadow-sm border-b-4 border-[#21244d] p-4 sticky top-0 z-50">
+        <div class="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-4">
+                               <div>
+                    <h1 class="text-xl md:text-2xl font-black text-[#21244d] tracking-tight">تحليل هيكلي لأكواد أولمبياد العلوم والرياضيات الوطني <span class="font-bold text-[#d94841]">NSMO</span></h1>
+                    <p class="text-sm text-slate-500 font-semibold mt-1">التحليل الهيكلي لخوارزميات البرمجة التنافسية</p>
+                </div>
+            </div>
+            <div class="bg-[#f8fafc] border border-slate-200 px-4 py-2 rounded-lg text-sm font-bold text-[#4d7ca6] flex items-center gap-2">
+                <i class="fab fa-cuttlefish text-lg"></i>
+                مسألة: Painting the Fence (Intervals)
+            </div>
+        </div>
+    </header>
+
+    <!-- المحتوى الرئيسي -->
+    <main class="flex-1 max-w-5xl mx-auto w-full p-4 space-y-8 my-6">
+
+        <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 text-blue-800 text-sm leading-relaxed font-medium">
+            <i class="fas fa-info-circle ml-2 text-blue-600"></i>
+            هذا المستند يحلل مسألة تعتمد على منطق <b>الفترات والتقاطعات (<span class="en-term">Intervals & Intersections</span>)</b>. عند الضغط على <b>أمثلة مشابهة</b>، سيتغير الكود ليوضح كيف يمكن تكييف هذا الأسلوب لمسائل أخرى مثل التعامل مع عدد غير محدود من الفترات أو الترتيب.
+        </div>
+
+        <!-- الجزء 1: الإدخال والإخراج الخاص بـ USACO -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-[#21244d] text-white px-5 py-3 flex items-center gap-3">
+                <div class="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center font-bold">1</div>
+                <h2 class="text-lg font-bold">التعامل مع الملفات (USACO I/O)</h2>
+            </div>
+            
+            <div class="flex flex-col md:flex-row">
+                <div class="md:w-1/2 bg-[#0f172a] p-5 overflow-x-auto border-b md:border-b-0 md:border-l border-slate-700 relative min-h-[150px]">
+                    <div id="code-orig-1" class="fade-in">
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+<span class="kwd">#include</span> <span class="str">&lt;iostream&gt;</span>
+
+<span class="kwd">using</span> <span class="typ">namespace</span> std;
+
+<span class="typ">int</span> <span class="fnc">main</span>() {
+  <span class="cmt">// USACO هذين السطرين فقد لأخذ المدخلات وطباعة المخرجات في موقع </span>
+  <span class="sys">freopen</span>(<span class="str">"paint.in"</span>, <span class="str">"r"</span>, stdin);
+  <span class="sys">freopen</span>(<span class="str">"paint.out"</span>, <span class="str">"w"</span>, stdout);
+</pre>
+                    </div>
+                    <div id="code-sim-1" class="hidden fade-in">
+                        <div class="text-xs text-red-400 mb-3 font-bold bg-red-400/10 inline-block px-2 py-1 rounded border border-red-400/20"><i class="fas fa-code-branch ml-1"></i> كود معدل: منصات مثل Codeforces أو LeetCode</div>
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+<span class="kwd">#include</span> <span class="str">&lt;iostream&gt;</span>
+
+<span class="kwd">using</span> <span class="typ">namespace</span> std;
+
+<span class="typ">int</span> <span class="fnc">main</span>() {
+  <span class="cmt">// في المنصات الأخرى، الإدخال والإخراج يكون من الـ Console مباشرة</span>
+  <span class="cmt">// لا حاجة لـ freopen، بل نستخدم هذه الأسطر للتسريع فقط:</span>
+  ios::sync_with_stdio(<span class="kwd">false</span>);
+  cin.tie(<span class="kwd">nullptr</span>);
+</pre>
+                    </div>
+                </div>
+                <div class="md:w-1/2 flex flex-col">
+                    <div class="flex border-b border-slate-200 bg-slate-50">
+                        <button class="tab-btn active flex-1 py-3 text-sm transition text-[#4d7ca6] border-[#4d7ca6]" onclick="switchTab(this, 1, 'orig')">الشرح الوظيفي</button>
+                        <button class="tab-btn flex-1 py-3 text-sm transition text-slate-500 hover:text-[#d94841]" onclick="switchTab(this, 1, 'sim')">أمثلة مشابهة (ماذا يتغير؟)</button>
+                    </div>
+                    <div class="p-5 flex-1 bg-white">
+                        <div id="desc-orig-1" class="text-slate-600 text-[15px] leading-loose fade-in">
+                            تاريخياً، كانت مسابقة <b><span class="en-term">USACO</span></b> تتطلب من المتسابقين قراءة المدخلات من ملف نصي (مثل <code class="inline-code">paint.in</code>) وكتابة المخرجات في ملف آخر (مثل <code class="inline-code">paint.out</code>). الدالة <code class="inline-code">freopen</code> تقوم بإعادة توجيه الدخل القياسي <code class="inline-code">stdin</code> والخرج القياسي <code class="inline-code">stdout</code> للتعامل مع هذه الملفات تلقائياً عند استخدام <code class="inline-code">cin</code> و <code class="inline-code">cout</code>.
+                        </div>
+                        <div id="desc-sim-1" class="hidden text-slate-600 text-[15px] leading-loose fade-in">
+                            <span class="inline-block bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold mb-2">تغير المعطيات</span><br>
+                            معظم المنصات الحديثة للبرمجة التنافسية (مثل <span class="en-term">Codeforces</span> أو النسخ الأحدث من <span class="en-term">USACO</span>) لم تعد تستخدم هذا الأسلوب وتعتمد على الإدخال القياسي المباشر. في هذه الحالة، نزيل <code class="inline-code">freopen</code> تماماً، ونكتفي بوضع أسطر تسريع الإدخال والإخراج القياسية إذا لزم الأمر.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- الجزء 2: قراءة الفترات -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-[#d94841] text-white px-5 py-3 flex items-center gap-3">
+                <div class="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center font-bold">2</div>
+                <h2 class="text-lg font-bold">قراءة إحداثيات الفترات (Interval Coordinates)</h2>
+            </div>
+            
+            <div class="flex flex-col md:flex-row">
+                <div class="md:w-1/2 bg-[#0f172a] p-5 overflow-x-auto border-b md:border-b-0 md:border-l border-slate-700 min-h-[150px]">
+                    <div id="code-orig-2" class="fade-in">
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+  <span class="typ">int</span> a_l , a_r, b_l , b_r;
+  
+  cin >> a_l >> a_r >> b_l >> b_r;
+</pre>
+                    </div>
+                    <div id="code-sim-2" class="hidden fade-in">
+                        <div class="text-xs text-red-400 mb-3 font-bold bg-red-400/10 inline-block px-2 py-1 rounded border border-red-400/20"><i class="fas fa-code-branch ml-1"></i> كود معدل: التعامل مع N من الفترات (Array of Structs/Pairs)</div>
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+  <span class="cmt">// إذا كان لدينا عدد غير محدد (N) من الفترات وليس اثنتين فقط</span>
+  <span class="typ">int</span> n; cin >> n;
+  <span class="typ">vector</span>&lt;<span class="typ">pair</span>&lt;<span class="typ">int</span>, <span class="typ">int</span>&gt;&gt; intervals(n);
+  
+  <span class="kwd">for</span>(<span class="typ">int</span> i = <span class="num">0</span>; i < n; i++) {
+      cin >> intervals[i].first >> intervals[i].second;
+  }
+</pre>
+                    </div>
+                </div>
+                <div class="md:w-1/2 flex flex-col">
+                    <div class="flex border-b border-slate-200 bg-slate-50">
+                        <button class="tab-btn active flex-1 py-3 text-sm transition text-[#4d7ca6] border-[#4d7ca6]" onclick="switchTab(this, 2, 'orig')">الشرح الوظيفي</button>
+                        <button class="tab-btn flex-1 py-3 text-sm transition text-slate-500 hover:text-[#d94841]" onclick="switchTab(this, 2, 'sim')">أمثلة مشابهة (ماذا يتغير؟)</button>
+                    </div>
+                    <div class="p-5 flex-1 bg-white">
+                        <div id="desc-orig-2" class="text-slate-600 text-[15px] leading-loose fade-in">
+                            المتغيرات هنا تعبر عن فترة معينة على خط الأعداد. <code class="inline-code">a_l</code> هو بداية الفترة <code class="inline-code">A</code> (اليسار)، و <code class="inline-code">a_r</code> هو نهايتها (اليمين). وبالمثل للفترة <code class="inline-code">B</code>. تقرأ هذه المتغيرات تباعاً من الدخل.
+                        </div>
+                        <div id="desc-sim-2" class="hidden text-slate-600 text-[15px] leading-loose fade-in">
+                            <span class="inline-block bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold mb-2">تغير المعطيات</span><br>
+                            في المسائل الأكثر تقدماً (مثل <b><span class="en-term">Merge Intervals</span></b>)، لا يقتصر الأمر على فترتين فقط بل <span class="en-term">N</span> من الفترات. في هذه الحالة، لن نعرّف متغيرات منفصلة، بل سنستخدم مصفوفة أو <code class="inline-code">vector</code> من نوع <code class="inline-code">pair&lt;int, int&gt;</code> لتخزين بداية ونهاية كل فترة.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- الجزء 3: حساب التقاطع رياضياً -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-[#e4a835] text-white px-5 py-3 flex items-center gap-3">
+                <div class="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center font-bold">3</div>
+                <h2 class="text-lg font-bold">إيجاد منطقة التقاطع (Intersection)</h2>
+            </div>
+            
+            <div class="flex flex-col md:flex-row">
+                <div class="md:w-1/2 bg-[#0f172a] p-5 overflow-x-auto border-b md:border-b-0 md:border-l border-slate-700 min-h-[150px]">
+                    <div id="code-orig-3" class="fade-in">
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+  <span class="cmt">// b و a يمثل التقاطع بين c</span>
+  <span class="typ">int</span> c_l = <span class="sys">max</span>(a_l, b_l), c_r = <span class="sys">min</span>(a_r, b_r);
+</pre>
+                    </div>
+                    <div id="code-sim-3" class="hidden fade-in">
+                        <div class="text-xs text-yellow-400 mb-3 font-bold bg-yellow-400/10 inline-block px-2 py-1 rounded border border-yellow-400/20"><i class="fas fa-code-branch ml-1"></i> كود معدل: تقاطع مستطيلات (2D Intersection)</div>
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+  <span class="cmt">// لو كنا نبحث عن تقاطع مستطيلين (2D) بدلاً من خطين (1D)</span>
+  <span class="cmt">// نطبق نفس المنطق لمحور X ولمحور Y بشكل منفصل</span>
+  <span class="typ">int</span> inter_x_l = <span class="sys">max</span>(rect1_x1, rect2_x1);
+  <span class="typ">int</span> inter_x_r = <span class="sys">min</span>(rect1_x2, rect2_x2);
+  
+  <span class="typ">int</span> inter_y_b = <span class="sys">max</span>(rect1_y1, rect2_y1);
+  <span class="typ">int</span> inter_y_t = <span class="sys">min</span>(rect1_y2, rect2_y2);
+</pre>
+                    </div>
+                </div>
+                <div class="md:w-1/2 flex flex-col">
+                    <div class="flex border-b border-slate-200 bg-slate-50">
+                        <button class="tab-btn active flex-1 py-3 text-sm transition text-[#4d7ca6] border-[#4d7ca6]" onclick="switchTab(this, 3, 'orig')">الشرح الوظيفي</button>
+                        <button class="tab-btn flex-1 py-3 text-sm transition text-slate-500 hover:text-[#d94841]" onclick="switchTab(this, 3, 'sim')">أمثلة مشابهة (ماذا يتغير؟)</button>
+                    </div>
+                    <div class="p-5 flex-1 bg-white">
+                        <div id="desc-orig-3" class="text-slate-600 text-[15px] leading-loose fade-in">
+                            هذا السطر هو قلب المنطق الرياضي! لكي نجد الفترة <code class="inline-code">c</code> التي تُمثل التقاطع بين <code class="inline-code">a</code> و <code class="inline-code">b</code>:<br>
+                            - بداية التقاطع <code class="inline-code">c_l</code> هي <b>الأكبر (<span class="en-term">max</span>)</b> بين بدايتي الفترتين.<br>
+                            - نهاية التقاطع <code class="inline-code">c_r</code> هي <b>الأصغر (<span class="en-term">min</span>)</b> بين نهايتي الفترتين.
+                        </div>
+                        <div id="desc-sim-3" class="hidden text-slate-600 text-[15px] leading-loose fade-in">
+                            <span class="inline-block bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold mb-2">تغير المعطيات</span><br>
+                            في مسائل الهندسة الحسابية (<span class="en-term">Computational Geometry</span>)، قد يُطلب منك إيجاد مساحة التقاطع بين <b>مستطيلين</b> وليس مجرد فترتين. المفاجأة أن نفس المنطق تماماً يُستخدم! كل ما عليك فعله هو تطبيقه مرتين: مرة لإيجاد تقاطع الإحداثيات السينية (محور X)، ومرة للإحداثيات الصادية (محور Y).
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- الجزء 4: حساب الأطوال المبدئية -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-[#65a363] text-white px-5 py-3 flex items-center gap-3">
+                <div class="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center font-bold">4</div>
+                <h2 class="text-lg font-bold">حساب الأطوال (Lengths Calculation)</h2>
+            </div>
+            
+            <div class="flex flex-col md:flex-row">
+                <div class="md:w-1/2 bg-[#0f172a] p-5 overflow-x-auto border-b md:border-b-0 md:border-l border-slate-700 min-h-[150px]">
+                    <div id="code-orig-4" class="fade-in">
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+  <span class="typ">int</span> total = (a_r - a_l) + (b_r - b_l);
+  <span class="typ">int</span> intersection = (c_r - c_l);
+</pre>
+                    </div>
+                    <div id="code-sim-4" class="hidden fade-in">
+                        <div class="text-xs text-green-400 mb-3 font-bold bg-green-400/10 inline-block px-2 py-1 rounded border border-green-400/20"><i class="fas fa-code-branch ml-1"></i> كود معدل: حماية ضد التقاطع الوهمي (Negative Length)</div>
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+  <span class="typ">int</span> total = (a_r - a_l) + (b_r - b_l);
+  
+  <span class="cmt">// إذا كانت c_r أقل من c_l، فالتقاطع غير موجود فعلياً (طول سالب)</span>
+  <span class="cmt">// نستخدم max(0, length) لمنع القيم السالبة</span>
+  <span class="typ">int</span> intersection = <span class="sys">max</span>(<span class="num">0</span>, c_r - c_l);
+</pre>
+                    </div>
+                </div>
+                <div class="md:w-1/2 flex flex-col">
+                    <div class="flex border-b border-slate-200 bg-slate-50">
+                        <button class="tab-btn active flex-1 py-3 text-sm transition text-[#4d7ca6] border-[#4d7ca6]" onclick="switchTab(this, 4, 'orig')">الشرح الوظيفي</button>
+                        <button class="tab-btn flex-1 py-3 text-sm transition text-slate-500 hover:text-[#d94841]" onclick="switchTab(this, 4, 'sim')">أمثلة مشابهة (ماذا يتغير؟)</button>
+                    </div>
+                    <div class="p-5 flex-1 bg-white">
+                        <div id="desc-orig-4" class="text-slate-600 text-[15px] leading-loose fade-in">
+                            نحسب هنا المجموع الإجمالي لأطوال الفترتين كأن كل منهما منفصلة تماماً (الطول = النهاية - البداية). <br>
+                            ثم نحسب طول فترة "التقاطع" المحتملة التي أوجدناها في الخطوة السابقة.
+                        </div>
+                        <div id="desc-sim-4" class="hidden text-slate-600 text-[15px] leading-loose fade-in">
+                            <span class="inline-block bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold mb-2">تغير المعطيات</span><br>
+                            ماذا لو كانت الفترتان متباعدتين جداً؟ في هذه الحالة ستكون <code class="inline-code">c_l &gt; c_r</code>، وسيكون طول التقاطع <b>سالباً!</b>.<br>
+                            بدلاً من معالجة ذلك بشروط لاحقة (كما فعلت في الجزء 5)، يقوم المحترفون عادةً بحساب طول التقاطع هكذا: <code class="inline-code">max(0, c_r - c_l)</code>. إذا كان الطول سالباً (وهمياً)، يصبح صفراً مباشرة.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- الجزء 5: الشروط النهائية وطباعة الحل -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-[#4d7ca6] text-white px-5 py-3 flex items-center gap-3">
+                <div class="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center font-bold">5</div>
+                <h2 class="text-lg font-bold">التحقق من التباعد وطباعة الحل (Final Logic)</h2>
+            </div>
+            
+            <div class="flex flex-col md:flex-row">
+                <div class="md:w-1/2 bg-[#0f172a] p-5 overflow-x-auto border-b md:border-b-0 md:border-l border-slate-700 min-h-[150px]">
+                    <div id="code-orig-5" class="fade-in">
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+  <span class="cmt">// يتقاطعان b و a الآن يجب أن نتحقق ما إذا </span>
+  <span class="kwd">if</span>(b_l > a_r || a_l > b_r){
+    cout << total << <span class="str">"\n"</span>;
+  }
+  <span class="kwd">else</span>{
+    cout << total - intersection << <span class="str">"\n"</span>;
+  }
+}
+</pre>
+                    </div>
+                    <div id="code-sim-5" class="hidden fade-in">
+                        <div class="text-xs text-blue-400 mb-3 font-bold bg-blue-400/10 inline-block px-2 py-1 rounded border border-blue-400/20"><i class="fas fa-code-branch ml-1"></i> كود معدل: تبسيط المنطق باستخدام حماية التقاطع (Step 4)</div>
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+  <span class="cmt">// إذا استخدمنا max(0, c_r - c_l) في الخطوة السابقة</span>
+  <span class="cmt">// فلا حاجة لأي شروط if/else هنا إطلاقاً!</span>
+  
+  <span class="cmt">// نطبع المجموع الكلي ناقص التقاطع (سواء كان 0 أو قيمة فعلية)</span>
+  cout << total - intersection << <span class="str">"\n"</span>;
+}
+</pre>
+                    </div>
+                </div>
+                <div class="md:w-1/2 flex flex-col">
+                    <div class="flex border-b border-slate-200 bg-slate-50">
+                        <button class="tab-btn active flex-1 py-3 text-sm transition text-[#4d7ca6] border-[#4d7ca6]" onclick="switchTab(this, 5, 'orig')">الشرح الوظيفي</button>
+                        <button class="tab-btn flex-1 py-3 text-sm transition text-slate-500 hover:text-[#d94841]" onclick="switchTab(this, 5, 'sim')">أمثلة مشابهة (ماذا يتغير؟)</button>
+                    </div>
+                    <div class="p-5 flex-1 bg-white">
+                        <div id="desc-orig-5" class="text-slate-600 text-[15px] leading-loose fade-in">
+                            هنا نتحقق يدوياً هل الفترتان متباعدتان؟<br>
+                            الشرط <code class="inline-code">b_l &gt; a_r</code> يعني أن <code class="inline-code">B</code> تقع بالكامل يمين <code class="inline-code">A</code>. والشرط المعاكس يعني أنها يسارها. إذا تحقق أحدهما فهذا يعني <b>لا يوجد تقاطع</b>، فنطبع مجموع الأطوال الكامل <code class="inline-code">total</code>.<br>
+                            أما إذا كان هناك تقاطع (حالة الـ <code class="inline-code">else</code>)، فنحن جمعنا منطقة التقاطع <b>مرتين</b>! لذا يجب طرحها مرة واحدة: <code class="inline-code">total - intersection</code>.
+                        </div>
+                        <div id="desc-sim-5" class="hidden text-slate-600 text-[15px] leading-loose fade-in">
+                            <span class="inline-block bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold mb-2">تغير المعطيات</span><br>
+                            كما ذكرنا في الخطوة السابقة، إذا أمّنت حساب التقاطع وجعلته لا ينزل عن الصفر <code class="inline-code">max(0, ...)</code>، يمكنك الاستغناء عن كتلة الـ <code class="inline-code">if-else</code> بأكملها هنا. ستطبع دائماً <code class="inline-code">total - intersection</code>. إذا كانت الفترتان متباعدتين، سيكون التقاطع 0، وبالتالي ستطبع الـ <code class="inline-code">total</code> بشكل صحيح دون الحاجة لشرط خاص. هذا الأسلوب يقلل من احتمالية الأخطاء (Bugs).
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- التذييل المخصص -->
+    <footer class="bg-white border-t border-slate-200 mt-auto">
+        <div class="max-w-5xl mx-auto p-6 text-center">
+            <p class="text-sm font-bold text-slate-600">
+                تصميم محمد مجممي - وهي جهد شخصي لا يغني عن الرجوع للمنصات الرسمية
+            </p>
+            <p class="text-xs text-slate-400 mt-2">
+                &copy; أداة تعليمية مساعدة مخصصة لطلاب الأولمبياد.
+            </p>
+        </div>
+    </footer>
+
+    <!-- سكربت التحكم الديناميكي -->
+    <script>
+        function switchTab(clickedBtn, sectionId, mode) {
+            // الحصول على حاوية الأزرار وإعادة تعيين التنسيقات
+            const btnContainer = clickedBtn.parentElement;
+            const buttons = btnContainer.querySelectorAll('button');
+            buttons.forEach(btn => {
+                btn.classList.remove('active', 'text-[#4d7ca6]', 'border-[#4d7ca6]');
+                btn.classList.add('text-slate-500');
+                btn.style.borderBottom = 'none';
+            });
+
+            // تفعيل الزر المضغوط
+            clickedBtn.classList.add('active', 'text-[#4d7ca6]');
+            clickedBtn.classList.remove('text-slate-500');
+            clickedBtn.style.borderBottom = '3px solid #4d7ca6';
+
+            // جلب عناصر الشرح
+            const descOrig = document.getElementById(`desc-orig-${sectionId}`);
+            const descSim = document.getElementById(`desc-sim-${sectionId}`);
+            
+            // جلب عناصر الكود
+            const codeOrig = document.getElementById(`code-orig-${sectionId}`);
+            const codeSim = document.getElementById(`code-sim-${sectionId}`);
+
+            // تبديل العرض بناءً على الوضع المختار
+            if (mode === 'orig') {
+                descOrig.classList.remove('hidden');
+                descSim.classList.add('hidden');
+                
+                codeOrig.classList.remove('hidden');
+                codeSim.classList.add('hidden');
+            } else {
+                descOrig.classList.add('hidden');
+                descSim.classList.remove('hidden');
+                
+                codeOrig.classList.add('hidden');
+                codeSim.classList.remove('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
