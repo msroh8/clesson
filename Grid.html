@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تحليل أكواد البرمجة التنافسية (Grid Paths DP)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Fira+Code:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #f1f5f9;
+        }
+        .font-code {
+            font-family: 'Fira Code', monospace;
+            direction: ltr;
+            text-align: left;
+        }
+        
+        /* تأثير تبويبات الشرح والأمثلة */
+        .tab-btn.active {
+            border-bottom: 3px solid;
+            font-weight: 700;
+            background-color: #f8fafc;
+        }
+        
+        /* تلوين أجزاء الكود (Syntax Highlighting مبسط) */
+        .kwd { color: #f472b6; } /* pink-400 - Keywords */
+        .typ { color: #93c5fd; } /* blue-300 - Types */
+        .str { color: #86efac; } /* green-300 - Strings/Includes */
+        .num { color: #d8b4fe; } /* purple-300 - Numbers */
+        .fnc { color: #fef08a; } /* yellow-200 - Functions */
+        .cmt { color: #94a3b8; font-style: italic; } /* slate-400 - Comments */
+        .sys { color: #67e8f9; } /* cyan-300 - System/Math Funcs */
+
+        /* إصلاح تداخل اتجاه النصوص (LTR داخل RTL) */
+        .inline-code {
+            direction: ltr;
+            unicode-bidi: isolate;
+            display: inline-block;
+            font-family: 'Fira Code', monospace;
+            background-color: #f8fafc;
+            color: #d94841;
+            padding: 0 6px;
+            border-radius: 4px;
+            border: 1px solid #e2e8f0;
+            margin: 0 2px;
+            font-size: 0.9em;
+        }
+        .en-term {
+            direction: ltr;
+            unicode-bidi: isolate;
+            display: inline-block;
+            font-weight: 700;
+        }
+
+        /* حركات التبديل للكود */
+        .fade-in {
+            animation: fadeIn 0.4s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #e2e8f0; }
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col text-slate-800">
+
+    <!-- شريط الرأس (Header) -->
+    <header class="bg-white shadow-sm border-b-4 border-[#21244d] p-4 sticky top-0 z-50">
+        <div class="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-4">
+                               <div>
+                    <h1 class="text-xl md:text-2xl font-black text-[#21244d] tracking-tight">تحليل هيكلي لأكواد الأولمبياد الوطني  <span class="font-bold text-[#d94841]">NSMO</span></h1>
+                    <p class="text-sm text-slate-500 font-semibold mt-1">التحليل الهيكلي لخوارزميات البرمجة التنافسية</p>
+                </div>
+            </div>
+            <div class="bg-[#f8fafc] border border-slate-200 px-4 py-2 rounded-lg text-sm font-bold text-[#4d7ca6] flex items-center gap-2">
+                <i class="fab fa-cuttlefish text-lg"></i>
+                مسألة: مسارات الشبكة (Grid Paths 2D DP)
+            </div>
+        </div>
+    </header>
+
+    <!-- المحتوى الرئيسي -->
+    <main class="flex-1 max-w-5xl mx-auto w-full p-4 space-y-8 my-6">
+
+        <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 text-blue-800 text-sm leading-relaxed font-medium">
+            <i class="fas fa-info-circle ml-2 text-blue-600"></i>
+            هذا المستند يحلل مسألة تعتمد على البرمجة الديناميكية في الشبكات <b>(<span class="en-term">2D Grid DP</span>)</b> لحساب عدد الطرق الممكنة. عند الضغط على <b>أمثلة مشابهة</b>، سيتغير الكود ليوضح كيف يمكن تكييف هذا الأسلوب لمسائل أخرى مثل البحث عن الحد الأقصى أو تحسين استهلاك الذاكرة.
+        </div>
+
+        <!-- الجزء 1: الإعدادات والقراءة -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-[#21244d] text-white px-5 py-3 flex items-center gap-3">
+                <div class="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center font-bold">1</div>
+                <h2 class="text-lg font-bold">الإعدادات وقراءة الشبكة (Input Handling)</h2>
+            </div>
+            
+            <div class="flex flex-col md:flex-row">
+                <div class="md:w-1/2 bg-[#0f172a] p-5 overflow-x-auto border-b md:border-b-0 md:border-l border-slate-700 relative min-h-[150px]">
+                    <div id="code-orig-1" class="fade-in">
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+<span class="kwd">#include</span> <span class="str">&lt;iostream&gt;</span>
+<span class="kwd">#include</span> <span class="str">&lt;vector&gt;</span>
+<span class="kwd">using</span> <span class="typ">namespace</span> std;
+
+<span class="kwd">const</span> <span class="typ">long long</span> MOD = <span class="num">1000000007LL</span>;
+
+<span class="typ">int</span> <span class="fnc">main</span>() {
+    ios::sync_with_stdio(<span class="kwd">false</span>);
+    cin.tie(<span class="kwd">nullptr</span>);
+
+    <span class="typ">int</span> n;
+    cin >> n;
+
+    <span class="typ">vector</span>&lt;<span class="typ">string</span>&gt; grid(n);
+    <span class="kwd">for</span> (<span class="typ">int</span> i = <span class="num">0</span>; i < n; ++i) {
+        cin >> grid[i];
+    }
+</pre>
+                    </div>
+                    <div id="code-sim-1" class="hidden fade-in">
+                        <div class="text-xs text-red-400 mb-3 font-bold bg-red-400/10 inline-block px-2 py-1 rounded border border-red-400/20"><i class="fas fa-code-branch ml-1"></i> كود معدل: شبكة أرقام (Weighted Grid)</div>
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+<span class="cmt">// إذا كانت الشبكة تحتوي على أرقام (مثل تكلفة أو نقاط) وليس رموز '*' و '.'</span>
+<span class="cmt">// نستخدم vector ثنائي الأبعاد للأرقام بدلاً من vector of strings</span>
+
+<span class="typ">int</span> n, m; <span class="cmt">// الشبكة قد تكون N x M</span>
+cin >> n >> m;
+
+<span class="typ">vector</span>&lt;<span class="typ">vector</span>&lt;<span class="typ">int</span>&gt;&gt; grid(n, <span class="typ">vector</span>&lt;<span class="typ">int</span>&gt;(m));
+<span class="kwd">for</span> (<span class="typ">int</span> i = <span class="num">0</span>; i < n; ++i) {
+    <span class="kwd">for</span> (<span class="typ">int</span> j = <span class="num">0</span>; j < m; ++j) {
+        cin >> grid[i][j];
+    }
+}
+</pre>
+                    </div>
+                </div>
+                <div class="md:w-1/2 flex flex-col">
+                    <div class="flex border-b border-slate-200 bg-slate-50">
+                        <button class="tab-btn active flex-1 py-3 text-sm transition text-[#4d7ca6] border-[#4d7ca6]" onclick="switchTab(this, 1, 'orig')">الشرح الوظيفي</button>
+                        <button class="tab-btn flex-1 py-3 text-sm transition text-slate-500 hover:text-[#d94841]" onclick="switchTab(this, 1, 'sim')">أمثلة مشابهة (ماذا يتغير؟)</button>
+                    </div>
+                    <div class="p-5 flex-1 bg-white">
+                        <div id="desc-orig-1" class="text-slate-600 text-[15px] leading-loose fade-in">
+                            نعرّف المتغير <code class="inline-code">MOD</code> لأن أعداد الطرق تنمو أُسياً وقد تتجاوز سعة البيانات بسهولة. بما أن الشبكة معطاة كحروف متصلة (مثال: <code class="inline-code">..*..</code>)، نستخدم <code class="inline-code">vector&lt;string&gt;</code> لقراءتها. هذا أسرع بكثير وأكثر كفاءة من قراءة كل حرف بمفرده في مصفوفة ثنائية الأبعاد للحروف.
+                        </div>
+                        <div id="desc-sim-1" class="hidden text-slate-600 text-[15px] leading-loose fade-in">
+                            <span class="inline-block bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold mb-2">تغير المعطيات</span><br>
+                            إذا كانت المسألة تطلب إيجاد "أقل مسار تكلفة" (<span class="en-term">Min Path Sum</span>)، فالشبكة ستتكون من أرقام منفصلة بالمسافات بدلاً من الرموز. هنا يجب التغيير من <code class="inline-code">vector&lt;string&gt;</code> إلى مصفوفة ثنائية الأبعاد من نوع <code class="inline-code">int</code> أو <code class="inline-code">long long</code> وقراءتها بحلقتين متداخلتين كما يظهر في الكود.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- الجزء 2: تهيئة المصفوفة -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-[#d94841] text-white px-5 py-3 flex items-center gap-3">
+                <div class="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center font-bold">2</div>
+                <h2 class="text-lg font-bold">تهيئة الـ DP (State Initialization)</h2>
+            </div>
+            
+            <div class="flex flex-col md:flex-row">
+                <div class="md:w-1/2 bg-[#0f172a] p-5 overflow-x-auto border-b md:border-b-0 md:border-l border-slate-700 min-h-[150px]">
+                    <div id="code-orig-2" class="fade-in">
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+    <span class="cmt">// dp[i][j] = number of ways to reach (i, j)</span>
+    <span class="typ">vector</span>&lt;<span class="typ">vector</span>&lt;<span class="typ">long long</span>&gt;&gt; dp(n, <span class="typ">vector</span>&lt;<span class="typ">long long</span>&gt;(n, <span class="num">0</span>));
+</pre>
+                    </div>
+                    <div id="code-sim-2" class="hidden fade-in">
+                        <div class="text-xs text-red-400 mb-3 font-bold bg-red-400/10 inline-block px-2 py-1 rounded border border-red-400/20"><i class="fas fa-code-branch ml-1"></i> كود معدل: تحسين استهلاك الذاكرة (Space Optimization)</div>
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+    <span class="cmt">// بدلاً من مصفوفة ثنائية تستهلك O(N^2)</span>
+    <span class="cmt">// نستخدم صفين فقط O(N) لأننا نحتاج الصف الحالي والسابق فقط!</span>
+    
+    <span class="typ">vector</span>&lt;<span class="typ">long long</span>&gt; prev_dp(n, <span class="num">0</span>);
+    <span class="typ">vector</span>&lt;<span class="typ">long long</span>&gt; curr_dp(n, <span class="num">0</span>);
+</pre>
+                    </div>
+                </div>
+                <div class="md:w-1/2 flex flex-col">
+                    <div class="flex border-b border-slate-200 bg-slate-50">
+                        <button class="tab-btn active flex-1 py-3 text-sm transition text-[#4d7ca6] border-[#4d7ca6]" onclick="switchTab(this, 2, 'orig')">الشرح الوظيفي</button>
+                        <button class="tab-btn flex-1 py-3 text-sm transition text-slate-500 hover:text-[#d94841]" onclick="switchTab(this, 2, 'sim')">أمثلة مشابهة (ماذا يتغير؟)</button>
+                    </div>
+                    <div class="p-5 flex-1 bg-white">
+                        <div id="desc-orig-2" class="text-slate-600 text-[15px] leading-loose fade-in">
+                            هنا نعرف مصفوفة ثنائية الأبعاد بأحجام <code class="inline-code">N x N</code> ونهيئ جميع خلاياها بالرقم <code class="inline-code">0</code>. الخلية <code class="inline-code">dp[i][j]</code> ستحتفظ بعدد الطرق الممكنة للوصول إلى الصف <code class="inline-code">i</code> والعمود <code class="inline-code">j</code> من نقطة البداية <code class="inline-code">(0,0)</code>.
+                        </div>
+                        <div id="desc-sim-2" class="hidden text-slate-600 text-[15px] leading-loose fade-in">
+                            <span class="inline-block bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold mb-2">تغير المعطيات</span><br>
+                            إذا كانت شبكة <span class="en-term">Grid</span> عملاقة (مثلاً <code class="inline-code">10^5 x 10^5</code>)، فإن مصفوفة ثنائية الأبعاد ستسبب خطأ امتلاء الذاكرة <span class="en-term">Memory Limit Exceeded</span>. بما أن حساب الصف الحالي يعتمد فقط على الصف الذي فوقه مباشرة، نقوم بتحسين المساحة (<span class="en-term">Space Optimization</span>) باستخدام مصفوفتين أحاديتين فقط (واحدة للصف السابق وواحدة للصف الحالي) ويتم التبديل بينهما.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- الجزء 3: المرور على الشبكة والعوائق -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-[#e4a835] text-white px-5 py-3 flex items-center gap-3">
+                <div class="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center font-bold">3</div>
+                <h2 class="text-lg font-bold">الحلقات واكتشاف الفخاخ (Loops & Obstacles)</h2>
+            </div>
+            
+            <div class="flex flex-col md:flex-row">
+                <div class="md:w-1/2 bg-[#0f172a] p-5 overflow-x-auto border-b md:border-b-0 md:border-l border-slate-700 min-h-[150px]">
+                    <div id="code-orig-3" class="fade-in">
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+    <span class="kwd">for</span> (<span class="typ">int</span> i = <span class="num">0</span>; i < n; ++i) {
+        <span class="kwd">for</span> (<span class="typ">int</span> j = <span class="num">0</span>; j < n; ++j) {
+            <span class="kwd">if</span> (grid[i][j] == <span class="str">'*'</span>) {
+                dp[i][j] = <span class="num">0</span>; <span class="cmt">// cannot use traps</span>
+                <span class="kwd">continue</span>;
+            }
+</pre>
+                    </div>
+                    <div id="code-sim-3" class="hidden fade-in">
+                        <div class="text-xs text-yellow-400 mb-3 font-bold bg-yellow-400/10 inline-block px-2 py-1 rounded border border-yellow-400/20"><i class="fas fa-code-branch ml-1"></i> كود معدل: تجنب شروط الحدود (Padding Technique)</div>
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+<span class="cmt">// لتبسيط الشروط المعقدة بالداخل، نبدأ من 1 بدلاً من 0</span>
+<span class="cmt">// ونكون قد قمنا بتهيئة حجم المصفوفة كـ (n+1) x (n+1)</span>
+<span class="kwd">for</span> (<span class="typ">int</span> i = <span class="num">1</span>; i <= n; ++i) {
+    <span class="kwd">for</span> (<span class="typ">int</span> j = <span class="num">1</span>; j <= n; ++j) {
+        <span class="cmt">// grid is 0-indexed, so we check i-1, j-1</span>
+        <span class="kwd">if</span> (grid[i-<span class="num">1</span>][j-<span class="num">1</span>] == <span class="str">'*'</span>) {
+            dp[i][j] = <span class="num">0</span>;
+            <span class="kwd">continue</span>;
+        }
+</pre>
+                    </div>
+                </div>
+                <div class="md:w-1/2 flex flex-col">
+                    <div class="flex border-b border-slate-200 bg-slate-50">
+                        <button class="tab-btn active flex-1 py-3 text-sm transition text-[#4d7ca6] border-[#4d7ca6]" onclick="switchTab(this, 3, 'orig')">الشرح الوظيفي</button>
+                        <button class="tab-btn flex-1 py-3 text-sm transition text-slate-500 hover:text-[#d94841]" onclick="switchTab(this, 3, 'sim')">أمثلة مشابهة (ماذا يتغير؟)</button>
+                    </div>
+                    <div class="p-5 flex-1 bg-white">
+                        <div id="desc-orig-3" class="text-slate-600 text-[15px] leading-loose fade-in">
+                            نمر على كل خلية في الشبكة. إذا كانت الخلية الحالية تحتوي على النجمة <code class="inline-code">'*'</code>، فهذا يعني أنها "فخ" أو عائق. لا يمكن المرور من خلالها، لذا نُثبت عدد الطرق للوصول إليها بـ <code class="inline-code">0</code> ونستخدم <code class="inline-code">continue</code> لتخطي باقي الحسابات لهذه الخلية فوراً.
+                        </div>
+                        <div id="desc-sim-3" class="hidden text-slate-600 text-[15px] leading-loose fade-in">
+                            <span class="inline-block bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold mb-2">تغير المعطيات</span><br>
+                            أحد أساليب البرمجة التنافسية الذكية هو <b>الحشو (<span class="en-term">1-Based Indexing Padding</span>)</b>. لكي نتجنب كتابة الشروط المزعجة مثل <code class="inline-code">i > 0</code> لاحقاً (خوفاً من الخروج عن حدود المصفوفة السالبة)، نقوم ببدء الحلقات من <code class="inline-code">1</code> ونجعل حجم مصفوفة الـ <code class="inline-code">dp</code> يزيد بمقدار 1. الصف 0 والعمود 0 سيكونا أصفاراً تلقائياً ويمثلان جداراً وهمياً آمناً!
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- الجزء 4: معادلة الانتقال الأساسية -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-[#65a363] text-white px-5 py-3 flex items-center gap-3">
+                <div class="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center font-bold">4</div>
+                <h2 class="text-lg font-bold">معادلة الانتقال (Transition Equation)</h2>
+            </div>
+            
+            <div class="flex flex-col md:flex-row">
+                <div class="md:w-1/2 bg-[#0f172a] p-5 overflow-x-auto border-b md:border-b-0 md:border-l border-slate-700 min-h-[150px]">
+                    <div id="code-orig-4" class="fade-in">
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+            <span class="kwd">if</span> (i == <span class="num">0</span> && j == <span class="num">0</span>) {
+                dp[i][j] = <span class="num">1</span>; <span class="cmt">// starting cell (if not trap)</span>
+            } <span class="kwd">else</span> {
+                <span class="typ">long long</span> from_up   = (i > <span class="num">0</span> ? dp[i - <span class="num">1</span>][j] : <span class="num">0</span>);
+                <span class="typ">long long</span> from_left = (j > <span class="num">0</span> ? dp[i][j - <span class="num">1</span>] : <span class="num">0</span>);
+                dp[i][j] = (from_up + from_left) % MOD;
+            }
+        }
+    }
+</pre>
+                    </div>
+                    <div id="code-sim-4" class="hidden fade-in">
+                        <div class="text-xs text-green-400 mb-3 font-bold bg-green-400/10 inline-block px-2 py-1 rounded border border-green-400/20"><i class="fas fa-code-branch ml-1"></i> كود معدل: البحث عن الحد الأقصى للنقاط (Max Path Sum)</div>
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+            <span class="kwd">if</span> (i == <span class="num">0</span> && j == <span class="num">0</span>) {
+                dp[i][j] = grid[<span class="num">0</span>][<span class="num">0</span>]; <span class="cmt">// قيمة الخلية الأولى</span>
+            } <span class="kwd">else</span> {
+                <span class="cmt">// نستبدل الجمع باختيار المسار الأكبر، ثم نجمع قيمة الخلية الحالية</span>
+                <span class="typ">long long</span> from_up   = (i > <span class="num">0</span> ? dp[i - <span class="num">1</span>][j] : -<span class="num">1e18</span>);
+                <span class="typ">long long</span> from_left = (j > <span class="num">0</span> ? dp[i][j - <span class="num">1</span>] : -<span class="num">1e18</span>);
+                
+                dp[i][j] = <span class="sys">max</span>(from_up, from_left) + grid[i][j];
+            }
+</pre>
+                    </div>
+                </div>
+                <div class="md:w-1/2 flex flex-col">
+                    <div class="flex border-b border-slate-200 bg-slate-50">
+                        <button class="tab-btn active flex-1 py-3 text-sm transition text-[#4d7ca6] border-[#4d7ca6]" onclick="switchTab(this, 4, 'orig')">الشرح الوظيفي</button>
+                        <button class="tab-btn flex-1 py-3 text-sm transition text-slate-500 hover:text-[#d94841]" onclick="switchTab(this, 4, 'sim')">أمثلة مشابهة (ماذا يتغير؟)</button>
+                    </div>
+                    <div class="p-5 flex-1 bg-white">
+                        <div id="desc-orig-4" class="text-slate-600 text-[15px] leading-loose fade-in">
+                            <b>الشرط الأساسي:</b> إذا كنا في نقطة البداية (ولم تكن فخاً)، فهناك "طريقة واحدة" للوقوف فيها.<br>
+                            <b>لأي خلية أخرى:</b> يمكننا الوصول إليها إما من الخلية التي <b>فوقها</b> أو الخلية التي على <b>يسارها</b>. عدد الطرق للوصول إليها يساوي (مجموع) طرق الوصول للخلية العلوية والخلية اليسرى. ونأخذ الـ <span class="en-term">Modulo</span> مباشرة لمنع الـ <span class="en-term">Overflow</span>.
+                        </div>
+                        <div id="desc-sim-4" class="hidden text-slate-600 text-[15px] leading-loose fade-in">
+                            <span class="inline-block bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold mb-2">تغير المعطيات</span><br>
+                            ماذا لو كانت المسألة تطلب <b>جمع أكبر عدد من النقاط (العملات)</b> أثناء السير، بدلاً من حساب عدد الطرق؟ <br>
+                            هنا نستبدل عملية <b>الجمع <code class="inline-code">+</code></b> بدالة <b><code class="inline-code">max</code></b> لاختيار المسار الأفضل بين الأعلى واليسار، ثم نضيف عليه قيمة الخلية الحالية. ونراعي استخدام <code class="inline-code">-1e18</code> كقيمة للخلايا خارج الحدود لتجنب اختيارها.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- الجزء 5: تخزين الحالة والطباعة -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-[#4d7ca6] text-white px-5 py-3 flex items-center gap-3">
+                <div class="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center font-bold">5</div>
+                <h2 class="text-lg font-bold">طباعة الحل (Output Final State)</h2>
+            </div>
+            
+            <div class="flex flex-col md:flex-row">
+                <div class="md:w-1/2 bg-[#0f172a] p-5 overflow-x-auto border-b md:border-b-0 md:border-l border-slate-700 min-h-[150px]">
+                    <div id="code-orig-5" class="fade-in">
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+    cout << dp[n - <span class="num">1</span>] [n - <span class="num">1</span>] << <span class="str">"\n"</span>;
+    <span class="kwd">return</span> <span class="num">0</span>;
+}
+</pre>
+                    </div>
+                    <div id="code-sim-5" class="hidden fade-in">
+                        <div class="text-xs text-blue-400 mb-3 font-bold bg-blue-400/10 inline-block px-2 py-1 rounded border border-blue-400/20"><i class="fas fa-code-branch ml-1"></i> كود معدل: تتبع المسار (Path Backtracking)</div>
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+    <span class="cmt">// إذا طلب منك طباعة الإحداثيات للمسار الفعلي</span>
+    cout << dp[n-<span class="num">1</span>][n-<span class="num">1</span>] << <span class="str">"\n"</span>;
+    
+    <span class="typ">int</span> i = n-<span class="num">1</span>, j = n-<span class="num">1</span>;
+    <span class="kwd">while</span>(i > <span class="num">0</span> || j > <span class="num">0</span>) {
+        cout << <span class="str">"("</span> << i << <span class="str">","</span> << j << <span class="str">") &lt;- "</span>;
+        <span class="cmt">// نتراجع بناءً على مصفوفة parent تم بناؤها بالخطوة السابقة</span>
+        <span class="typ">pair</span>&lt;<span class="typ">int</span>,<span class="typ">int</span>&gt; p = parent[i][j];
+        i = p.first; j = p.second;
+    }
+    cout << <span class="str">"(0,0)\n"</span>;
+</pre>
+                    </div>
+                </div>
+                <div class="md:w-1/2 flex flex-col">
+                    <div class="flex border-b border-slate-200 bg-slate-50">
+                        <button class="tab-btn active flex-1 py-3 text-sm transition text-[#4d7ca6] border-[#4d7ca6]" onclick="switchTab(this, 5, 'orig')">الشرح الوظيفي</button>
+                        <button class="tab-btn flex-1 py-3 text-sm transition text-slate-500 hover:text-[#d94841]" onclick="switchTab(this, 5, 'sim')">أمثلة مشابهة (ماذا يتغير؟)</button>
+                    </div>
+                    <div class="p-5 flex-1 bg-white">
+                        <div id="desc-orig-5" class="text-slate-600 text-[15px] leading-loose fade-in">
+                            بما أننا نبني الحل من أعلى اليسار <code class="inline-code">(0,0)</code> متجيهن لأسفل ويمين، فإن الهدف النهائي للوصول إليه يتواجد في الزاوية السفلية اليمنى من الشبكة، والتي إحداثياتها هي <code class="inline-code">(n-1, n-1)</code> في حالة القراءة بصفر كبداية الفهارس (<span class="en-term">0-indexed</span>).
+                        </div>
+                        <div id="desc-sim-5" class="hidden text-slate-600 text-[15px] leading-loose fade-in">
+                            <span class="inline-block bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold mb-2">تغير المعطيات</span><br>
+                            في مسابقات مثل <b><span class="en-term">CSES</span></b>، قد يطلب منك ليس فقط إيجاد العدد، بل طباعة "حركات المسار" (<code class="inline-code">D D R R</code>). لذلك، بجانب مصفوفة الـ <code class="inline-code">dp</code>، ستحتاج لبناء مصفوفة مساعدة مثلاً تُسمى <code class="inline-code">parent</code> لتخزين من أين أتيت لكل خلية. وفي النهاية تقوم بحلقة <code class="inline-code">while</code> تبدأ من نقطة النهاية وتتراجع خطوة بخطوة حتى تصل لنقطة البداية.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- التذييل المخصص -->
+    <footer class="bg-white border-t border-slate-200 mt-auto">
+        <div class="max-w-5xl mx-auto p-6 text-center">
+            <p class="text-sm font-bold text-slate-600">
+                تصميم محمد مجممي - وهي جهد شخصي لا يغني عن الرجوع للمنصات الرسمية
+            </p>
+            <p class="text-xs text-slate-400 mt-2">
+                &copy; أداة تعليمية مساعدة مخصصة لطلاب الأولمبياد.
+            </p>
+        </div>
+    </footer>
+
+    <!-- سكربت التحكم الديناميكي -->
+    <script>
+        function switchTab(clickedBtn, sectionId, mode) {
+            // الحصول على حاوية الأزرار وإعادة تعيين التنسيقات
+            const btnContainer = clickedBtn.parentElement;
+            const buttons = btnContainer.querySelectorAll('button');
+            buttons.forEach(btn => {
+                btn.classList.remove('active', 'text-[#4d7ca6]', 'border-[#4d7ca6]');
+                btn.classList.add('text-slate-500');
+                btn.style.borderBottom = 'none';
+            });
+
+            // تفعيل الزر المضغوط
+            clickedBtn.classList.add('active', 'text-[#4d7ca6]');
+            clickedBtn.classList.remove('text-slate-500');
+            clickedBtn.style.borderBottom = '3px solid #4d7ca6';
+
+            // جلب عناصر الشرح
+            const descOrig = document.getElementById(`desc-orig-${sectionId}`);
+            const descSim = document.getElementById(`desc-sim-${sectionId}`);
+            
+            // جلب عناصر الكود
+            const codeOrig = document.getElementById(`code-orig-${sectionId}`);
+            const codeSim = document.getElementById(`code-sim-${sectionId}`);
+
+            // تبديل العرض بناءً على الوضع المختار
+            if (mode === 'orig') {
+                descOrig.classList.remove('hidden');
+                descSim.classList.add('hidden');
+                
+                codeOrig.classList.remove('hidden');
+                codeSim.classList.add('hidden');
+            } else {
+                descOrig.classList.add('hidden');
+                descSim.classList.remove('hidden');
+                
+                codeOrig.classList.add('hidden');
+                codeSim.classList.remove('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
