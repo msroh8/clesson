@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> تحليل أكواد البرمجة التنافسية (Vacation)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Fira+Code:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #f1f5f9;
+        }
+        .font-code {
+            font-family: 'Fira Code', monospace;
+            direction: ltr;
+            text-align: left;
+        }
+        
+        /* تأثير تبويبات الشرح والأمثلة */
+        .tab-btn.active {
+            border-bottom: 3px solid;
+            font-weight: 700;
+            background-color: #f8fafc;
+        }
+        
+        /* تلوين أجزاء الكود (Syntax Highlighting مبسط) */
+        .kwd { color: #f472b6; } /* pink-400 - Keywords */
+        .typ { color: #93c5fd; } /* blue-300 - Types */
+        .str { color: #86efac; } /* green-300 - Strings/Includes */
+        .num { color: #d8b4fe; } /* purple-300 - Numbers */
+        .fnc { color: #fef08a; } /* yellow-200 - Functions */
+        .cmt { color: #94a3b8; font-style: italic; } /* slate-400 - Comments */
+        .sys { color: #67e8f9; } /* cyan-300 - System/Math Funcs */
+
+        /* إصلاح تداخل اتجاه النصوص (LTR داخل RTL) */
+        .inline-code {
+            direction: ltr;
+            unicode-bidi: isolate;
+            display: inline-block;
+            font-family: 'Fira Code', monospace;
+            background-color: #f8fafc;
+            color: #d94841;
+            padding: 0 6px;
+            border-radius: 4px;
+            border: 1px solid #e2e8f0;
+            margin: 0 2px;
+            font-size: 0.9em;
+        }
+        .en-term {
+            direction: ltr;
+            unicode-bidi: isolate;
+            display: inline-block;
+            font-weight: 700;
+        }
+
+        /* حركات التبديل للكود */
+        .fade-in {
+            animation: fadeIn 0.4s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #e2e8f0; }
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col text-slate-800">
+
+    <!-- شريط الرأس (Header) -->
+    <header class="bg-white shadow-sm border-b-4 border-[#21244d] p-4 sticky top-0 z-50">
+        <div class="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-4">
+               
+                    <h1 class="text-xl md:text-2xl font-black text-[#21244d] tracking-tight">تحليل هيكلي لأكواد أولمبياد العلوم والرياضيات الوطني <span class="font-bold text-[#d94841]">NSMO</span></h1>
+                    <p class="text-sm text-slate-500 font-semibold mt-1">التحليل الهيكلي لخوارزميات البرمجة التنافسية</p>
+                </div>
+            </div>
+            <div class="bg-[#f8fafc] border border-slate-200 px-4 py-2 rounded-lg text-sm font-bold text-[#4d7ca6] flex items-center gap-2">
+                <i class="fab fa-cuttlefish text-lg"></i>
+                مسألة: Vacation (2D State DP)
+            </div>
+        </div>
+    </header>
+
+    <!-- المحتوى الرئيسي -->
+    <main class="flex-1 max-w-5xl mx-auto w-full p-4 space-y-8 my-6">
+
+        <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 text-blue-800 text-sm leading-relaxed font-medium">
+            <i class="fas fa-info-circle ml-2 text-blue-600"></i>
+            هذا المستند يحلل مسألة تعتمد على <b>الحالة ثنائية الأبعاد (<span class="en-term">2D State DP</span>)</b>. عند الضغط على <b>أمثلة مشابهة</b>، سيتغير الكود البرمجي أمامك ليوضح كيف تختلف كتابة هذا الجزء لجعله أكثر ديناميكية أو ليناسب مسألة مختلفة.
+        </div>
+
+        <!-- الجزء 1: الاستدعاءات والمتغيرات -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-[#21244d] text-white px-5 py-3 flex items-center gap-3">
+                <div class="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center font-bold">1</div>
+                <h2 class="text-lg font-bold">المتغيرات وحالة المسألة (State)</h2>
+            </div>
+            
+            <div class="flex flex-col md:flex-row">
+                <!-- الكود الديناميكي -->
+                <div class="md:w-1/2 bg-[#0f172a] p-5 overflow-x-auto border-b md:border-b-0 md:border-l border-slate-700 relative min-h-[150px]">
+                    <div id="code-orig-1" class="fade-in">
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+<span class="kwd">#include</span> <span class="str">&lt;iostream&gt;</span>
+<span class="kwd">using</span> <span class="typ">namespace</span> std;
+
+<span class="typ">int</span> dp[<span class="num">200000</span>][<span class="num">3</span>];
+<span class="typ">int</span> d[<span class="num">200000</span>][<span class="num">3</span>];
+</pre>
+                    </div>
+                    <div id="code-sim-1" class="hidden fade-in">
+                        <div class="text-xs text-red-400 mb-3 font-bold bg-red-400/10 inline-block px-2 py-1 rounded border border-red-400/20"><i class="fas fa-code-branch ml-1"></i> كود معدل: تمثيل حالة معقدة (Bitmask DP)</div>
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+<span class="kwd">#include</span> <span class="str">&lt;iostream&gt;</span>
+<span class="kwd">using</span> <span class="typ">namespace</span> std;
+
+<span class="cmt">// في حالة Bitmask، البعد الأول يمثل المجموعات الفرعية كأرقام ثنائية</span>
+<span class="typ">int</span> dp[<span class="num">1 &lt;&lt; 20</span>][<span class="num">20</span>]; <span class="cmt">// [mask][last_visited]</span>
+</pre>
+                    </div>
+                </div>
+                <!-- الشرح والتبويبات -->
+                <div class="md:w-1/2 flex flex-col">
+                    <div class="flex border-b border-slate-200 bg-slate-50">
+                        <button class="tab-btn active flex-1 py-3 text-sm transition text-[#4d7ca6] border-[#4d7ca6]" onclick="switchTab(this, 1, 'orig')">
+                            <i class="fas fa-book-open ml-1"></i> الشرح الوظيفي
+                        </button>
+                        <button class="tab-btn flex-1 py-3 text-sm transition text-slate-500 hover:text-[#d94841]" onclick="switchTab(this, 1, 'sim')">
+                            <i class="fas fa-exchange-alt ml-1"></i> أمثلة مشابهة (ماذا يتغير؟)
+                        </button>
+                    </div>
+                    <div class="p-5 flex-1 bg-white">
+                        <div id="desc-orig-1" class="text-slate-600 text-[15px] leading-loose fade-in">
+                            هنا تطورت حالة المسألة لتصبح <b>ثنائية الأبعاد (<span class="en-term">2D Array</span>)</b>. المصفوفة <code class="inline-code">dp[i][j]</code> تخزن أقصى عدد من النقاط يمكن جمعه حتى اليوم <code class="inline-code">i</code> بشرط أن يكون النشاط المختار في هذا اليوم هو <code class="inline-code">j</code> (حيث أن 0 و 1 و 2 تمثل الأنشطة الثلاثة).
+                        </div>
+                        <div id="desc-sim-1" class="hidden text-slate-600 text-[15px] leading-loose fade-in">
+                            <span class="inline-block bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold mb-2">تغير المعطيات</span><br>
+                            في مسائل متقدمة مثل <b>مسألة البائع المتجول (<span class="en-term">TSP</span>)</b>، الحالة تعتمد على "مجموعة المدن المُزارة" و "المدينة الحالية". يتم استخدام تقنية الـ <span class="en-term">Bitmask DP</span> حيث يُمثل البُعد الأول بالحجم <code class="inline-code">2^N</code> لتخزين المجموعات كأرقام ثنائية.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- الجزء 2: الحالات الأساسية -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-[#d94841] text-white px-5 py-3 flex items-center gap-3">
+                <div class="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center font-bold">2</div>
+                <h2 class="text-lg font-bold">الحالات الأساسية (Base Cases)</h2>
+            </div>
+            
+            <div class="flex flex-col md:flex-row">
+                <div class="md:w-1/2 bg-[#0f172a] p-5 overflow-x-auto border-b md:border-b-0 md:border-l border-slate-700 min-h-[150px]">
+                    <div id="code-orig-2" class="fade-in">
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+<span class="typ">int</span> <span class="fnc">f</span> (<span class="typ">int</span> i, <span class="typ">int</span> type) {
+  
+    <span class="kwd">if</span> (i == <span class="num">0</span>) {
+        <span class="kwd">return</span> d[i][type];
+    }
+</pre>
+                    </div>
+                    <div id="code-sim-2" class="hidden fade-in">
+                        <div class="text-xs text-red-400 mb-3 font-bold bg-red-400/10 inline-block px-2 py-1 rounded border border-red-400/20"><i class="fas fa-code-branch ml-1"></i> كود معدل: إضافة عوائق (Obstacles) للـ Base Cases</div>
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+<span class="typ">int</span> <span class="fnc">f</span> (<span class="typ">int</span> i, <span class="typ">int</span> type) {
+    <span class="cmt">// إذا كان هذا النشاط محظوراً في هذا اليوم</span>
+    <span class="kwd">if</span> (is_forbidden[i][type]) {
+        <span class="kwd">return</span> -<span class="num">1e9</span>; <span class="cmt">// قيمة مستحيلة لأننا نبحث عن Max</span>
+    }
+    
+    <span class="kwd">if</span> (i == <span class="num">0</span>) {
+        <span class="kwd">return</span> d[i][type];
+    }
+</pre>
+                    </div>
+                </div>
+                <div class="md:w-1/2 flex flex-col">
+                    <div class="flex border-b border-slate-200 bg-slate-50">
+                        <button class="tab-btn active flex-1 py-3 text-sm transition text-[#4d7ca6] border-[#4d7ca6]" onclick="switchTab(this, 2, 'orig')">الشرح الوظيفي</button>
+                        <button class="tab-btn flex-1 py-3 text-sm transition text-slate-500 hover:text-[#d94841]" onclick="switchTab(this, 2, 'sim')">أمثلة مشابهة (ماذا يتغير؟)</button>
+                    </div>
+                    <div class="p-5 flex-1 bg-white">
+                        <div id="desc-orig-2" class="text-slate-600 text-[15px] leading-loose fade-in">
+                            هذا هو شرط التوقف الذي يمنع الاستدعاء اللانهائي.<br>
+                            عندما نصل إلى اليوم الأول <code class="inline-code">i == 0</code>، فإن أقصى عدد من النقاط يمكن جمعه هو ببساطة قيمة النقاط المخصصة للنشاط <code class="inline-code">type</code> في ذلك اليوم.
+                        </div>
+                        <div id="desc-sim-2" class="hidden text-slate-600 text-[15px] leading-loose fade-in">
+                            <span class="inline-block bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold mb-2">تغير المعطيات</span><br>
+                            إذا تم تعديل المسألة بحيث تصبح بعض الأنشطة "مغلقة" أو "محظورة" في أيام معينة (عوائق)، يجب إضافة <b>حالة أساسية إضافية</b> قبل التحقق من اليوم <code class="inline-code">0</code>، حيث نُرجع قيمة سالبة ضخمة (سالب ما لا نهاية) لتجنب اختيار هذا المسار في حسابات الـ <span class="en-term">Max</span>.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- الجزء 3: تقنية الحفظ -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-[#e4a835] text-white px-5 py-3 flex items-center gap-3">
+                <div class="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center font-bold">3</div>
+                <h2 class="text-lg font-bold">تقنية الحفظ (Memoization)</h2>
+            </div>
+            
+            <div class="flex flex-col md:flex-row">
+                <div class="md:w-1/2 bg-[#0f172a] p-5 overflow-x-auto border-b md:border-b-0 md:border-l border-slate-700 min-h-[150px]">
+                    <div id="code-orig-3" class="fade-in">
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+    <span class="kwd">if</span> (dp[i][type] != -<span class="num">1</span>) {
+        <span class="kwd">return</span> dp[i][type];
+    }
+</pre>
+                    </div>
+                    <div id="code-sim-3" class="hidden fade-in">
+                        <div class="text-xs text-yellow-400 mb-3 font-bold bg-yellow-400/10 inline-block px-2 py-1 rounded border border-yellow-400/20"><i class="fas fa-code-branch ml-1"></i> كود معدل: تمييز الحالات المحسوبة عن غير المحسوبة</div>
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+    <span class="cmt">// يمكن استخدام مصفوفة منطقية إضافية (visited)</span>
+    <span class="cmt">// هذا أأمن إذا كانت إجابة المسألة قد تساوي 1-</span>
+    <span class="kwd">if</span> (visited[i][type]) {
+        <span class="kwd">return</span> dp[i][type];
+    }
+    visited[i][type] = <span class="num">true</span>; <span class="cmt">// نضعها كـ true بعد الحساب بالأسفل</span>
+</pre>
+                    </div>
+                </div>
+                <div class="md:w-1/2 flex flex-col">
+                    <div class="flex border-b border-slate-200 bg-slate-50">
+                        <button class="tab-btn active flex-1 py-3 text-sm transition text-[#4d7ca6] border-[#4d7ca6]" onclick="switchTab(this, 3, 'orig')">الشرح الوظيفي</button>
+                        <button class="tab-btn flex-1 py-3 text-sm transition text-slate-500 hover:text-[#d94841]" onclick="switchTab(this, 3, 'sim')">أمثلة مشابهة (ماذا يتغير؟)</button>
+                    </div>
+                    <div class="p-5 flex-1 bg-white">
+                        <div id="desc-orig-3" class="text-slate-600 text-[15px] leading-loose fade-in">
+                            عملية الحفظ المعتادة للبرمجة الديناميكية. إذا وجدنا أن القيمة في <code class="inline-code">dp[i][type]</code> لا تساوي القيمة الابتدائية <code class="inline-code">-1</code>، نعلم فوراً أننا قمنا بحساب هذا المسار مسبقاً، فنُرجع الناتج المحفوظ اختصاراً للوقت.
+                        </div>
+                        <div id="desc-sim-3" class="hidden text-slate-600 text-[15px] leading-loose fade-in">
+                            <span class="inline-block bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold mb-2">تغير المعطيات</span><br>
+                            كما ذكرنا، استخدام <code class="inline-code">-1</code> يعمل جيداً إذا كانت النواتج المتوقعة دائماً موجبة كحالتنا. ولكن في مسألة يمكن أن تكون إجابتها الصافية <code class="inline-code">-1</code>، يُفضل المحترفون إنشاء مصفوفة <code class="inline-code">bool visited[N][3]</code> مستقلة تماماً لمعرفة هل تم حساب الحالة أم لا، بدلاً من الاعتماد على قيمة الـ <code class="inline-code">dp</code> نفسها.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- الجزء 4: معادلة الانتقال (Transition) -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-[#65a363] text-white px-5 py-3 flex items-center gap-3">
+                <div class="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center font-bold">4</div>
+                <h2 class="text-lg font-bold">معادلة الانتقال (Transition) وتطبيق الشروط</h2>
+            </div>
+            
+            <div class="flex flex-col md:flex-row">
+                <div class="md:w-1/2 bg-[#0f172a] p-5 overflow-x-auto border-b md:border-b-0 md:border-l border-slate-700 min-h-[150px]">
+                    <div id="code-orig-4" class="fade-in">
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+  <span class="kwd">if</span>(type == <span class="num">0</span>){
+    dp[i][type] = <span class="sys">max</span>(<span class="fnc">f</span>(i - <span class="num">1</span>, <span class="num">1</span>), <span class="fnc">f</span>(i - <span class="num">1</span>, <span class="num">2</span>)) + d[i][type];
+  }
+  <span class="kwd">else if</span>(type == <span class="num">1</span>){
+    dp[i][type] = <span class="sys">max</span>(<span class="fnc">f</span>(i - <span class="num">1</span>, <span class="num">0</span>), <span class="fnc">f</span>(i - <span class="num">1</span>, <span class="num">2</span>)) + d[i][type];
+  }
+  <span class="kwd">else if</span>(type == <span class="num">2</span>){
+    dp[i][type] = <span class="sys">max</span>(<span class="fnc">f</span>(i - <span class="num">1</span>, <span class="num">0</span>), <span class="fnc">f</span>(i - <span class="num">1</span>, <span class="num">1</span>)) + d[i][type];
+  }
+
+  <span class="kwd">return</span> dp[i][type];
+}
+</pre>
+                    </div>
+                    <div id="code-sim-4" class="hidden fade-in">
+                        <div class="text-xs text-green-400 mb-3 font-bold bg-green-400/10 inline-block px-2 py-1 rounded border border-green-400/20"><i class="fas fa-code-branch ml-1"></i> كود معدل: جعله ديناميكياً ليدعم K من الأنشطة</div>
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+  <span class="cmt">// الاستغناء عن جمل الـ if بـ حلقة تكرار (For loop)</span>
+  <span class="typ">int</span> best_prev = <span class="num">0</span>;
+  
+  <span class="kwd">for</span> (<span class="typ">int</span> prev_type = <span class="num">0</span>; prev_type &lt; <span class="num">3</span>; prev_type++) {
+      <span class="cmt">// شرط: يمنع اختيار نفس نشاط الأمس</span>
+      <span class="kwd">if</span> (prev_type != type) {
+          best_prev = <span class="sys">max</span>(best_prev, <span class="fnc">f</span>(i - <span class="num">1</span>, prev_type));
+      }
+  }
+  
+  dp[i][type] = best_prev + d[i][type];
+  <span class="kwd">return</span> dp[i][type];
+}
+</pre>
+                    </div>
+                </div>
+                <div class="md:w-1/2 flex flex-col">
+                    <div class="flex border-b border-slate-200 bg-slate-50">
+                        <button class="tab-btn active flex-1 py-3 text-sm transition text-[#4d7ca6] border-[#4d7ca6]" onclick="switchTab(this, 4, 'orig')">الشرح الوظيفي</button>
+                        <button class="tab-btn flex-1 py-3 text-sm transition text-slate-500 hover:text-[#d94841]" onclick="switchTab(this, 4, 'sim')">أمثلة مشابهة (ماذا يتغير؟)</button>
+                    </div>
+                    <div class="p-5 flex-1 bg-white">
+                        <div id="desc-orig-4" class="text-slate-600 text-[15px] leading-loose fade-in">
+                            هنا يتم تطبيق <b>الشرط الرئيسي للمسألة</b> (لا يجوز ممارسة نفس النشاط ليومين متتاليين).<br>
+                            لذلك، إذا أردت اختيار النشاط <code class="inline-code">0</code> اليوم، فيجب أن أبحث عن <b>الأفضل (<span class="en-term">max</span>)</b> من مسارات الأمس التي تنتهي بالنشاط <code class="inline-code">1</code> أو النشاط <code class="inline-code">2</code> حصراً، ثم أجمع معها نقاط اليوم.
+                        </div>
+                        <div id="desc-sim-4" class="hidden text-slate-600 text-[15px] leading-loose fade-in">
+                            <span class="inline-block bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold mb-2">تغير المعطيات</span><br>
+                            كتابة شروط <code class="inline-code">if / else</code> يدوياً تعمل جيداً لأن عدد الأنشطة هنا <code class="inline-code">3</code> فقط. ولكن في أمثلة مشابهة حيث يسمح لك بالاختيار من بين <span class="en-term">K</span> من الأنشطة (مثلاً 10 أنشطة)، لا يمكننا كتابة 10 شروط يدوياً! بل نستخدم <b>حلقة تكرار</b> كما يظهر في الكود المُعدل للمرور على كل الأنشطة السابقة وتخطي المطابق للنشاط الحالي.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- الجزء 5: الدالة الرئيسية والتهيئة -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-[#4d7ca6] text-white px-5 py-3 flex items-center gap-3">
+                <div class="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center font-bold">5</div>
+                <h2 class="text-lg font-bold">التهيئة والدالة الرئيسية (Main)</h2>
+            </div>
+            
+            <div class="flex flex-col md:flex-row">
+                <div class="md:w-1/2 bg-[#0f172a] p-5 overflow-x-auto border-b md:border-b-0 md:border-l border-slate-700 min-h-[150px]">
+                    <div id="code-orig-5" class="fade-in">
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+<span class="typ">int</span> <span class="fnc">main</span>() {
+  
+    <span class="cmt">// تهيئة مصفوفة 2D بحلقتين متداخلتين</span>
+    <span class="kwd">for</span> (<span class="typ">int</span> i = <span class="num">0</span>; i < <span class="num">200000</span>; i++) {
+    <span class="kwd">for</span> (<span class="typ">int</span> j = <span class="num">0</span>; j < <span class="num">3</span>; j++) {
+          dp[i][j] = -<span class="num">1</span>;
+    }
+    }
+
+    <span class="typ">int</span> n; cin >> n;
+
+    <span class="kwd">for</span> (<span class="typ">int</span> i = <span class="num">0</span>; i < n; i++) {
+    <span class="kwd">for</span> (<span class="typ">int</span> j = <span class="num">0</span>; j < <span class="num">3</span>; j++) {
+      cin >> d[i][j];
+    }
+    }
+
+    <span class="cmt">// إيجاد الحد الأقصى بين جميع النهايات الممكنة لليوم الأخير</span>
+    cout << <span class="sys">max</span>(<span class="sys">max</span>(<span class="fnc">f</span>(n - <span class="num">1</span>, <span class="num">0</span>), <span class="fnc">f</span>(n - <span class="num">1</span>, <span class="num">1</span>)), <span class="fnc">f</span>(n - <span class="num">1</span>, <span class="num">2</span>)) << <span class="str">"\n"</span>;
+}
+</pre>
+                    </div>
+                    <div id="code-sim-5" class="hidden fade-in">
+                        <div class="text-xs text-blue-400 mb-3 font-bold bg-blue-400/10 inline-block px-2 py-1 rounded border border-blue-400/20"><i class="fas fa-code-branch ml-1"></i> كود معدل: تحويل الكود إلى أسلوب (Bottom-Up Iterative DP)</div>
+<pre class="font-code text-[14px] leading-loose text-slate-300">
+<span class="typ">int</span> <span class="fnc">main</span>() {
+    <span class="cmt">/* ... (قراءة المعطيات) ... */</span>
+
+    <span class="cmt">// Base Case</span>
+    dp[<span class="num">0</span>][<span class="num">0</span>] = d[<span class="num">0</span>][<span class="num">0</span>]; dp[<span class="num">0</span>][<span class="num">1</span>] = d[<span class="num">0</span>][<span class="num">1</span>]; dp[<span class="num">0</span>][<span class="num">2</span>] = d[<span class="num">0</span>][<span class="num">2</span>];
+
+    <span class="cmt">// Transition Loop</span>
+    <span class="kwd">for</span> (<span class="typ">int</span> i = <span class="num">1</span>; i < n; i++) {
+        dp[i][<span class="num">0</span>] = <span class="sys">max</span>(dp[i-<span class="num">1</span>][<span class="num">1</span>], dp[i-<span class="num">1</span>][<span class="num">2</span>]) + d[i][<span class="num">0</span>];
+        dp[i][<span class="num">1</span>] = <span class="sys">max</span>(dp[i-<span class="num">1</span>][<span class="num">0</span>], dp[i-<span class="num">1</span>][<span class="num">2</span>]) + d[i][<span class="num">1</span>];
+        dp[i][<span class="num">2</span>] = <span class="sys">max</span>(dp[i-<span class="num">1</span>][<span class="num">0</span>], dp[i-<span class="num">1</span>][<span class="num">1</span>]) + d[i][<span class="num">2</span>];
+    }
+
+    cout << <span class="sys">max</span>(<span class="sys">max</span>(dp[n-<span class="num">1</span>][<span class="num">0</span>], dp[n-<span class="num">1</span>][<span class="num">1</span>]), dp[n-<span class="num">1</span>][<span class="num">2</span>]) << <span class="str">"\n"</span>;
+}
+</pre>
+                    </div>
+                </div>
+                <div class="md:w-1/2 flex flex-col">
+                    <div class="flex border-b border-slate-200 bg-slate-50">
+                        <button class="tab-btn active flex-1 py-3 text-sm transition text-[#4d7ca6] border-[#4d7ca6]" onclick="switchTab(this, 5, 'orig')">الشرح الوظيفي</button>
+                        <button class="tab-btn flex-1 py-3 text-sm transition text-slate-500 hover:text-[#d94841]" onclick="switchTab(this, 5, 'sim')">أمثلة مشابهة (ماذا يتغير؟)</button>
+                    </div>
+                    <div class="p-5 flex-1 bg-white">
+                        <div id="desc-orig-5" class="text-slate-600 text-[15px] leading-loose fade-in">
+                            نظرًا لأن المصفوفة الآن ثنائية الأبعاد، استخدمنا حلقتين متداخلتين لتهيئتها بـ <code class="inline-code">-1</code>، وكذلك لقراءة مصفوفة المدخلات. وفي السطر الأخير، بما أننا لا نعرف أي نشاط سينتهي به المطاف في اليوم الأخير بأكبر مجموع، قمنا باستدعاء الدالة ثلاث مرات (لكل نشاط) واختيار القيمة الأكبر بينهم.
+                        </div>
+                        <div id="desc-sim-5" class="hidden text-slate-600 text-[15px] leading-loose fade-in">
+                            <span class="inline-block bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold mb-2">تغير المعطيات</span><br>
+                            في المنافسات الاحترافية، لتفادي أخطاء امتلاء مكدس الاستدعاءات (<span class="en-term">Stack Overflow</span>)، يتم أحياناً تحويل المسألة من طريقة <span class="en-term">Top-Down</span> (بالدوال التراجعية) إلى أسلوب <b><span class="en-term">Bottom-Up</span></b>. كما يظهر في الكود المجاور، يتم الاستغناء عن دالة <code class="inline-code">f(i)</code> تماماً، ونقوم بملء قيم الـ <code class="inline-code">dp</code> يدوياً تصاعدياً من اليوم الأول وحتى الأخير داخل حلقة التكرار في دالة الـ <code class="inline-code">main</code>.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- التذييل المخصص -->
+    <footer class="bg-white border-t border-slate-200 mt-auto">
+        <div class="max-w-5xl mx-auto p-6 text-center">
+            <p class="text-sm font-bold text-slate-600">
+                تصميم محمد مجممي - وهي جهد شخصي لا يغني عن الرجوع للمنصات الرسمية
+            </p>
+            <p class="text-xs text-slate-400 mt-2">
+                &copy; أداة تعليمية مساعدة مخصصة لطلاب الأولمبياد.
+            </p>
+        </div>
+    </footer>
+
+    <!-- سكربت التحكم الديناميكي -->
+    <script>
+        function switchTab(clickedBtn, sectionId, mode) {
+            // الحصول على حاوية الأزرار وإعادة تعيين التنسيقات
+            const btnContainer = clickedBtn.parentElement;
+            const buttons = btnContainer.querySelectorAll('button');
+            buttons.forEach(btn => {
+                btn.classList.remove('active', 'text-[#4d7ca6]', 'border-[#4d7ca6]');
+                btn.classList.add('text-slate-500');
+                btn.style.borderBottom = 'none';
+            });
+
+            // تفعيل الزر المضغوط
+            clickedBtn.classList.add('active', 'text-[#4d7ca6]');
+            clickedBtn.classList.remove('text-slate-500');
+            clickedBtn.style.borderBottom = '3px solid #4d7ca6';
+
+            // جلب عناصر الشرح
+            const descOrig = document.getElementById(`desc-orig-${sectionId}`);
+            const descSim = document.getElementById(`desc-sim-${sectionId}`);
+            
+            // جلب عناصر الكود
+            const codeOrig = document.getElementById(`code-orig-${sectionId}`);
+            const codeSim = document.getElementById(`code-sim-${sectionId}`);
+
+            // تبديل العرض بناءً على الوضع المختار
+            if (mode === 'orig') {
+                descOrig.classList.remove('hidden');
+                descSim.classList.add('hidden');
+                
+                codeOrig.classList.remove('hidden');
+                codeSim.classList.add('hidden');
+            } else {
+                descOrig.classList.add('hidden');
+                descSim.classList.remove('hidden');
+                
+                codeOrig.classList.add('hidden');
+                codeSim.classList.remove('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
