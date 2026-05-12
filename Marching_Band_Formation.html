@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شرح خوارزمية The Marching Band Formation</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Cairo', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        body { background-color: #f8fafc; margin: 0; height: 100vh; overflow: hidden; font-size: 14px; }
+        #root { height: 100%; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .pop-in { animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useRef } = React;
+
+        function generateSteps() {
+            let steps = [];
+            const N = 240;
+            let divisors = [];
+            let count = 0;
+
+            steps.push({
+                happened: "بدأ البرنامج. هدفنا إيجاد جميع التشكيلات المحتملة لفرقة من 240 عضواً.",
+                next: "سنبحث عن الأرقام التي تقبل القسمة على 240، وسنقف عند الجذر التربيعي للرقم 240 (وهو 15 تقريباً).",
+                state: { phase: 'intro', i: null, divisors: [], count: 0, filterIdx: -1, newPairs: [] }
+            });
+
+            let currentI = 1;
+            let skippedSoFar = [];
+            
+            // Phase 1: Finding pairs up to sqrt(n)
+            while (currentI <= 15) {
+                if (N % currentI !== 0) {
+                    skippedSoFar.push(currentI);
+                    currentI++;
+                    continue;
+                }
+
+                let i = currentI;
+                let newPairs = [];
+                if (i * i === N) {
+                    newPairs.push({r: i, c: i});
+                    divisors.push({r: i, c: i});
+                } else {
+                    newPairs.push({r: i, c: N/i});
+                    newPairs.push({r: N/i, c: i});
+                    divisors.push({r: i, c: N/i});
+                    divisors.push({r: N/i, c: i});
+                }
+                
+                let skippedText = skippedSoFar.length > 0 ? ` (تخطينا الأرقام ${skippedSoFar.join(', ')} لعدم قبول القسمة).` : '';
+                steps.push({
+                    happened: `المؤشر i = ${i}.${skippedText} الرقم 240 يقبل القسمة على ${i}. استنتجنا الزوج ومقلوبه.`,
+                    next: i === 15 ? "انتهت حلقة البحث الموفرة للوقت! سننتقل لمرحلة فرز النتائج." : "سنكمل البحث عن القاسم التالي.",
+                    state: { phase: 'finding', i: i, divisors: [...divisors], newPairs: newPairs, count: 0, filterIdx: -1 }
+                });
+                
+                skippedSoFar = [];
+                currentI++;
+            }
+
+            steps.push({
+                happened: `جمعنا ${divisors.length} تشكيلاً محتملاً بفضل طريقة الجذر التربيعي السريعة.`,
+                next: "سنمر الآن على القائمة لنتحقق من شرط مدير الفرقة: (عدد الصفوف بين 10 و 20).",
+                state: { phase: 'transition', i: 15, divisors: [...divisors], newPairs: [], count: 0, filterIdx: -1 }
+            });
+
+            // Phase 2: Filtering based on conditions
+            for (let idx = 0; idx < divisors.length; idx++) {
+                let pair = divisors[idx];
+                let valid = pair.r >= 10 && pair.r <= 20;
+                if (valid) count++;
+                
+                steps.push({
+                    happened: `فحص التشكيل (${pair.r} صفوف، ${pair.c} أعمدة). هل عدد الصفوف بين 10 و 20؟ ${valid ? 'نعم! صالح وتم عده.' : 'لا. غير صالح.'}`,
+                    next: idx === divisors.length - 1 ? "أنهينا فحص كل القائمة!" : "سنفحص التشكيل التالي.",
+                    state: { phase: 'filtering', i: 15, divisors: [...divisors], newPairs: [], count: count, filterIdx: idx, valid: valid }
+                });
+            }
+
+            steps.push({
+                happened: `انتهى البرنامج. تم العثور على ${count} تشكيلات تلبي جميع شروط الموكب.`,
+                next: "التتبع انتهى. يمكنك الإعادة متى شئت.",
+                state: { phase: 'done', i: 15, divisors: [...divisors], newPairs: [], count: count, filterIdx: divisors.length }
+            });
+
+            return steps;
+        }
+
+        function App() {
+            const [activeTab, setActiveTab] = useState('problem'); 
+            const stepsRef = useRef(generateSteps());
+            const [stepIdx, setStepIdx] = useState(0);
+
+            const renderProblem = () => (
+                <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                    <div className="max-w-4xl mx-auto w-full space-y-4">
+                        <div className="bg-white p-5 rounded border border-slate-200 shadow-sm">
+                            <h2 className="text-lg font-bold mb-4 text-indigo-800 border-b pb-2">نص المسألة (The Marching Band Formation)</h2>
+                            
+                            <div className="text-sm space-y-4 text-slate-700 leading-relaxed">
+                                <p className="font-semibold bg-slate-100 p-4 rounded border border-slate-200 shadow-inner">
+                                    فرقة موسيقية في مدرسة ثانوية لديها <strong>240 عضواً</strong>. مدير الفرقة يريد ترتيب الأعضاء في تشكيل مستطيل للموكب. ومع ذلك، هناك قيود محددة للتشكيل:
+                                </p>
+
+                                <ul className="list-disc list-inside space-y-2 text-xs text-slate-700 font-bold mr-2">
+                                    <li>يجب تضمين جميع الأعضاء في التشكيل.</li>
+                                    <li>يجب أن يكون التشكيل مستطيلاً صلباً (بدون أماكن فارغة).</li>
+                                    <li>يجب أن يكون هناك <span className="text-indigo-600">10 صفوف على الأقل</span>.</li>
+                                    <li>لا يمكن أن يكون هناك أكثر من <span className="text-indigo-600">20 صفاً</span>.</li>
+                                </ul>
+
+                                <div className="bg-amber-50 p-4 rounded border border-amber-200 mt-4 text-amber-900 font-bold text-center shadow-sm">
+                                    المطلوب: كم عدد التشكيلات المستطيلة المختلفة التي تحقق هذه الشروط؟
+                                </div>
+
+                                <div className="flex flex-col md:flex-row gap-4 mt-6">
+                                    <div className="flex-1 bg-[#1e1e1e] text-slate-300 p-3 rounded border border-slate-700 font-mono text-xs" dir="ltr">
+                                        <div className="text-slate-400 mb-2 border-b border-slate-600 pb-1">// Example Input</div>
+                                        <div>240 <span className="text-slate-500 text-[10px] ml-2">// Number of members</span></div>
+                                    </div>
+                                    <div className="flex-1 bg-[#1e1e1e] text-slate-300 p-3 rounded border border-slate-700 font-mono text-xs" dir="ltr">
+                                        <div className="text-slate-400 mb-2 border-b border-slate-600 pb-1">// Expected Output</div>
+                                        <div className="text-emerald-400">5</div>
+                                        <div className="mt-2 text-slate-500 text-[10px] whitespace-pre-wrap">
+                                            // The valid formations are:
+                                            // (10 rows, 24 cols)
+                                            // (12 rows, 20 cols)
+                                            // (15 rows, 16 cols)
+                                            // (16 rows, 15 cols)
+                                            // (20 rows, 12 cols)
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const renderConcept = () => (
+                <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                    <div className="max-w-4xl mx-auto w-full space-y-4">
+                        <div className="bg-white p-5 rounded border border-slate-200 shadow-sm">
+                            <h2 className="text-lg font-bold mb-4 text-indigo-800 border-b pb-2">المفهوم الرياضي (The Math Behind It)</h2>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-3">
+                                    <h3 className="text-sm font-bold text-slate-700 bg-slate-200 p-2 rounded">قواسم العدد (Factors)</h3>
+                                    <p className="text-xs text-slate-700 leading-relaxed">
+                                        يقول المخرج أن التشكيل مستطيل وصلب (بدون فراغات). هذا يعني رياضياً أن:
+                                        <br/><strong dir="ltr" className="font-mono text-indigo-700 bg-indigo-50 px-1 rounded block mt-2 mb-2 text-center">Rows × Columns = 240</strong>
+                                        نحن نبحث إذاً عن "القواسم" (Divisors) للرقم 240. وهي الأرقام التي تقسم 240 دون وجود باقٍ (Remainder).
+                                    </p>
+                                    <div className="bg-white border border-slate-200 p-3 rounded text-xs font-mono shadow-sm" dir="ltr">
+                                        <div className="text-slate-500 mb-1 border-b pb-1">Example Factors:</div>
+                                        <div className="text-slate-700">1 × 240 = 240</div>
+                                        <div className="text-slate-700">2 × 120 = 240</div>
+                                        <div className="text-slate-700">...</div>
+                                        <div className="text-emerald-600 font-bold">10 × 24 = 240</div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <h3 className="text-sm font-bold text-amber-900 bg-amber-100 p-2 rounded">خدعة الجذر التربيعي السحرية</h3>
+                                    <p className="text-xs text-slate-700 leading-relaxed">
+                                        الطريقة التقليدية للبحث هي تجربة كل الأرقام من 1 إلى 240. لكن هذا بطيء! الرياضيون يعلمون أن القواسم تأتي كـ "أزواج".
+                                        <br/><br/>
+                                        أكبر رقم نحتاج للبحث عنه لاكتشاف جميع الأزواج هو <strong>الجذر التربيعي</strong> للعدد (جذر 240 تقريباً 15.4).
+                                    </p>
+                                    <div className="bg-amber-50 border border-amber-200 p-4 rounded text-center shadow-inner">
+                                        <div className="text-xs font-bold text-amber-900 mb-2">كيف تعمل؟</div>
+                                        <p className="text-[11px] text-slate-600 leading-relaxed text-right">
+                                            إذا وجدنا أن (2) تقسم 240، فنحن تلقائياً استنتجنا الزوج الآخر بعملية قسمة بسيطة <code dir="ltr" className="font-mono bg-white px-1 border rounded mx-1">240 / 2 = 120</code>.
+                                            هذه الخدعة تخفض عدد خطوات البحث من 240 خطوة إلى 15 خطوة فقط!
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const renderStrategy = () => (
+                <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                    <div className="max-w-4xl mx-auto w-full space-y-6">
+                        <div className="bg-white p-6 rounded border border-slate-200 shadow-sm">
+                            <h2 className="text-lg font-bold mb-4 text-indigo-800 border-b pb-2 flex items-center gap-2">
+                                <i className="fa-solid fa-chess-knight"></i> استراتيجية الحل البرمجية
+                            </h2>
+                            <p className="text-sm text-slate-600 mb-6">الحل ينقسم برمجياً إلى مرحلتين أساسيتين: التوليد السريع، ثم الفرز البطيء.</p>
+                            
+                            <div className="space-y-5 text-sm text-slate-700 leading-relaxed">
+                                
+                                <div className="bg-blue-50/50 p-4 rounded border border-blue-100">
+                                    <h3 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
+                                        <span className="bg-blue-200 text-blue-800 w-6 h-6 flex items-center justify-center rounded-full text-xs">1</span>
+                                        مرحلة التوليد (Generation Phase)
+                                    </h3>
+                                    <ul className="list-disc list-inside space-y-2 text-xs text-slate-700">
+                                        <li>ننشئ حلقة تكرار (Loop) تبدأ من <code className="font-mono">i = 1</code> وتستمر طالما <code className="font-mono">i * i &lt;= n</code> (هذا هو تطبيق قانون الجذر التربيعي).</li>
+                                        <li>إذا كان الباقي صفراً <code className="font-mono">n % i == 0</code>، فهذا يعني أن <code className="font-mono">i</code> قاسم صحيح.</li>
+                                        <li>نحتفظ بالزوجين معاً لأن ترتيب التشكيل يهم (عكس الطول والعرض يغير شكل الموكب):
+                                            <ul className="list-[circle] list-inside ml-6 mt-1 text-indigo-700 font-mono">
+                                                <li>التشكيل الأول: (i, n/i)</li>
+                                                <li>التشكيل الثاني: (n/i, i)</li>
+                                            </ul>
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                <div className="bg-purple-50/50 p-4 rounded border border-purple-100">
+                                    <h3 className="font-bold text-purple-900 mb-2 flex items-center gap-2">
+                                        <span className="bg-purple-200 text-purple-800 w-6 h-6 flex items-center justify-center rounded-full text-xs">2</span>
+                                        مرحلة الفرز والتصفية (Filtering Phase)
+                                    </h3>
+                                    <ul className="list-disc list-inside space-y-2 text-xs text-slate-700">
+                                        <li>لدينا الآن قائمة (Vector) ممتلئة بكل التشكيلات الممكنة (وهي 20 تشكيلاً في حالة الرقم 240).</li>
+                                        <li>نفتح حلقة تكرار أخرى للمرور على هذه القائمة عنصراً تلو الآخر.</li>
+                                        <li>نختبر الشرط المطلوب من مدير الفرقة: هل عدد الصفوف (وهو الرقم الأول في الزوج <code className="font-mono bg-white px-1 rounded border">pair.first</code>) يقع بين 10 و 20؟</li>
+                                        <li>إذا تحقق الشرط، نزيد عداد الحلول الصالحة <code className="font-mono bg-white px-1 rounded border">count++</code>.</li>
+                                    </ul>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const renderVisualizer = () => {
+                const s = stepsRef.current[stepIdx].state;
+                const currentStepInfo = stepsRef.current[stepIdx];
+
+                return (
+                    <div className="flex flex-col lg:flex-row h-full bg-slate-100 fade-in overflow-hidden">
+                        
+                        {/* Control Panel */}
+                        <div className="w-full lg:w-1/3 bg-white border-l border-slate-200 shadow-lg z-20 flex flex-col">
+                            <div className="p-3 bg-slate-800 text-white border-b border-slate-700">
+                                <h2 className="text-sm font-bold">التتبع البصري التفاعلي</h2>
+                                <p className="text-[10px] text-slate-400">انقر لتشغيل المحاكاة واستكشاف خطة مدير الفرقة.</p>
+                            </div>
+                            
+                            <div className="p-4 flex-1 overflow-y-auto space-y-4">
+                                <div className="bg-slate-50 border border-slate-200 p-3 rounded relative shadow-sm">
+                                    <h3 className="font-bold text-xs text-slate-800 mb-1 border-b border-slate-200 pb-1 flex items-center gap-2">
+                                        <i className="fa-solid fa-check-circle text-emerald-600"></i> ماذا حدث للتو؟
+                                    </h3>
+                                    <p className="text-xs text-slate-700 leading-relaxed mt-2">{currentStepInfo.happened}</p>
+                                </div>
+
+                                <div className="bg-indigo-50 border border-indigo-200 p-3 rounded relative shadow-sm">
+                                    <h3 className="font-bold text-xs text-indigo-900 mb-1 border-b border-indigo-200 pb-1 flex items-center gap-2">
+                                        <i className="fa-solid fa-arrow-left text-indigo-600"></i> ماذا سيحدث الآن؟
+                                    </h3>
+                                    <p className="text-xs text-indigo-800 leading-relaxed mt-2">{currentStepInfo.next}</p>
+                                </div>
+                            </div>
+
+                            <div className="p-4 bg-slate-50 border-t border-slate-200">
+                                <button 
+                                    onClick={() => setStepIdx(Math.min(stepsRef.current.length - 1, stepIdx + 1))} 
+                                    disabled={stepIdx === stepsRef.current.length - 1}
+                                    className="w-full py-3 rounded bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-bold text-sm shadow transition flex items-center justify-center gap-2"
+                                >
+                                    {stepIdx === stepsRef.current.length - 1 ? 'انتهى التنفيذ' : 'تنفيذ الخطوة التالية'}
+                                    {stepIdx < stepsRef.current.length - 1 && <i className="fa-solid fa-play text-xs"></i>}
+                                </button>
+                                
+                                <div className="flex justify-between mt-3">
+                                    <button onClick={() => setStepIdx(0)} disabled={stepIdx === 0} className="text-xs text-slate-500 hover:text-slate-800 transition disabled:opacity-50 flex items-center gap-1">
+                                        <i className="fa-solid fa-rotate-right"></i> إعادة من البداية
+                                    </button>
+                                    <span className="text-xs font-mono text-slate-400 bg-slate-200 px-2 py-0.5 rounded">
+                                        خطوة {stepIdx + 1} / {stepsRef.current.length}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Visual Area */}
+                        <div className="flex-1 p-4 flex flex-col items-center justify-start bg-slate-100 overflow-y-auto relative" dir="ltr">
+                            
+                            {/* Phase 1: Finding Divisors */}
+                            { (s.phase === 'intro' || s.phase === 'finding' || s.phase === 'transition') && (
+                                <div className="w-full max-w-xl flex flex-col items-center mt-6 fade-in">
+                                    <div className="bg-white p-6 rounded shadow border border-slate-200 text-center w-full max-w-sm mb-6 relative">
+                                        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 border-b pb-2">Math Check (i &le; 15)</h3>
+                                        <div className="text-3xl font-mono font-black text-slate-800 flex items-center justify-center gap-3 mt-4">
+                                            <span>240 %</span>
+                                            <span className="text-indigo-600">{s.i !== null ? s.i : '?'}</span>
+                                            {s.phase === 'finding' && <span className="text-emerald-500 ml-2">== 0 <i className="fa-solid fa-check"></i></span>}
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white p-4 rounded shadow border border-slate-200 w-full relative">
+                                        <div className="absolute -top-3 right-4 bg-indigo-600 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow">
+                                            Total Found: {s.divisors.length}
+                                        </div>
+                                        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 border-b pb-2 text-center">Generated Pairs (rows, cols)</h3>
+                                        <div className="flex flex-wrap gap-2 justify-center">
+                                            {s.divisors.map((pair, idx) => {
+                                                const isNew = s.newPairs && s.newPairs.some(p => p.r === pair.r && p.c === pair.c);
+                                                return (
+                                                    <div key={idx} className={`px-2 py-1 text-xs font-mono font-bold border rounded transition-all duration-300 ${isNew ? 'bg-indigo-500 text-white border-indigo-600 scale-110 shadow-lg pop-in' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>
+                                                        ({pair.r}, {pair.c})
+                                                    </div>
+                                                )
+                                            })}
+                                            {s.divisors.length === 0 && <div className="text-xs text-slate-400 italic py-2">Waiting for first valid divisor...</div>}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Phase 2: Filtering Details */}
+                            { (s.phase === 'filtering' || s.phase === 'done') && (
+                                <div className="w-full max-w-xl flex flex-col items-center mt-4 fade-in">
+                                    
+                                    <div className="flex gap-4 w-full mb-6">
+                                        <div className="flex-1 bg-white p-4 rounded shadow border border-slate-200 text-center relative overflow-hidden">
+                                            <div className="absolute top-0 left-0 w-full h-1 bg-emerald-500"></div>
+                                            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Valid Formations</h3>
+                                            <div className="text-4xl font-mono font-black text-emerald-600 pop-in key={s.count}">{s.count}</div>
+                                        </div>
+                                        
+                                        { s.filterIdx >= 0 && s.filterIdx < s.divisors.length && (
+                                            <div className="flex-[2] bg-white p-4 rounded shadow border border-slate-200 text-center">
+                                                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Director's Rule: 10 &le; Rows &le; 20</h3>
+                                                <div className="flex items-center justify-center gap-4 mt-2">
+                                                    <div className="text-lg font-mono font-bold text-slate-700 bg-slate-100 px-3 py-1 rounded border border-slate-200">
+                                                        Rows: {s.divisors[s.filterIdx].r}
+                                                    </div>
+                                                    <div className={`text-sm font-bold px-3 py-1.5 rounded-full ${s.valid ? 'bg-emerald-100 text-emerald-700 border border-emerald-300' : 'bg-rose-100 text-rose-700 border border-rose-300'}`}>
+                                                        {s.valid ? <><i className="fa-solid fa-check mr-1"></i> Valid</> : <><i className="fa-solid fa-xmark mr-1"></i> Invalid</>}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="bg-white p-4 rounded shadow border border-slate-200 w-full">
+                                        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 border-b pb-2 text-center">Filtering Phase: All 20 Pairs</h3>
+                                        <div className="flex flex-wrap gap-2 justify-center">
+                                            {s.divisors.map((pair, idx) => {
+                                                const isCurrent = s.filterIdx === idx;
+                                                const isProcessed = s.filterIdx > idx || s.phase === 'done';
+                                                const isValid = pair.r >= 10 && pair.r <= 20;
+
+                                                let style = "bg-slate-50 text-slate-400 border-slate-200"; // default
+                                                
+                                                if (isCurrent) {
+                                                    style = s.valid ? "bg-emerald-500 text-white border-emerald-600 scale-110 shadow-lg" : "bg-rose-500 text-white border-rose-600 scale-110 shadow-lg";
+                                                } else if (isProcessed) {
+                                                    style = isValid ? "bg-emerald-100 text-emerald-800 border-emerald-300 font-bold shadow-sm" : "bg-slate-100 text-slate-300 border-slate-200 line-through opacity-40";
+                                                }
+
+                                                return (
+                                                    <div key={idx} className={`px-2 py-1 text-xs font-mono border rounded transition-all duration-300 ${style}`}>
+                                                        ({pair.r}, {pair.c})
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                        </div>
+                    </div>
+                );
+            };
+
+            const renderCode = () => {
+                const codeSegments = [
+                    {
+                        title: "1. تعريف الدالة والقائمة",
+                        desc: "نعرّف دالة تستقبل العدد n. ونقوم بإنشاء قائمة (Vector) نوعها Pair، وظيفتها تخزين كل تشكيل محتمل كزوج من الأرقام (تمثل صفوف وأعمدة).",
+                        code: `int findDivisors(int n) {\n    vector<pair<int, int>> divisors;`
+                    },
+                    {
+                        title: "2. حلقة البحث (خدعة الجذر التربيعي)",
+                        desc: "بدلاً من الدوران 240 مرة، ندور حتى جذر الرقم فقط باستخدام الشرط (i * i <= n). هذا يوفر الكثير من الموارد، لأن القواسم تظهر دائماً على شكل أزواج، وإذا وجدنا الأول نستنتج الثاني فوراً.",
+                        code: `    for (int i = 1; i * i <= n; i++) {\n        if (n % i == 0) {`
+                    },
+                    {
+                        title: "3. استخراج وإضافة التشكيلات",
+                        desc: "إذا كان الرقم يمثل جذراً تاماً نضيفه مرة واحدة (كالتشكيل المربع). أما إذا كانا مختلفين، نضيف التشكيلين معاً: (i مع n/i) ثم المقلوب (n/i مع i)، لأن ترتيب الصفوف يختلف عن الأعمدة في الموكب.",
+                        code: `            if (i * i == n) {\n                divisors.push_back({i, i});\n            } else {\n                divisors.push_back({i, n/i});\n                divisors.push_back({n/i, i}); // Add both combinations\n            }\n        }\n    }`
+                    },
+                    {
+                        title: "4. التصفية وفرز النتائج",
+                        desc: "بعد أن جمعنا كل التشكيلات الممكنة (20 تشكيلاً)، نمر عليها واحدة تلو الأخرى لاختبار شرط مدير الفرقة: هل عدد الصفوف (divisors[i].first) يقع بين 10 و 20؟ إذا كان صحيحاً، نزيد العداد.",
+                        code: `    int count = 0;\n    for (int i = 0; i < (int)divisors.size(); ++i){\n        if (divisors[i].first >= 10 && divisors[i].first <= 20){\n            count++;\n        }\n    }`
+                    },
+                    {
+                        title: "5. إرجاع النتيجة",
+                        desc: "أخيراً، نعيد قيمة العداد (count) والتي تمثل عدد التشكيلات المستطيلة الصالحة التي تلبي جميع الشروط المحددة للموكب.",
+                        code: `    return count;\n}`
+                    }
+                ];
+
+                return (
+                    <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                        <div className="max-w-6xl mx-auto w-full space-y-4">
+                            <div className="bg-white p-4 rounded border border-slate-200 shadow-sm text-center">
+                                <h2 className="text-lg font-bold text-slate-800">تفصيل الكود الأصلي والمجزء</h2>
+                                <p className="text-xs text-slate-600 mt-1">
+                                    الجهة اليسرى تحتوي على الكود الأصلي بدون تغيير. الجهة اليمنى تشرح للطالب وظيفة كل مقطع برمجياً لارتباطه بمنطق المسألة.
+                                </p>
+                            </div>
+
+                            <div className="space-y-4">
+                                {codeSegments.map((seg, idx) => (
+                                    <div key={idx} className="flex flex-col md:flex-row bg-white rounded shadow-sm border border-slate-200 overflow-hidden">
+                                        
+                                        <div className="w-full md:w-5/12 bg-slate-50 p-4 border-b md:border-b-0 md:border-l border-slate-200 flex flex-col justify-center">
+                                            <h3 className="font-bold text-indigo-800 mb-2 text-sm">{seg.title}</h3>
+                                            <p className="text-xs text-slate-700 leading-relaxed">{seg.desc}</p>
+                                        </div>
+                                        
+                                        <div className="w-full md:w-7/12 bg-[#1e1e1e] p-4 overflow-x-auto" dir="ltr">
+                                            <pre className="m-0">
+                                                <code className="text-xs font-mono text-[#d4d4d4] whitespace-pre" style={{lineHeight: '1.6'}}>
+                                                    {seg.code}
+                                                </code>
+                                            </pre>
+                                        </div>
+
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div className="flex flex-col h-full bg-slate-200">
+                    <header className="bg-white px-4 py-3 shadow-sm z-30 flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-200">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-indigo-700 rounded flex items-center justify-center text-white text-sm shadow">
+                                <i className="fa-solid fa-users-rectangle"></i>
+                            </div>
+                            <div>
+                                <h1 className="text-sm font-bold text-slate-800 leading-tight">The Marching Band</h1>
+                                <p className="text-slate-500 text-[10px] font-semibold">توليد وفرز قواسم العدد (Factors)</p>
+                            </div>
+                        </div>
+                        
+                        <div className="flex bg-slate-100 p-1 rounded border border-slate-200 gap-1 overflow-x-auto text-xs shadow-inner">
+                            {['problem', 'concept', 'strategy', 'visualizer', 'code'].map((tabKey, idx) => {
+                                const labels = ["1. المسألة الأصلية", "2. المفهوم الرياضي", "3. استراتيجية الحل", "4. التتبع البصري", "5. تفصيل الكود"];
+                                return (
+                                    <button 
+                                        key={tabKey}
+                                        onClick={() => setActiveTab(tabKey)} 
+                                        className={`px-3 py-1.5 rounded font-bold transition-all whitespace-nowrap ${activeTab === tabKey ? 'bg-white text-indigo-800 shadow border border-slate-200' : 'text-slate-600 hover:bg-slate-200'}`}
+                                    >
+                                        {labels[idx]}
+                                    </button>
+                                )
+                            })}
+                        </div>
+                    </header>
+
+                    <main className="flex-1 overflow-hidden">
+                        {activeTab === 'problem' && renderProblem()}
+                        {activeTab === 'concept' && renderConcept()}
+                        {activeTab === 'strategy' && renderStrategy()}
+                        {activeTab === 'visualizer' && renderVisualizer()}
+                        {activeTab === 'code' && renderCode()}
+                    </main>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
