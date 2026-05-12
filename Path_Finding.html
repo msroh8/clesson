@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شرح خوارزمية Path Finding (DFS) المنهجي</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Cairo', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        body { background-color: #f8fafc; margin: 0; height: 100vh; overflow: hidden; font-size: 14px; }
+        #root { height: 100%; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .graph-node { transition: all 0.3s ease; }
+        .graph-edge { transition: all 0.3s ease; stroke-dasharray: 1000; stroke-dashoffset: 0; }
+        @keyframes drawLine {
+            from { stroke-dashoffset: 100; }
+            to { stroke-dashoffset: 0; }
+        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // للتبسيط في العرض التفاعلي سنستخدم شجرة صغيرة (5 رؤوس و 4 حواف)
+        // الحواف: (1-2), (1-3), (2-4), (3-5)
+        const N = 5;
+        const EDGES = [[1, 2], [1, 3], [2, 4], [3, 5]];
+        
+        // إحداثيات مرئية للرسم البياني
+        const NODE_POS = {
+            1: { x: 150, y: 40 },
+            2: { x: 70, y: 120 },
+            3: { x: 230, y: 120 },
+            4: { x: 70, y: 220 },
+            5: { x: 230, y: 220 }
+        };
+
+        function generateDFSSteps() {
+            let steps = [];
+            let vis = Array(N + 1).fill(false);
+            let p = Array(N + 1).fill(0);
+            
+            // Adj list
+            let adj = { 1: [2, 3], 2: [1, 4], 3: [1, 5], 4: [2], 5: [3] };
+
+            const cloneState = (curr = null, pathNodes = [], activeEdge = null) => ({
+                v: [...vis],
+                p: [...p],
+                c: curr,
+                path: [...pathNodes],
+                edge: activeEdge
+            });
+
+            steps.push({
+                happened: "البرنامج بدأ، ولم نقم بزيارة أي رأس (العقدة) حتى الآن. المصفوفات فارغة.",
+                next: "سنقوم باستدعاء دالة dfs(1) للبدء من الرأس رقم 1.",
+                state: cloneState()
+            });
+
+            // محاكاة يدوية لـ DFS لإنتاج خطوات واضحة (بدلاً من الـ Recursion الحقيقي لسهولة التحكم بالتتبع)
+            
+            // Step: dfs(1)
+            vis[1] = true;
+            steps.push({
+                happened: "دخلنا الدالة dfs(1). تم تلوين الرأس 1 كمُزار (true).",
+                next: "سنبحث في جيران الرأس 1 (وهم 2 و 3). الجار الأول هو 2.",
+                state: cloneState(1)
+            });
+
+            // Edge 1->2
+            p[2] = 1;
+            steps.push({
+                happened: "الجار 2 لم تتم زيارته. سجلنا أننا اكتشفنا 2 عن طريق 1 (أصبح p[2] = 1).",
+                next: "سننتقل للعمق (Recursion) ونستدعي dfs(2).",
+                state: cloneState(1, [], [1, 2])
+            });
+
+            // Step: dfs(2)
+            vis[2] = true;
+            steps.push({
+                happened: "دخلنا الدالة dfs(2). الرأس 2 أصبح مُزاراً الآن.",
+                next: "سنبحث في جيران الرأس 2 (وهم 1 و 4). الرأس 1 مُزار مسبقاً، سنتجاهله. الجار 4 لم يُزر.",
+                state: cloneState(2)
+            });
+
+            // Edge 2->4
+            p[4] = 2;
+            steps.push({
+                happened: "سجلنا أننا اكتشفنا الرأس 4 عن طريق الرأس 2 (p[4] = 2).",
+                next: "سنغوص أكثر ونستدعي dfs(4).",
+                state: cloneState(2, [], [2, 4])
+            });
+
+            // Step: dfs(4)
+            vis[4] = true;
+            steps.push({
+                happened: "دخلنا dfs(4). الرأس 4 أصبح مُزاراً.",
+                next: "سنبحث في جيران 4 (جار واحد وهو 2). لكن 2 مُزار مسبقاً! إذن وصلنا لطريق مسدود.",
+                state: cloneState(4)
+            });
+
+            // Backtrack from 4 to 2
+            steps.push({
+                happened: "الدالة dfs(4) انتهت لعدم وجود جيران جدد. سنعود للخلف (Backtrack) إلى الرأس 2 الذي استدعانا.",
+                next: "سنكمل فحص بقية جيران الرأس 2 إن وجدوا.",
+                state: cloneState(2)
+            });
+
+            // Backtrack from 2 to 1
+            steps.push({
+                happened: "لا يوجد جيران آخرون للرأس 2. انتهت dfs(2)، وسنعود للخلف (Backtrack) إلى الرأس 1.",
+                next: "الرأس 1 لا يزال لديه جار لم نفحصه، وهو الرأس 3.",
+                state: cloneState(1)
+            });
+
+            // Edge 1->3
+            p[3] = 1;
+            steps.push({
+                happened: "اكتشفنا الجار 3 من خلال 1. سجلنا (p[3] = 1).",
+                next: "سنستدعي dfs(3) وندخل في مسار جديد.",
+                state: cloneState(1, [], [1, 3])
+            });
+
+            // Step: dfs(3)
+            vis[3] = true;
+            steps.push({
+                happened: "دخلنا dfs(3). الرأس 3 أصبح مُزاراً.",
+                next: "نبحث في جيرانه (1 و 5). 1 مُزار. بقي الرأس 5.",
+                state: cloneState(3)
+            });
+
+            // Edge 3->5
+            p[5] = 3;
+            steps.push({
+                happened: "اكتشفنا الهدف! الرأس 5 من خلال الرأس 3 (p[5] = 3).",
+                next: "سنستدعي dfs(5) لتسجيل زيارته كالعادة.",
+                state: cloneState(3, [], [3, 5])
+            });
+
+            // Step: dfs(5)
+            vis[5] = true;
+            steps.push({
+                happened: "الرأس 5 (الهدف) أصبح مُزاراً. جاره الوحيد (3) مُزار مسبقاً، فينتهي الاستدعاء ويعود للخلف.",
+                next: "تمت زيارة جميع العقد الممكنة، وسينتهي الـ DFS بالكامل لنعود للدالة الرئيسية main.",
+                state: cloneState(5)
+            });
+
+            // Reconstruct path
+            steps.push({
+                happened: "الآن داخل دالة main: نتأكد هل vis[5] == true؟ نعم. إذن سنبدأ تتبع المسار العكسي.",
+                next: "سنستخدم المصفوفة p للعودة من 5 إلى 1 خطوة بخطوة.",
+                state: cloneState(null, [5])
+            });
+
+            steps.push({
+                happened: "نسأل المصفوفة: من الذي أوصلنا لـ 5؟ الإجابة: p[5] = 3. إذن العقدة السابقة هي 3.",
+                next: "نسأل مرة أخرى: من الذي أوصلنا لـ 3؟",
+                state: cloneState(null, [5, 3], [3, 5])
+            });
+
+            steps.push({
+                happened: "الإجابة: p[3] = 1. إذن العقدة السابقة هي 1 (وهي عقدة البداية). نتوقف عن البحث.",
+                next: "نعكس المسار الذي جمعناه (5 ثم 3 ثم 1) ليصبح (1 ثم 3 ثم 5) ونطبعه.",
+                state: cloneState(null, [5, 3, 1], [1, 3])
+            });
+
+            steps.push({
+                happened: "تم عكس المسار وطباعته بنجاح: 1 3 5. وانتهى البرنامج.",
+                next: "انتهى التتبع البصري. يمكنك إعادة تشغيله متى شئت.",
+                state: cloneState(null, [1, 3, 5], null)
+            });
+
+            return steps;
+        }
+
+        function App() {
+            const [activeTab, setActiveTab] = useState('problem'); 
+            const stepsRef = useRef(generateDFSSteps());
+            const [stepIdx, setStepIdx] = useState(0);
+
+            const renderProblem = () => (
+                <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                    <div className="max-w-4xl mx-auto w-full space-y-4">
+                        <div className="bg-white p-5 rounded border border-slate-200 shadow-sm">
+                            <h2 className="text-lg font-bold mb-4 text-indigo-800 border-b pb-2">نص المسألة</h2>
+                            
+                            <div className="text-sm space-y-3 text-slate-700 leading-relaxed">
+                                <p className="font-semibold bg-slate-100 p-3 rounded">
+                                    معطى رسم بياني غير موجه (Undirected Graph) يتكون من <span dir="ltr" className="font-mono text-xs mx-1">N</span> رأساً (مرقمة من 1 إلى N) و <span dir="ltr" className="font-mono text-xs mx-1">M</span> حرفاً (أو حافة).<br/>
+                                    تحقق مما إذا كان الرأس <span dir="ltr" className="font-mono text-xs mx-1 font-bold text-indigo-700">1</span> يمكنه الوصول إلى الرأس <span dir="ltr" className="font-mono text-xs mx-1 font-bold text-rose-700">N</span> واطبع مساراً ممكناً.
+                                </p>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                    <div className="bg-slate-50 p-3 rounded border border-slate-200">
+                                        <h3 className="font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">المدخلات (Input)</h3>
+                                        <p>السطر الأول يحتوي على N و M.</p>
+                                        <p>ثم M سطر، كل سطر يحتوي على رقمين يمثلان حافة (طريق) بين رأسين.</p>
+                                    </div>
+                                    
+                                    <div className="bg-slate-50 p-3 rounded border border-slate-200">
+                                        <h3 className="font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">المخرجات (Output)</h3>
+                                        <p>إذا كان هناك مسار اطبع "Yes" وفي السطر التالي اطبع المسار مبتدئاً بـ 1 ومنتهياً بـ N.</p>
+                                        <p>وإلا اطبع "No".</p>
+                                    </div>
+                                </div>
+
+                                <div className="mt-4 flex flex-col md:flex-row gap-4">
+                                    <div className="flex-1 bg-[#1e1e1e] text-slate-300 p-3 rounded border border-slate-700 font-mono text-xs" dir="ltr">
+                                        <div className="text-slate-400 mb-2 border-b border-slate-600 pb-1">// مثال اختباري (N=5, M=4)</div>
+                                        <div>5 4</div>
+                                        <div>1 2</div>
+                                        <div>1 3</div>
+                                        <div>2 4</div>
+                                        <div>3 5</div>
+                                    </div>
+                                    <div className="flex-1 bg-[#1e1e1e] text-slate-300 p-3 rounded border border-slate-700 font-mono text-xs" dir="ltr">
+                                        <div className="text-slate-400 mb-2 border-b border-slate-600 pb-1">// المخرج المتوقع (مسار باستخدام DFS)</div>
+                                        <div className="text-emerald-400">Yes</div>
+                                        <div className="text-emerald-400">1 3 5</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const renderDataStructures = () => (
+                <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                    <div className="max-w-4xl mx-auto w-full space-y-4">
+                        <div className="bg-white p-5 rounded border border-slate-200 shadow-sm">
+                            <h2 className="text-lg font-bold mb-4 text-indigo-800 border-b pb-2">كيف قرأ الكمبيوتر الرسم البياني؟ (المعطى والمستنتج)</h2>
+                            <p className="text-sm text-slate-600 mb-4">في المسائل الخطية والمتاهات كنا نستخدم المصفوفة الثنائية (Grid). لكن هنا لا يوجد شكل هندسي منتظم! لذا نستخدم ما يسمى بـ <strong>قائمة التجاور (Adjacency List)</strong>.</p>
+
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                <div className="space-y-3">
+                                    <h3 className="text-sm font-bold text-slate-700 bg-slate-200 p-2 rounded">1. المُعطى الخام (Edges)</h3>
+                                    <p className="text-xs text-slate-600">الكمبيوتر يقرأ كل سطر كـ "وصلة" بين نقطتين u و v.</p>
+                                    <div className="bg-slate-900 text-slate-300 p-3 rounded font-mono text-xs shadow-inner" dir="ltr">
+                                        <div className="text-emerald-400 mb-1">5 4 <span className="text-slate-500 text-[10px] ml-2">// N=5 Nodes, M=4 Edges</span></div>
+                                        <div className="text-indigo-300">1 2 <span className="text-slate-500 text-[10px] ml-2">// edge from 1 to 2</span></div>
+                                        <div className="text-indigo-300">1 3 <span className="text-slate-500 text-[10px] ml-2">// edge from 1 to 3</span></div>
+                                        <div className="text-indigo-300">2 4 <span className="text-slate-500 text-[10px] ml-2">// edge from 2 to 4</span></div>
+                                        <div className="text-indigo-300">3 5 <span className="text-slate-500 text-[10px] ml-2">// edge from 3 to 5</span></div>
+                                    </div>
+                                    <div className="bg-amber-50 border border-amber-200 p-3 rounded text-xs text-amber-900 mt-2">
+                                        لأن الرسم <strong>غير موجه</strong> (طريق باتجاهين)، الكود يقوم بإضافة u إلى قائمة جيران v، وإضافة v إلى قائمة جيران u:
+                                        <br/>
+                                        <code dir="ltr" className="block mt-1 font-bold text-indigo-700">adj[u].push_back(v);</code>
+                                        <code dir="ltr" className="block font-bold text-indigo-700">adj[v].push_back(u);</code>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <h3 className="text-sm font-bold text-slate-700 bg-emerald-100 p-2 rounded">2. المُستنتج (Adjacency List)</h3>
+                                    <p className="text-xs text-slate-600">ينتج لدينا مصفوفة من القوائم (Vectors). كل "رأس" يملك قائمة بجميع جيرانه المباشرين.</p>
+                                    
+                                    <div className="bg-white border border-slate-200 p-3 rounded shadow-sm font-mono text-xs" dir="ltr">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span className="bg-slate-800 text-white w-10 h-6 flex items-center justify-center rounded">adj[1]</span>
+                                            <i className="fa-solid fa-arrow-right text-slate-400"></i>
+                                            <span className="bg-emerald-100 text-emerald-800 px-2 py-1 rounded border border-emerald-200">[2, 3]</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span className="bg-slate-800 text-white w-10 h-6 flex items-center justify-center rounded">adj[2]</span>
+                                            <i className="fa-solid fa-arrow-right text-slate-400"></i>
+                                            <span className="bg-emerald-100 text-emerald-800 px-2 py-1 rounded border border-emerald-200">[1, 4]</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span className="bg-slate-800 text-white w-10 h-6 flex items-center justify-center rounded">adj[3]</span>
+                                            <i className="fa-solid fa-arrow-right text-slate-400"></i>
+                                            <span className="bg-emerald-100 text-emerald-800 px-2 py-1 rounded border border-emerald-200">[1, 5]</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span className="bg-slate-800 text-white w-10 h-6 flex items-center justify-center rounded">adj[4]</span>
+                                            <i className="fa-solid fa-arrow-right text-slate-400"></i>
+                                            <span className="bg-emerald-100 text-emerald-800 px-2 py-1 rounded border border-emerald-200">[2]</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="bg-slate-800 text-white w-10 h-6 flex items-center justify-center rounded">adj[5]</span>
+                                            <i className="fa-solid fa-arrow-right text-slate-400"></i>
+                                            <span className="bg-emerald-100 text-emerald-800 px-2 py-1 rounded border border-emerald-200">[3]</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const renderStrategy = () => (
+                <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                    <div className="max-w-4xl mx-auto w-full space-y-5">
+                        <div className="bg-white p-6 rounded border border-slate-200 shadow-sm">
+                            <h2 className="text-lg font-bold mb-4 text-indigo-800 border-b pb-2 flex items-center gap-2">
+                                <i className="fa-solid fa-chess-knight"></i> استراتيجية الحل المفصلة
+                            </h2>
+                            <p className="text-sm text-slate-600 mb-4">هذه المسألة تطلب "أي مسار ممكن"، والكود المرفق يستخدم منهجية البحث في العمق للوصول للهدف.</p>
+                            
+                            <div className="space-y-5 text-sm text-slate-700 leading-relaxed">
+                                
+                                {/* DFS vs BFS */}
+                                <div className="bg-blue-50/50 p-4 rounded border border-blue-100">
+                                    <h3 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
+                                        <span className="bg-blue-200 text-blue-800 w-6 h-6 flex items-center justify-center rounded-full text-xs">1</span>
+                                        لماذا استُخدمت خوارزمية DFS؟
+                                    </h3>
+                                    <p className="mb-2">خوارزمية <strong dir="ltr" className="font-mono mx-1 text-blue-700">Depth-First Search (DFS)</strong> تتميز بأنها "تغوص" في المسارات حتى نهايتها. بمجرد أن تعثر على طريق يؤدي إلى النهاية (N)، فإنها تعتبر مهمتها ناجحة. لا يهمها إن كان الأقصر أم لا، المهم أنه "مسار ممكن" كما طلب السؤال.</p>
+                                </div>
+
+                                {/* الأدوات */}
+                                <div className="bg-emerald-50/50 p-4 rounded border border-emerald-100">
+                                    <h3 className="font-bold text-emerald-900 mb-3 flex items-center gap-2">
+                                        <span className="bg-emerald-200 text-emerald-800 w-6 h-6 flex items-center justify-center rounded-full text-xs">2</span>
+                                        أدوات التتبع الأساسية (حفظ الحالة)
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="bg-white p-3 rounded border-b-4 border-emerald-400 shadow-sm">
+                                            <div dir="ltr" className="font-mono font-bold text-indigo-700 mb-1 text-left">vis[N]</div>
+                                            <p className="text-xs font-bold text-slate-800 mb-1 border-b pb-1">مصفوفة الزيارات</p>
+                                            <p className="text-xs text-slate-600 mt-1">تمنعنا من الدوران في حلقة مفرغة. عندما نزور الرأس u، نجعل <code>vis[u] = true</code> كي لا نعود إليه أبداً.</p>
+                                        </div>
+                                        <div className="bg-white p-3 rounded border-b-4 border-emerald-400 shadow-sm">
+                                            <div dir="ltr" className="font-mono font-bold text-indigo-700 mb-1 text-left">p[N]</div>
+                                            <p className="text-xs font-bold text-slate-800 mb-1 border-b pb-1">مصفوفة الآباء (فتات الخبز)</p>
+                                            <p className="text-xs text-slate-600 mt-1">تحفظ <strong>"من أين جئنا؟"</strong>. الجملة <code>p[v] = u</code> تعني: "لقد اكتشفنا الرأس v عن طريق الرأس u". وهي الأساس الذي سنبني عليه المسار العكسي لاحقاً.</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* استرجاع المسار */}
+                                <div className="bg-purple-50/50 p-4 rounded border border-purple-100">
+                                    <h3 className="font-bold text-purple-900 mb-2 flex items-center gap-2">
+                                        <span className="bg-purple-200 text-purple-800 w-6 h-6 flex items-center justify-center rounded-full text-xs">3</span>
+                                        حلقة التتبع العكسي (Trace Back Loop)
+                                    </h3>
+                                    <p className="mb-2">بعد انتهاء البحث، لو كانت <code>vis[N] == true</code>، فهذا يعني أننا وصلنا الهدف. كيف نطبع المسار؟</p>
+                                    <div className="bg-white p-3 rounded border border-purple-200 text-xs">
+                                        <code dir="ltr" className="block text-indigo-700 font-bold mb-2">for (int i = n ; i != 1 ; i = p[i])</code>
+                                        <ul className="list-disc list-inside space-y-1 text-slate-600 pr-2">
+                                            <li>نبدأ من الهدف <code>i = n</code>.</li>
+                                            <li>نسأل المصفوفة: من أبوك؟ <code>i = p[i]</code>. فنقفز للعقدة السابقة.</li>
+                                            <li>نستمر هكذا حتى نصل إلى نقطة البداية <code>i == 1</code>.</li>
+                                            <li>لأننا جمعنا المسار من النهاية للبداية، نستخدم أمر <code>reverse()</code> لقلبه وعرضه مرتباً، ثم نطبع الرأس رقم 1 يليه بقية المسار.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const renderVisualizer = () => {
+                const s = stepsRef.current[stepIdx].state;
+                const currentStepInfo = stepsRef.current[stepIdx];
+
+                return (
+                    <div className="flex flex-col lg:flex-row h-full bg-slate-100 fade-in overflow-hidden">
+                        
+                        {/* لوحة التحكم الجانبية */}
+                        <div className="w-full lg:w-1/3 bg-white border-l border-slate-200 shadow-lg z-20 flex flex-col">
+                            <div className="p-3 bg-slate-800 text-white border-b border-slate-700">
+                                <h2 className="text-sm font-bold">التتبع البصري لـ DFS</h2>
+                                <p className="text-[10px] text-slate-400">انقر لتتقدم خطوة بخطوة وتفهم ما يجري.</p>
+                            </div>
+                            
+                            <div className="p-4 flex-1 overflow-y-auto space-y-4">
+                                <div className="bg-slate-50 border border-slate-200 p-3 rounded relative shadow-sm">
+                                    <h3 className="font-bold text-xs text-slate-800 mb-1 border-b border-slate-200 pb-1 flex items-center gap-2">
+                                        <i className="fa-solid fa-check-circle text-emerald-600"></i> ماذا حدث للتو؟
+                                    </h3>
+                                    <p className="text-xs text-slate-700 leading-relaxed mt-2">{currentStepInfo.happened}</p>
+                                </div>
+
+                                <div className="bg-indigo-50 border border-indigo-200 p-3 rounded relative shadow-sm">
+                                    <h3 className="font-bold text-xs text-indigo-900 mb-1 border-b border-indigo-200 pb-1 flex items-center gap-2">
+                                        <i className="fa-solid fa-arrow-left text-indigo-600"></i> ماذا سيحدث الآن؟
+                                    </h3>
+                                    <p className="text-xs text-indigo-800 leading-relaxed mt-2">{currentStepInfo.next}</p>
+                                </div>
+                            </div>
+
+                            <div className="p-4 bg-slate-50 border-t border-slate-200">
+                                <button 
+                                    onClick={() => setStepIdx(Math.min(stepsRef.current.length - 1, stepIdx + 1))} 
+                                    disabled={stepIdx === stepsRef.current.length - 1}
+                                    className="w-full py-3 rounded bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-bold text-sm shadow transition flex items-center justify-center gap-2"
+                                >
+                                    {stepIdx === stepsRef.current.length - 1 ? 'انتهى التنفيذ' : 'تنفيذ الخطوة التالية'}
+                                    {stepIdx < stepsRef.current.length - 1 && <i className="fa-solid fa-play text-xs"></i>}
+                                </button>
+                                
+                                <div className="flex justify-between mt-3">
+                                    <button onClick={() => setStepIdx(0)} disabled={stepIdx === 0} className="text-xs text-slate-500 hover:text-slate-800 transition disabled:opacity-50 flex items-center gap-1">
+                                        <i className="fa-solid fa-rotate-right"></i> إعادة من البداية
+                                    </button>
+                                    <span className="text-xs font-mono text-slate-400 bg-slate-200 px-2 py-0.5 rounded">
+                                        خطوة {stepIdx + 1} / {stepsRef.current.length}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* منطقة العرض البصري */}
+                        <div className="flex-1 p-4 flex flex-col items-center justify-center bg-slate-100 overflow-y-auto relative" dir="ltr">
+                            
+                            {/* الرسم البياني SVG */}
+                            <div className="relative w-full max-w-sm h-72 bg-white rounded shadow border border-slate-200 mb-6 flex justify-center items-center">
+                                <svg className="absolute w-full h-full inset-0 pointer-events-none">
+                                    {EDGES.map((edge, idx) => {
+                                        const [u, v] = edge;
+                                        const isPathEdge = s.path.includes(u) && s.path.includes(v);
+                                        const isActiveEdge = s.edge && ((s.edge[0] === u && s.edge[1] === v) || (s.edge[0] === v && s.edge[1] === u));
+                                        const isParentEdge = s.p[v] === u || s.p[u] === v;
+                                        
+                                        let strokeColor = "#cbd5e1"; // slate-300 default
+                                        let strokeWidth = 2;
+                                        if (isPathEdge) { strokeColor = "#10b981"; strokeWidth = 4; } // emerald
+                                        else if (isActiveEdge) { strokeColor = "#6366f1"; strokeWidth = 4; } // indigo
+                                        else if (isParentEdge) { strokeColor = "#94a3b8"; strokeWidth = 3; } // slate-400
+
+                                        return (
+                                            <line 
+                                                key={idx}
+                                                x1={NODE_POS[u].x + 30} y1={NODE_POS[u].y + 30} 
+                                                x2={NODE_POS[v].x + 30} y2={NODE_POS[v].y + 30} 
+                                                stroke={strokeColor} 
+                                                strokeWidth={strokeWidth}
+                                                className="graph-edge"
+                                            />
+                                        );
+                                    })}
+                                </svg>
+                                
+                                {Object.keys(NODE_POS).map(nodeId => {
+                                    const id = parseInt(nodeId);
+                                    const isCurrent = s.c === id;
+                                    const isVisited = s.v[id];
+                                    const isPath = s.path.includes(id);
+                                    const isTarget = id === 5;
+                                    const isStart = id === 1;
+
+                                    let bgClasses = "bg-white border-2 border-slate-300 text-slate-500";
+                                    if (isPath) bgClasses = "bg-emerald-500 border-2 border-emerald-600 text-white shadow-lg scale-110";
+                                    else if (isCurrent) bgClasses = "bg-yellow-400 border-2 border-yellow-500 text-yellow-900 shadow-lg scale-110";
+                                    else if (isVisited) bgClasses = "bg-indigo-100 border-2 border-indigo-300 text-indigo-700";
+
+                                    return (
+                                        <div 
+                                            key={id} 
+                                            className={`absolute flex items-center justify-center w-10 h-10 rounded-full font-bold text-sm shadow-sm graph-node z-10 ${bgClasses}`}
+                                            style={{ left: NODE_POS[id].x + 10, top: NODE_POS[id].y + 10 }}
+                                        >
+                                            {id}
+                                            {isStart && !isPath && <span className="absolute -top-5 text-[10px] text-slate-400">Start</span>}
+                                            {isTarget && !isPath && <span className="absolute -top-5 text-[10px] text-slate-400">Target</span>}
+                                        </div>
+                                    )
+                                })}
+                            </div>
+
+                            {/* مصفوفة الآباء (فتات الخبز) */}
+                            <div className="w-full max-w-sm bg-white p-3 rounded shadow border border-slate-200">
+                                <h4 className="text-slate-500 font-bold mb-2 text-[10px] uppercase tracking-wider border-b pb-1 text-center">p Array (مصفوفة الآباء)</h4>
+                                <div className="flex gap-2 justify-center font-mono text-xs">
+                                    {[1, 2, 3, 4, 5].map(id => (
+                                        <div key={id} className="flex flex-col items-center">
+                                            <div className="text-[10px] text-slate-400 mb-1">p[{id}]</div>
+                                            <div className={`w-8 h-8 flex items-center justify-center rounded border ${s.p[id] !== 0 ? 'bg-indigo-50 border-indigo-200 text-indigo-700 font-bold' : 'bg-slate-50 border-slate-200 text-slate-300'}`}>
+                                                {s.p[id]}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                );
+            };
+
+            const renderCode = () => {
+                const codeSegments = [
+                    {
+                        title: "1. المتغيرات العامة",
+                        desc: "تعريف الثوابت والمصفوفات خارج الدوال لتكون مرئية للجميع. vis لتسجيل الزيارات (لمنع الدوران)، p لحفظ الأب لكل عقدة (للتتبع العكسي)، و adj لتمثيل قائمة التجاور.",
+                        code: `const int maxN = 200'001;\nint vis[maxN], p[maxN];\nvector<int> adj[maxN];`
+                    },
+                    {
+                        title: "2. دالة البحث في العمق (DFS)",
+                        desc: "جوهر الخوارزمية. بمجرد دخول العقدة u، نعلمها كمُزارة (true). ثم نمر على كل جيرانها v، إذا لم يسبق زيارة الجار، نسجل أننا وصلنا لـ v عن طريق u (بواسطة p[v] = u) ثم نستدعي الدالة مجدداً للغوص في v.",
+                        code: `void dfs (int u) {\n    vis[u] = true;\n    for (int v : adj[u]) {\n        if (!vis[v]) {\n            p[v] = u; // we discovered v through u\n            dfs(v);\n        }\n    }\n}`
+                    },
+                    {
+                        title: "3. بناء الرسم البياني (في main)",
+                        desc: "قراءة عدد الرؤوس n والحواف m. حلقة تدور m مرة لقراءة الأطراف u و v، وربطهما في الاتجاهين لأن الرسم غير موجه (Undirected).",
+                        code: `int main () {\n    int n, m;\n    cin >> n >> m;\n    for (int i = 0 ; i < m ; i++) {\n        int u, v;\n        cin >> u >> v;\n        adj[u].push_back(v);\n        adj[v].push_back(u);\n    }`
+                    },
+                    {
+                        title: "4. التنفيذ والتحقق",
+                        desc: "نبدأ الـ DFS من الرأس 1. بعد أن ينتهي، نفحص vis[n]. إذا كانت false فهذا يعني أنه طريق مسدود ولم نصل، نطبع No.",
+                        code: `    dfs(1);\n    if (!vis[n]) cout << "No";`
+                    },
+                    {
+                        title: "5. التتبع العكسي والطباعة",
+                        desc: "إذا وصلنا، نطبع Yes. ننشئ vector للمسار ونبدأ حلقة التتبع من n، وفي كل دورة نقفز للأب p[i] حتى نصل قبل 1. نعكس المسار، ثم نطبع 1، ثم بقية المسار.",
+                        code: `    else {\n        cout << "Yes\\n";\n        vector<int> pth;\n        for (int i = n ; i != 1 ; i = p[i]) { // trace back loop \n             pth.push_back(i);          \n        }\n        reverse(pth.begin(), pth.end());\n        cout << 1 << ' '; \n        for (int i : pth) cout << i << ' ';\n    }\n}`
+                    }
+                ];
+
+                return (
+                    <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                        <div className="max-w-5xl mx-auto w-full space-y-4">
+                            <div className="bg-white p-4 rounded border border-slate-200 shadow-sm text-center">
+                                <h2 className="text-lg font-bold text-slate-800">تفصيل الكود الأصلي والمجزء</h2>
+                                <p className="text-xs text-slate-600 mt-1">
+                                    الجهة اليسرى تحتوي على الكود الأصلي، واليمنى تشرح ماذا يفعل كل جزء بالضبط.
+                                </p>
+                            </div>
+
+                            <div className="space-y-4">
+                                {codeSegments.map((seg, idx) => (
+                                    <div key={idx} className="flex flex-col md:flex-row bg-white rounded shadow-sm border border-slate-200 overflow-hidden">
+                                        
+                                        {/* الشرح العربي */}
+                                        <div className="w-full md:w-5/12 bg-slate-50 p-4 border-b md:border-b-0 md:border-l border-slate-200 flex flex-col justify-center">
+                                            <h3 className="font-bold text-indigo-800 mb-2 text-sm">{seg.title}</h3>
+                                            <p className="text-xs text-slate-700 leading-relaxed">{seg.desc}</p>
+                                        </div>
+                                        
+                                        {/* الكود الإنجليزي */}
+                                        <div className="w-full md:w-7/12 bg-[#1e1e1e] p-4 overflow-x-auto" dir="ltr">
+                                            <pre className="m-0">
+                                                <code className="text-xs font-mono text-[#d4d4d4] whitespace-pre" style={{lineHeight: '1.6'}}>
+                                                    {seg.code}
+                                                </code>
+                                            </pre>
+                                        </div>
+
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div className="flex flex-col h-full bg-slate-200">
+                    <header className="bg-white px-4 py-3 shadow-sm z-30 flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-200">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-indigo-700 rounded flex items-center justify-center text-white text-sm shadow">
+                                <i className="fa-solid fa-code-branch"></i>
+                            </div>
+                            <div>
+                                <h1 className="text-sm font-bold text-slate-800 leading-tight">Path Finding (DFS)</h1>
+                                <p className="text-slate-500 text-[10px] font-semibold">تفكيك وشرح الخوارزمية المنهجي</p>
+                            </div>
+                        </div>
+                        
+                        <div className="flex bg-slate-100 p-1 rounded border border-slate-200 gap-1 overflow-x-auto text-xs shadow-inner">
+                            {['problem', 'data', 'strategy', 'visualizer', 'code'].map((tabKey, idx) => {
+                                const labels = ["1. المسألة الأصلية", "2. تكوين الرسم", "3. استراتيجية الحل", "4. التتبع البصري", "5. تفصيل الكود"];
+                                return (
+                                    <button 
+                                        key={tabKey}
+                                        onClick={() => setActiveTab(tabKey)} 
+                                        className={`px-3 py-1.5 rounded font-bold transition-all whitespace-nowrap ${activeTab === tabKey ? 'bg-white text-indigo-800 shadow border border-slate-200' : 'text-slate-600 hover:bg-slate-200'}`}
+                                    >
+                                        {labels[idx]}
+                                    </button>
+                                )
+                            })}
+                        </div>
+                    </header>
+
+                    <main className="flex-1 overflow-hidden">
+                        {activeTab === 'problem' && renderProblem()}
+                        {activeTab === 'data' && renderDataStructures()}
+                        {activeTab === 'strategy' && renderStrategy()}
+                        {activeTab === 'visualizer' && renderVisualizer()}
+                        {activeTab === 'code' && renderCode()}
+                    </main>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
