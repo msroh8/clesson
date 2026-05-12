@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شرح خوارزمية تبسيط الكسور (Simplifying Fractions)</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Cairo', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        body { background-color: #f8fafc; margin: 0; height: 100vh; overflow: hidden; font-size: 14px; }
+        #root { height: 100%; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fraction-line { transition: width 0.3s ease; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useRef } = React;
+
+        function generateSteps() {
+            let steps = [];
+
+            const cloneState = (num, den, gcd = null, divNum = false, divDen = false, done = false) => ({
+                num, den, gcd, divNum, divDen, done
+            });
+
+            // 1. Initial State
+            steps.push({
+                happened: "بدأ البرنامج. تم تعريف الكسر الأصلي: البسط (18) والمقام (24).",
+                next: "سنقوم باستدعاء دالة حساب القاسم المشترك الأكبر std::gcd بين الرقمين.",
+                state: cloneState(18, 24)
+            });
+
+            // 2. Finding GCD
+            steps.push({
+                happened: "قامت الدالة std::gcd(18, 24) بحساب القاسم المشترك الأكبر ووجدته يساوي (6).",
+                next: "سنقوم الآن بتطبيق هذا القاسم على الكسر، بدايةً بالبسط.",
+                state: cloneState(18, 24, 6)
+            });
+
+            // 3. Dividing Numerator
+            steps.push({
+                happened: "تمت قسمة البسط (18) على القاسم المشترك (6). النتيجة الجديدة للبسط هي 3.",
+                next: "سنقوم الآن بتطبيق نفس عملية القسمة على المقام.",
+                state: cloneState(3, 24, 6, true, false)
+            });
+
+            // 4. Dividing Denominator
+            steps.push({
+                happened: "تمت قسمة المقام (24) على القاسم المشترك (6). النتيجة الجديدة للمقام هي 4.",
+                next: "تم تبسيط الكسر بالكامل. الخطوة الأخيرة هي طباعة النتيجة النهائية.",
+                state: cloneState(3, 4, 6, true, true)
+            });
+
+            // 5. Final Output
+            steps.push({
+                happened: "تمت طباعة النتيجة النهائية للكسر في أبسط صورة (3/4).",
+                next: "انتهى البرنامج بنجاح. يمكنك إعادة التتبع البصري متى شئت.",
+                state: cloneState(3, 4, 6, true, true, true)
+            });
+
+            return steps;
+        }
+
+        function App() {
+            const [activeTab, setActiveTab] = useState('problem'); 
+            const stepsRef = useRef(generateSteps());
+            const [stepIdx, setStepIdx] = useState(0);
+
+            const renderProblem = () => (
+                <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                    <div className="max-w-4xl mx-auto w-full space-y-4">
+                        <div className="bg-white p-5 rounded border border-slate-200 shadow-sm">
+                            <h2 className="text-lg font-bold mb-4 text-indigo-800 border-b pb-2">نص المسألة (Simplifying Fractions)</h2>
+                            
+                            <div className="text-sm space-y-4 text-slate-700 leading-relaxed">
+                                <p className="font-semibold bg-slate-100 p-4 rounded text-center">
+                                    مُعطى كسر يتكون من بسط (Numerator) ومقام (Denominator).<br/>
+                                    المطلوب: إخراج هذا الكسر في <strong>أبسط صورة (Simplest Form)</strong>.
+                                </p>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                    <div className="bg-slate-50 p-4 rounded border border-slate-200">
+                                        <h3 className="font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">المدخلات (Input)</h3>
+                                        <ul className="list-disc list-inside space-y-1 text-xs">
+                                            <li>رقمان صحيحان يمثلان البسط <code className="font-mono">num</code> والمقام <code className="font-mono">den</code>.</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div className="bg-slate-50 p-4 rounded border border-slate-200">
+                                        <h3 className="font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">المخرجات (Output)</h3>
+                                        <ul className="list-disc list-inside space-y-1 text-xs">
+                                            <li>طباعة الكسر بعد التبسيط بصيغة <code className="font-mono">num/den</code>.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col md:flex-row gap-4">
+                                    <div className="flex-1 bg-[#1e1e1e] text-slate-300 p-3 rounded border border-slate-700 font-mono text-xs" dir="ltr">
+                                        <div className="text-slate-400 mb-2 border-b border-slate-600 pb-1">// مثال المدخلات</div>
+                                        <div>18 <span className="text-slate-500 text-[10px] ml-2">// Numerator</span></div>
+                                        <div>24 <span className="text-slate-500 text-[10px] ml-2">// Denominator</span></div>
+                                        <div className="mt-2 text-slate-500 text-[10px] whitespace-pre-wrap">
+                                            // الكسر هو 18/24
+                                        </div>
+                                    </div>
+                                    <div className="flex-1 bg-[#1e1e1e] text-slate-300 p-3 rounded border border-slate-700 font-mono text-xs" dir="ltr">
+                                        <div className="text-slate-400 mb-2 border-b border-slate-600 pb-1">// مثال المخرجات المتوقعة</div>
+                                        <div className="text-emerald-400">3/4</div>
+                                        <div className="mt-2 text-slate-500 text-[10px] whitespace-pre-wrap">
+                                            // 18 و 24 كلاهما يقبل القسمة على 6
+                                            // 18 ÷ 6 = 3
+                                            // 24 ÷ 6 = 4
+                                            // النتيجة 3/4 ولا يمكن تبسيطها أكثر.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const renderConcept = () => (
+                <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                    <div className="max-w-4xl mx-auto w-full space-y-4">
+                        <div className="bg-white p-5 rounded border border-slate-200 shadow-sm">
+                            <h2 className="text-lg font-bold mb-4 text-indigo-800 border-b pb-2">المفهوم الرياضي (The Math Behind It)</h2>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-3">
+                                    <h3 className="text-sm font-bold text-slate-700 bg-slate-200 p-2 rounded">ما هو القاسم المشترك الأكبر؟ (GCD)</h3>
+                                    <p className="text-xs text-slate-700 leading-relaxed">
+                                        القاسم المشترك الأكبر <span dir="ltr" className="font-mono text-xs text-indigo-700">(Greatest Common Divisor)</span> لرقمين هو أكبر عدد صحيح يقسم كلا الرقمين دون أي باقٍ (Remainder = 0).
+                                    </p>
+                                    <div className="bg-white border border-slate-200 p-3 rounded text-xs font-mono shadow-sm" dir="ltr">
+                                        <div className="text-slate-500 mb-1 border-b pb-1">Factors of 18:</div>
+                                        <div className="text-indigo-800 mb-3">1, 2, 3, <span className="font-bold text-emerald-600 bg-emerald-50 px-1 rounded">6</span>, 9, 18</div>
+                                        
+                                        <div className="text-slate-500 mb-1 border-b pb-1">Factors of 24:</div>
+                                        <div className="text-indigo-800">1, 2, 3, 4, <span className="font-bold text-emerald-600 bg-emerald-50 px-1 rounded">6</span>, 8, 12, 24</div>
+                                    </div>
+                                    <div className="text-[11px] text-slate-500 mt-2">
+                                        أكبر رقم متكرر في كلا القائمتين هو <strong className="text-emerald-600 text-xs">6</strong>.
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <h3 className="text-sm font-bold text-slate-700 bg-emerald-100 p-2 rounded">كيف نستخدمه في تبسيط الكسور؟</h3>
+                                    <p className="text-xs text-slate-700 leading-relaxed">
+                                        رياضياً، قيمة الكسر لا تتغير إذا قمنا بقسمة أو ضرب كل من البسط والمقام في نفس العدد. للوصول لأبسط صورة مباشرة، نقسم كلاهما على أكبر قاسم مشترك يجمعهما.
+                                    </p>
+                                    <div className="flex justify-center items-center gap-4 bg-emerald-50 border border-emerald-200 p-4 rounded shadow-inner" dir="ltr">
+                                        <div className="flex flex-col items-center font-bold text-lg text-slate-700">
+                                            <span className="border-b-2 border-slate-700 px-2 pb-1">18</span>
+                                            <span className="pt-1 px-2">24</span>
+                                        </div>
+                                        <div className="flex flex-col gap-2 text-xs font-mono text-emerald-700">
+                                            <span>÷ 6</span>
+                                            <span>÷ 6</span>
+                                        </div>
+                                        <i className="fa-solid fa-equals text-slate-400"></i>
+                                        <div className="flex flex-col items-center font-bold text-xl text-emerald-700">
+                                            <span className="border-b-2 border-emerald-700 px-2 pb-1">3</span>
+                                            <span className="pt-1 px-2">4</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const renderStrategy = () => (
+                <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                    <div className="max-w-4xl mx-auto w-full space-y-6">
+                        <div className="bg-white p-6 rounded border border-slate-200 shadow-sm">
+                            <h2 className="text-lg font-bold mb-4 text-indigo-800 border-b pb-2 flex items-center gap-2">
+                                <i className="fa-solid fa-chess-knight"></i> استراتيجية الحل البرمجية
+                            </h2>
+                            <p className="text-sm text-slate-600 mb-6">في البرمجة التنافسية وتطوير البرمجيات الحديثة، لا داعي لإعادة اختراع العجلة وكتابة خوارزمية لاستخراج الـ GCD من الصفر (مثل خوارزمية إقليدس Euclidean algorithm)، بل نستخدم الدوال الجاهزة والمحسنة في لغة C++.</p>
+                            
+                            <div className="space-y-5 text-sm text-slate-700 leading-relaxed">
+                                
+                                <div className="bg-blue-50/50 p-4 rounded border border-blue-100">
+                                    <h3 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
+                                        <span className="bg-blue-200 text-blue-800 w-6 h-6 flex items-center justify-center rounded-full text-xs">1</span>
+                                        المكتبة السحرية <code>&lt;numeric&gt;</code>
+                                    </h3>
+                                    <p className="mb-2 text-xs">في لغة C++ (منذ إصدار C++17)، توجد دالة جاهزة وسريعة جداً تُسمى <code dir="ltr" className="font-mono text-indigo-700 font-bold bg-white px-1 border rounded mx-1">std::gcd</code> متوفرة داخل مكتبة <code dir="ltr" className="font-mono bg-white px-1 border rounded mx-1">&lt;numeric&gt;</code>. هذه الدالة تتكفل بالحساب المعقد وتعيد لك الرقم السحري فوراً.</p>
+                                </div>
+
+                                <div className="bg-purple-50/50 p-4 rounded border border-purple-100">
+                                    <h3 className="font-bold text-purple-900 mb-2 flex items-center gap-2">
+                                        <span className="bg-purple-200 text-purple-800 w-6 h-6 flex items-center justify-center rounded-full text-xs">2</span>
+                                        خطوات التنفيذ
+                                    </h3>
+                                    <ul className="list-decimal list-inside space-y-3 text-xs text-slate-700 bg-white p-4 rounded border border-purple-200 shadow-sm">
+                                        <li>نمرر البسط <code dir="ltr" className="font-mono text-purple-700 mx-1">num</code> والمقام <code dir="ltr" className="font-mono text-purple-700 mx-1">den</code> إلى الدالة ونحفظ الناتج في متغير <code dir="ltr" className="font-mono text-purple-700 mx-1">common</code>.</li>
+                                        <li>نستخدم معامل التخصيص المركب <code dir="ltr" className="font-mono font-bold mx-1">/=</code> لتحديث البسط. <br/><span className="text-[10px] text-slate-500 mr-5">(الجملة <code dir="ltr" className="font-mono mx-1">num /= common</code> هي اختصار لـ <code dir="ltr" className="font-mono mx-1">num = num / common</code>).</span></li>
+                                        <li>نطبق نفس التحديث على المقام.</li>
+                                        <li>نطبع النتيجة مفصولة برمز الكسر الكسري النصي <code dir="ltr" className="font-mono mx-1">"/"</code>.</li>
+                                    </ul>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const renderVisualizer = () => {
+                const s = stepsRef.current[stepIdx].state;
+                const currentStepInfo = stepsRef.current[stepIdx];
+
+                return (
+                    <div className="flex flex-col lg:flex-row h-full bg-slate-100 fade-in overflow-hidden">
+                        
+                        {/* Control Panel */}
+                        <div className="w-full lg:w-1/3 bg-white border-l border-slate-200 shadow-lg z-20 flex flex-col">
+                            <div className="p-3 bg-slate-800 text-white border-b border-slate-700">
+                                <h2 className="text-sm font-bold">التتبع البصري التفاعلي</h2>
+                                <p className="text-[10px] text-slate-400">انقر لتتقدم خطوة بخطوة وتفهم ما يجري.</p>
+                            </div>
+                            
+                            <div className="p-4 flex-1 overflow-y-auto space-y-4">
+                                <div className="bg-slate-50 border border-slate-200 p-3 rounded relative shadow-sm">
+                                    <h3 className="font-bold text-xs text-slate-800 mb-1 border-b border-slate-200 pb-1 flex items-center gap-2">
+                                        <i className="fa-solid fa-check-circle text-emerald-600"></i> ماذا حدث للتو؟
+                                    </h3>
+                                    <p className="text-xs text-slate-700 leading-relaxed mt-2">{currentStepInfo.happened}</p>
+                                </div>
+
+                                <div className="bg-indigo-50 border border-indigo-200 p-3 rounded relative shadow-sm">
+                                    <h3 className="font-bold text-xs text-indigo-900 mb-1 border-b border-indigo-200 pb-1 flex items-center gap-2">
+                                        <i className="fa-solid fa-arrow-left text-indigo-600"></i> ماذا سيحدث الآن؟
+                                    </h3>
+                                    <p className="text-xs text-indigo-800 leading-relaxed mt-2">{currentStepInfo.next}</p>
+                                </div>
+                            </div>
+
+                            <div className="p-4 bg-slate-50 border-t border-slate-200">
+                                <button 
+                                    onClick={() => setStepIdx(Math.min(stepsRef.current.length - 1, stepIdx + 1))} 
+                                    disabled={stepIdx === stepsRef.current.length - 1}
+                                    className="w-full py-3 rounded bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-bold text-sm shadow transition flex items-center justify-center gap-2"
+                                >
+                                    {stepIdx === stepsRef.current.length - 1 ? 'انتهى التنفيذ' : 'تنفيذ الخطوة التالية'}
+                                    {stepIdx < stepsRef.current.length - 1 && <i className="fa-solid fa-play text-xs"></i>}
+                                </button>
+                                
+                                <div className="flex justify-between mt-3">
+                                    <button onClick={() => setStepIdx(0)} disabled={stepIdx === 0} className="text-xs text-slate-500 hover:text-slate-800 transition disabled:opacity-50 flex items-center gap-1">
+                                        <i className="fa-solid fa-rotate-right"></i> إعادة من البداية
+                                    </button>
+                                    <span className="text-xs font-mono text-slate-400 bg-slate-200 px-2 py-0.5 rounded">
+                                        خطوة {stepIdx + 1} / {stepsRef.current.length}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Visual Area */}
+                        <div className="flex-1 p-4 flex flex-col items-center justify-center bg-slate-100 overflow-y-auto relative" dir="ltr">
+                            
+                            {/* Main Math Display */}
+                            <div className="w-full max-w-md h-64 bg-white rounded shadow border border-slate-200 mb-6 flex flex-col items-center justify-center p-6 transition-all">
+                                
+                                <div className="flex items-center gap-8">
+                                    {/* Fraction Container */}
+                                    <div className="flex flex-col items-center justify-center">
+                                        <div className={`text-5xl font-black font-mono transition-colors duration-500 ${s.divNum && !s.done ? 'text-indigo-600' : (s.done ? 'text-emerald-600' : 'text-slate-700')}`}>
+                                            {s.num}
+                                        </div>
+                                        <div className="w-full h-1 bg-slate-800 my-2 rounded fraction-line"></div>
+                                        <div className={`text-5xl font-black font-mono transition-colors duration-500 ${s.divDen && !s.done ? 'text-indigo-600' : (s.done ? 'text-emerald-600' : 'text-slate-700')}`}>
+                                            {s.den}
+                                        </div>
+                                    </div>
+
+                                    {/* Operators (appear dynamically) */}
+                                    {s.gcd !== null && !s.done && (
+                                        <div className="flex flex-col justify-between h-full py-2 gap-4 text-slate-400 font-mono text-2xl font-bold fade-in">
+                                            <div className="flex items-center gap-2">
+                                                <span>÷</span>
+                                                <span className="bg-yellow-100 text-yellow-800 px-2 rounded border border-yellow-300">{s.gcd}</span>
+                                            </div>
+                                            <div className="h-2"></div>
+                                            <div className="flex items-center gap-2 opacity-50">
+                                                <span>÷</span>
+                                                <span className="bg-yellow-100 text-yellow-800 px-2 rounded border border-yellow-300">{s.gcd}</span>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {s.done && (
+                                        <div className="fade-in flex items-center">
+                                            <i className="fa-solid fa-check-circle text-4xl text-emerald-500"></i>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Variables Tracker */}
+                            <div className="flex gap-4 w-full max-w-md">
+                                <div className="flex-1 bg-white p-3 rounded shadow border border-slate-200 text-center">
+                                    <h4 className="text-slate-500 font-bold mb-1 text-[10px] uppercase tracking-wider border-b pb-1">Variables</h4>
+                                    <div className="grid grid-cols-3 gap-2 text-xs font-mono mt-2">
+                                        <div className="flex flex-col bg-slate-50 p-2 rounded border border-slate-100">
+                                            <span className="text-slate-400 mb-1 text-[10px]">num</span>
+                                            <span className="font-bold text-slate-700 text-sm">{s.num}</span>
+                                        </div>
+                                        <div className="flex flex-col bg-slate-50 p-2 rounded border border-slate-100">
+                                            <span className="text-slate-400 mb-1 text-[10px]">den</span>
+                                            <span className="font-bold text-slate-700 text-sm">{s.den}</span>
+                                        </div>
+                                        <div className="flex flex-col bg-slate-50 p-2 rounded border border-slate-100">
+                                            <span className="text-slate-400 mb-1 text-[10px]">common</span>
+                                            <span className="font-bold text-indigo-700 text-sm">{s.gcd === null ? '?' : s.gcd}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                );
+            };
+
+            const renderCode = () => {
+                const codeSegments = [
+                    {
+                        title: "1. استدعاء المكتبات",
+                        desc: "نستدعي مكتبة الإدخال والإخراج المعتادة <iostream>، والأهم هنا هو استدعاء مكتبة <numeric> التي تحتوي على دالة std::gcd المدمجة والجاهزة للاستخدام.",
+                        code: `#include <iostream>\n#include <numeric> // for std::gcd\nusing namespace std;`
+                    },
+                    {
+                        title: "2. نقطة البداية (main)",
+                        desc: "نعرف المتغيرات الأساسية للمسألة. num يمثل البسط (Numerator) وقيمته 18. و den يمثل المقام (Denominator) وقيمته 24.",
+                        code: `int main() {\n    int num = 18;\n    int den = 24;`
+                    },
+                    {
+                        title: "3. استخراج القاسم المشترك الأكبر",
+                        desc: "هنا يكمن سطر الحل الجوهري. نقوم بتمرير البسط والمقام لدالة std::gcd. ستقوم الدالة بإرجاع أكبر رقم يقبلان القسمة عليه معاً، ونحفظ هذا الرقم في المتغير common.",
+                        code: `    int common = std::gcd(num, den);`
+                    },
+                    {
+                        title: "4. تبسيط الكسر",
+                        desc: "الآن وقد عرفنا القاسم المشترك الأكبر، نقوم بقسمة البسط والمقام عليه باستخدام المعامل المركب (/=). هذا يضمن تحويل الكسر إلى أبسط صورة ممكنة.",
+                        code: `    num /= common;\n    den /= common;`
+                    },
+                    {
+                        title: "5. طباعة المخرجات",
+                        desc: "أخيراً، نطبع البسط الجديد، متبوعاً بعلامة القسمة الكسرية (/) كنص، ثم المقام الجديد. لتكون النتيجة الظاهرة على الشاشة هي (3/4).",
+                        code: `    cout << num << "/" << den; // Outputs: 3/4\n}`
+                    }
+                ];
+
+                return (
+                    <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                        <div className="max-w-6xl mx-auto w-full space-y-4">
+                            <div className="bg-white p-4 rounded border border-slate-200 shadow-sm text-center">
+                                <h2 className="text-lg font-bold text-slate-800">تفصيل الكود الأصلي والمجزء</h2>
+                                <p className="text-xs text-slate-600 mt-1">
+                                    الجهة اليسرى تحتوي على الكود الأصلي (دون أي تعديل). الجهة اليمنى تشرح للطالب ما الذي يحلّه هذا الجزء بالتحديد.
+                                </p>
+                            </div>
+
+                            <div className="space-y-4">
+                                {codeSegments.map((seg, idx) => (
+                                    <div key={idx} className="flex flex-col md:flex-row bg-white rounded shadow-sm border border-slate-200 overflow-hidden">
+                                        
+                                        <div className="w-full md:w-5/12 bg-slate-50 p-4 border-b md:border-b-0 md:border-l border-slate-200 flex flex-col justify-center">
+                                            <h3 className="font-bold text-indigo-800 mb-2 text-sm">{seg.title}</h3>
+                                            <p className="text-xs text-slate-700 leading-relaxed">{seg.desc}</p>
+                                        </div>
+                                        
+                                        <div className="w-full md:w-7/12 bg-[#1e1e1e] p-4 overflow-x-auto" dir="ltr">
+                                            <pre className="m-0">
+                                                <code className="text-xs font-mono text-[#d4d4d4] whitespace-pre" style={{lineHeight: '1.6'}}>
+                                                    {seg.code}
+                                                </code>
+                                            </pre>
+                                        </div>
+
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div className="flex flex-col h-full bg-slate-200">
+                    <header className="bg-white px-4 py-3 shadow-sm z-30 flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-200">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-indigo-700 rounded flex items-center justify-center text-white text-sm shadow">
+                                <i className="fa-solid fa-divide"></i>
+                            </div>
+                            <div>
+                                <h1 className="text-sm font-bold text-slate-800 leading-tight">Simplifying Fractions</h1>
+                                <p className="text-slate-500 text-[10px] font-semibold">تبسيط الكسور باستخدام القاسم المشترك (GCD)</p>
+                            </div>
+                        </div>
+                        
+                        <div className="flex bg-slate-100 p-1 rounded border border-slate-200 gap-1 overflow-x-auto text-xs shadow-inner">
+                            {['problem', 'concept', 'strategy', 'visualizer', 'code'].map((tabKey, idx) => {
+                                const labels = ["1. المسألة الأصلية", "2. المفهوم الرياضي", "3. استراتيجية الحل", "4. التتبع البصري", "5. تفصيل الكود"];
+                                return (
+                                    <button 
+                                        key={tabKey}
+                                        onClick={() => setActiveTab(tabKey)} 
+                                        className={`px-3 py-1.5 rounded font-bold transition-all whitespace-nowrap ${activeTab === tabKey ? 'bg-white text-indigo-800 shadow border border-slate-200' : 'text-slate-600 hover:bg-slate-200'}`}
+                                    >
+                                        {labels[idx]}
+                                    </button>
+                                )
+                            })}
+                        </div>
+                    </header>
+
+                    <main className="flex-1 overflow-hidden">
+                        {activeTab === 'problem' && renderProblem()}
+                        {activeTab === 'concept' && renderConcept()}
+                        {activeTab === 'strategy' && renderStrategy()}
+                        {activeTab === 'visualizer' && renderVisualizer()}
+                        {activeTab === 'code' && renderCode()}
+                    </main>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شرح خوارزمية The Meeting Point (LCM)</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Cairo', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        body { background-color: #f8fafc; margin: 0; height: 100vh; overflow: hidden; font-size: 14px; }
+        #root { height: 100%; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .pop-in { animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useRef } = React;
+
+        function generateSteps() {
+            let steps = [];
+
+            const cloneState = (multA = [], multB = [], matched = null, showMath = false) => ({
+                multA: [...multA],
+                multB: [...multB],
+                matched: matched,
+                showMath: showMath
+            });
+
+            // 1. Initial State
+            steps.push({
+                happened: "بدأ البرنامج. لدينا المصباح A يومض كل 12 ثانية، والمصباح B يومض كل 15 ثانية.",
+                next: "سنقوم بمحاكاة ومضات المصباح A عبر الزمن لنرى متى سيضيء.",
+                state: cloneState()
+            });
+
+            // 2. Multiples of A
+            steps.push({
+                happened: "تم تسجيل اللحظات التي سيومض فيها المصباح A (مضاعفات الـ 12): 12, 24, 36, 48, 60.",
+                next: "الآن سنقوم بنفس العملية للمصباح B لنرى متى سيضيء.",
+                state: cloneState([12, 24, 36, 48, 60])
+            });
+
+            // 3. Multiples of B
+            steps.push({
+                happened: "تم تسجيل ومضات المصباح B (مضاعفات الـ 15): 15, 30, 45, 60.",
+                next: "سنقارن القائمتين لنبحث عن أول نقطة التقاء (رقم مشترك) بينهما.",
+                state: cloneState([12, 24, 36, 48, 60], [15, 30, 45, 60])
+            });
+
+            // 4. Finding Match
+            steps.push({
+                happened: "وجدنا نقطة الالتقاء! الرقم 60 موجود في كلتا القائمتين. هذا هو المضاعف المشترك الأصغر (LCM).",
+                next: "بدلاً من هذه المحاكاة الطويلة والمجهدة، سنرى كيف يختصر الكمبيوتر ذلك بمعادلة رياضية بسيطة.",
+                state: cloneState([12, 24, 36, 48, 60], [15, 30, 45, 60], 60)
+            });
+
+            // 5. Mathematical Formula
+            steps.push({
+                happened: "الكمبيوتر يستخدم المعادلة: LCM = (A × B) ÷ GCD(A, B). وتم حساب الناتج في جزء من الثانية (60).",
+                next: "انتهى البرنامج وطبع النتيجة (60 seconds).",
+                state: cloneState([12, 24, 36, 48, 60], [15, 30, 45, 60], 60, true)
+            });
+
+            return steps;
+        }
+
+        function App() {
+            const [activeTab, setActiveTab] = useState('problem'); 
+            const stepsRef = useRef(generateSteps());
+            const [stepIdx, setStepIdx] = useState(0);
+
+            const renderProblem = () => (
+                <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                    <div className="max-w-4xl mx-auto w-full space-y-4">
+                        <div className="bg-white p-5 rounded border border-slate-200 shadow-sm">
+                            <h2 className="text-lg font-bold mb-4 text-indigo-800 border-b pb-2">نص المسألة (The Meeting Point)</h2>
+                            
+                            <div className="text-sm space-y-4 text-slate-700 leading-relaxed">
+                                <p className="font-semibold bg-slate-100 p-4 rounded border border-slate-200 shadow-inner">
+                                    مصباحان يومضان بفترات زمنية مختلفة.<br/>
+                                    - المصباح A يومض كل <strong>12 ثانية</strong>.<br/>
+                                    - المصباح B يومض كل <strong>15 ثانية</strong>.<br/>
+                                    لقد ومضا معاً للتو في اللحظة (صفر). متى سيومضان معاً مرة أخرى؟
+                                </p>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                    <div className="bg-slate-50 p-4 rounded border border-slate-200">
+                                        <h3 className="font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">المدخلات (Input)</h3>
+                                        <ul className="list-disc list-inside space-y-1 text-xs">
+                                            <li>رقمان صحيحان يمثلان فترات الوميض للمصباحين <code className="font-mono">a</code> و <code className="font-mono">b</code>.</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div className="bg-slate-50 p-4 rounded border border-slate-200">
+                                        <h3 className="font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">المخرجات (Output)</h3>
+                                        <ul className="list-disc list-inside space-y-1 text-xs">
+                                            <li>رقم واحد يمثل أقل عدد من الثواني التي سيلتقيان بعدها في الوميض معاً.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col md:flex-row gap-4 mt-4">
+                                    <div className="flex-1 bg-[#1e1e1e] text-slate-300 p-3 rounded border border-slate-700 font-mono text-xs" dir="ltr">
+                                        <div className="text-slate-400 mb-2 border-b border-slate-600 pb-1">// Example Input</div>
+                                        <div>12 <span className="text-slate-500 text-[10px] ml-2">// Lamp A interval</span></div>
+                                        <div>15 <span className="text-slate-500 text-[10px] ml-2">// Lamp B interval</span></div>
+                                    </div>
+                                    <div className="flex-1 bg-[#1e1e1e] text-slate-300 p-3 rounded border border-slate-700 font-mono text-xs" dir="ltr">
+                                        <div className="text-slate-400 mb-2 border-b border-slate-600 pb-1">// Expected Output</div>
+                                        <div className="text-emerald-400">60</div>
+                                        <div className="mt-2 text-slate-500 text-[10px] whitespace-pre-wrap">
+                                            // They will meet again at 60 seconds.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const renderConcept = () => (
+                <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                    <div className="max-w-4xl mx-auto w-full space-y-4">
+                        <div className="bg-white p-5 rounded border border-slate-200 shadow-sm">
+                            <h2 className="text-lg font-bold mb-4 text-indigo-800 border-b pb-2">فهم المضاعفات والالتقاء (Concept)</h2>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-3">
+                                    <h3 className="text-sm font-bold text-slate-700 bg-slate-200 p-2 rounded">ما هو "المضاعف المشترك الأصغر" (LCM)؟</h3>
+                                    <p className="text-xs text-slate-700 leading-relaxed">
+                                        المضاعف <span dir="ltr" className="font-mono mx-1">(Multiple)</span> لأي رقم هو ناتج ضربه في (1، 2، 3...). عندما نبحث عن نقطة التقاء لحدثين متكررين (مثل وميض المصابيح أو دوران الكواكب)، فنحن نبحث عن <strong>أول رقم</strong> يظهر في قائمة مضاعفات الحدثين معاً. وهذا رياضياً يسمى <strong dir="ltr" className="font-mono mx-1 text-indigo-700">Least Common Multiple (LCM)</strong>.
+                                    </p>
+                                    <div className="bg-white border border-slate-200 p-3 rounded text-xs font-mono shadow-sm" dir="ltr">
+                                        <div className="text-slate-500 mb-1 border-b pb-1">Multiples of 12:</div>
+                                        <div className="text-indigo-800 mb-3">12, 24, 36, 48, <span className="font-bold text-emerald-600 bg-emerald-50 px-1 rounded border border-emerald-200">60</span>, 72, 84</div>
+                                        
+                                        <div className="text-slate-500 mb-1 border-b pb-1">Multiples of 15:</div>
+                                        <div className="text-indigo-800">15, 30, 45, <span className="font-bold text-emerald-600 bg-emerald-50 px-1 rounded border border-emerald-200">60</span>, 75, 90</div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <h3 className="text-sm font-bold text-slate-700 bg-amber-100 p-2 rounded">العلاقة السحرية بين LCM و GCD</h3>
+                                    <p className="text-xs text-slate-700 leading-relaxed">
+                                        في البرمجة، لسنا بحاجة لكتابة قوائم طويلة ومقارنتها. هناك علاقة رياضية ثابتة تربط بين القاسم المشترك الأكبر (GCD) والمضاعف المشترك الأصغر (LCM):
+                                    </p>
+                                    <div className="bg-amber-50 border border-amber-200 p-4 rounded text-center shadow-inner">
+                                        <div className="text-lg font-mono font-bold text-amber-900" dir="ltr">
+                                            LCM(a, b) = <span className="text-slate-600">(</span>a × b<span className="text-slate-600">)</span> / GCD(a, b)
+                                        </div>
+                                    </div>
+                                    <p className="text-[11px] text-slate-600 leading-relaxed">
+                                        هذا يعني أننا إذا ضربنا الرقمين (12 × 15 = 180)، ثم قسمنا الناتج على قاسمهما المشترك (وهو 3)، سنحصل فوراً على (60)!
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const renderStrategy = () => (
+                <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                    <div className="max-w-4xl mx-auto w-full space-y-6">
+                        <div className="bg-white p-6 rounded border border-slate-200 shadow-sm">
+                            <h2 className="text-lg font-bold mb-4 text-indigo-800 border-b pb-2 flex items-center gap-2">
+                                <i className="fa-solid fa-chess-knight"></i> استراتيجية الحل البرمجية
+                            </h2>
+                            <p className="text-sm text-slate-600 mb-6">كما في المسألة السابقة، نحن لا نخترع العجلة في C++ الحديثة. نستخدم الدوال المدمجة والمُحسنة لضمان الدقة والسرعة.</p>
+                            
+                            <div className="space-y-6 text-sm text-slate-700 leading-relaxed">
+                                
+                                <div className="bg-blue-50/50 p-4 rounded border border-blue-100">
+                                    <h3 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
+                                        <span className="bg-blue-200 text-blue-800 w-6 h-6 flex items-center justify-center rounded-full text-xs">1</span>
+                                        دالة std::lcm السريعة
+                                    </h3>
+                                    <p className="mb-2 text-xs">بدءاً من إصدار C++17، تم توفير دالة جاهزة تُسمى <code dir="ltr" className="font-mono text-indigo-700 font-bold bg-white px-1 border rounded mx-1">std::lcm</code> داخل مكتبة <code dir="ltr" className="font-mono bg-white px-1 border rounded mx-1">&lt;numeric&gt;</code>. هذه الدالة تطبق القانون الرياضي الذي ذكرناه داخلياً وتعطيك المضاعف المشترك الأصغر فوراً.</p>
+                                    <div className="bg-slate-800 text-white p-3 rounded font-mono text-xs shadow-inner w-fit" dir="ltr">
+                                        int meet_time = std::lcm(12, 15);
+                                    </div>
+                                </div>
+
+                                <div className="bg-rose-50/50 p-4 rounded border border-rose-100">
+                                    <h3 className="font-bold text-rose-900 mb-2 flex items-center gap-2">
+                                        <span className="bg-rose-200 text-rose-800 w-6 h-6 flex items-center justify-center rounded-full text-xs"><i className="fa-solid fa-triangle-exclamation text-[10px]"></i></span>
+                                        تحذير تقني (Overflow)
+                                    </h3>
+                                    <p className="text-xs leading-relaxed text-rose-800">
+                                        إذا كنت تستخدم لغات لا تحتوي على دالة جاهزة، وستقوم بكتابة المعادلة بنفسك <code dir="ltr" className="font-mono font-bold mx-1">(a * b) / GCD(a, b)</code>، <strong>احذر!</strong> 
+                                        عملية الضرب <code dir="ltr" className="font-mono mx-1">(a * b)</code> قد تتجاوز سعة المتغير الرقمي (Integer Overflow) إذا كانت الأرقام كبيرة.
+                                        <br/><br/>
+                                        <span className="font-bold">الممارسة الأفضل:</span> اقسم أولاً ثم اضرب هكذا: <code dir="ltr" className="font-mono font-bold bg-white px-1 rounded border border-rose-200 mx-1">(a / GCD(a, b)) * b</code>. دالة <code dir="ltr" className="font-mono text-indigo-700 mx-1">std::lcm</code> تعالج هذا الأمر بذكاء نيابة عنك!
+                                    </p>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const renderVisualizer = () => {
+                const s = stepsRef.current[stepIdx].state;
+                const currentStepInfo = stepsRef.current[stepIdx];
+
+                return (
+                    <div className="flex flex-col lg:flex-row h-full bg-slate-100 fade-in overflow-hidden">
+                        
+                        {/* Control Panel */}
+                        <div className="w-full lg:w-1/3 bg-white border-l border-slate-200 shadow-lg z-20 flex flex-col">
+                            <div className="p-3 bg-slate-800 text-white border-b border-slate-700">
+                                <h2 className="text-sm font-bold">التتبع البصري (LCM)</h2>
+                                <p className="text-[10px] text-slate-400">انقر لتشغيل المحاكاة واستكشاف الالتقاء.</p>
+                            </div>
+                            
+                            <div className="p-4 flex-1 overflow-y-auto space-y-4">
+                                <div className="bg-slate-50 border border-slate-200 p-3 rounded relative shadow-sm">
+                                    <h3 className="font-bold text-xs text-slate-800 mb-1 border-b border-slate-200 pb-1 flex items-center gap-2">
+                                        <i className="fa-solid fa-check-circle text-emerald-600"></i> ماذا حدث للتو؟
+                                    </h3>
+                                    <p className="text-xs text-slate-700 leading-relaxed mt-2">{currentStepInfo.happened}</p>
+                                </div>
+
+                                <div className="bg-indigo-50 border border-indigo-200 p-3 rounded relative shadow-sm">
+                                    <h3 className="font-bold text-xs text-indigo-900 mb-1 border-b border-indigo-200 pb-1 flex items-center gap-2">
+                                        <i className="fa-solid fa-arrow-left text-indigo-600"></i> ماذا سيحدث الآن؟
+                                    </h3>
+                                    <p className="text-xs text-indigo-800 leading-relaxed mt-2">{currentStepInfo.next}</p>
+                                </div>
+                            </div>
+
+                            <div className="p-4 bg-slate-50 border-t border-slate-200">
+                                <button 
+                                    onClick={() => setStepIdx(Math.min(stepsRef.current.length - 1, stepIdx + 1))} 
+                                    disabled={stepIdx === stepsRef.current.length - 1}
+                                    className="w-full py-3 rounded bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-bold text-sm shadow transition flex items-center justify-center gap-2"
+                                >
+                                    {stepIdx === stepsRef.current.length - 1 ? 'انتهى التنفيذ' : 'تنفيذ الخطوة التالية'}
+                                    {stepIdx < stepsRef.current.length - 1 && <i className="fa-solid fa-play text-xs"></i>}
+                                </button>
+                                
+                                <div className="flex justify-between mt-3">
+                                    <button onClick={() => setStepIdx(0)} disabled={stepIdx === 0} className="text-xs text-slate-500 hover:text-slate-800 transition disabled:opacity-50 flex items-center gap-1">
+                                        <i className="fa-solid fa-rotate-right"></i> إعادة من البداية
+                                    </button>
+                                    <span className="text-xs font-mono text-slate-400 bg-slate-200 px-2 py-0.5 rounded">
+                                        خطوة {stepIdx + 1} / {stepsRef.current.length}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Visual Area */}
+                        <div className="flex-1 p-4 flex flex-col items-center justify-start bg-slate-100 overflow-y-auto relative" dir="ltr">
+                            
+                            {/* Timeline Visualizer */}
+                            {!s.showMath ? (
+                                <div className="w-full max-w-xl space-y-6 mt-6">
+                                    
+                                    {/* Lamp A */}
+                                    <div className="bg-white p-4 rounded shadow border border-slate-200">
+                                        <div className="flex items-center gap-3 mb-3 border-b border-slate-100 pb-2">
+                                            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shadow-inner">
+                                                <i className="fa-regular fa-lightbulb"></i>
+                                            </div>
+                                            <h4 className="font-bold text-sm text-slate-700">Lamp A (Every 12s)</h4>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2 font-mono text-xs">
+                                            <div className="px-2 py-1 bg-slate-100 text-slate-400 border border-slate-200 rounded">0</div>
+                                            {s.multA.map((num, i) => (
+                                                <div key={i} className={`px-2 py-1 border rounded pop-in ${num === s.matched ? 'bg-emerald-500 text-white border-emerald-600 font-bold shadow-md scale-110' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
+                                                    {num}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Lamp B */}
+                                    <div className="bg-white p-4 rounded shadow border border-slate-200">
+                                        <div className="flex items-center gap-3 mb-3 border-b border-slate-100 pb-2">
+                                            <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 shadow-inner">
+                                                <i className="fa-regular fa-lightbulb"></i>
+                                            </div>
+                                            <h4 className="font-bold text-sm text-slate-700">Lamp B (Every 15s)</h4>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2 font-mono text-xs">
+                                            <div className="px-2 py-1 bg-slate-100 text-slate-400 border border-slate-200 rounded">0</div>
+                                            {s.multB.map((num, i) => (
+                                                <div key={i} className={`px-2 py-1 border rounded pop-in ${num === s.matched ? 'bg-emerald-500 text-white border-emerald-600 font-bold shadow-md scale-110' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                                                    {num}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Match Notification */}
+                                    {s.matched && (
+                                        <div className="bg-emerald-100 border border-emerald-300 text-emerald-800 p-4 rounded font-bold text-center shadow-sm pop-in flex items-center justify-center gap-3">
+                                            <i className="fa-solid fa-handshake"></i>
+                                            <span>Meeting Point Found at {s.matched} seconds!</span>
+                                        </div>
+                                    )}
+
+                                </div>
+                            ) : (
+                                /* Math Formula Visualizer */
+                                <div className="w-full max-w-md h-full flex flex-col items-center justify-center pop-in">
+                                    <div className="bg-white p-6 rounded shadow border border-slate-200 w-full text-center">
+                                        <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4 border-b pb-2">C++ Backend Logic</h3>
+                                        
+                                        <div className="bg-slate-800 text-emerald-400 font-mono text-lg p-4 rounded shadow-inner mb-6 relative">
+                                            <span className="text-slate-400 text-xs absolute top-1 left-2">std::lcm(12, 15)</span>
+                                            <div className="mt-2 flex items-center justify-center gap-2">
+                                                <span className="text-white">(</span> 
+                                                <span>12</span> 
+                                                <span className="text-rose-400">×</span> 
+                                                <span>15</span> 
+                                                <span className="text-white">)</span> 
+                                                <span className="text-rose-400">÷</span> 
+                                                <span className="text-indigo-300">GCD(12,15)</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-3 font-mono text-sm text-slate-600">
+                                            <div className="flex justify-between items-center bg-slate-50 p-2 rounded border border-slate-100">
+                                                <span>Product (12 × 15)</span>
+                                                <span className="font-bold text-slate-800">180</span>
+                                            </div>
+                                            <div className="flex justify-between items-center bg-slate-50 p-2 rounded border border-slate-100">
+                                                <span>GCD (Greatest Divisor)</span>
+                                                <span className="font-bold text-indigo-600">3</span>
+                                            </div>
+                                            <div className="flex justify-between items-center bg-emerald-50 p-3 rounded border border-emerald-200 mt-4 shadow-sm">
+                                                <span className="font-bold text-emerald-800">LCM Result</span>
+                                                <span className="font-black text-emerald-600 text-xl">60</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                        </div>
+                    </div>
+                );
+            };
+
+            const renderCode = () => {
+                const codeSegments = [
+                    {
+                        title: "1. استدعاء المكتبات",
+                        desc: "نستدعي مكتبة الإدخال والإخراج <iostream>، ومكتبة <numeric> المهمة جداً والتي تحتوي على دالة std::lcm الجاهزة للاستخدام.",
+                        code: `#include <iostream>\n#include <numeric>\nusing namespace std;`
+                    },
+                    {
+                        title: "2. بداية البرنامج والمعطيات",
+                        desc: "نعرف المتغيرات المذكورة في المسألة. a يمثل المصباح الأول (12 ثانية) و b يمثل المصباح الثاني (15 ثانية).",
+                        code: `int main() {\n    int a = 12;\n    int b = 15;`
+                    },
+                    {
+                        title: "3. استخراج نقطة الالتقاء (LCM)",
+                        desc: "هنا نستخدم الدالة المدمجة std::lcm ونمرر لها المتغيرين. تقوم الدالة داخلياً بتطبيق القانون (a * b) / GCD لتستخرج المضاعف المشترك الأصغر بدقة وسرعة.",
+                        code: `    // LCM formula: (a * b) / GCD(a, b)\n    int meet_time = std::lcm(a, b);`
+                    },
+                    {
+                        title: "4. طباعة النتيجة",
+                        desc: "أخيراً، نطبع النتيجة النهائية للمستخدم لتخبره بالثانية التي سيلتقي فيها المصباحان. النتيجة هنا ستكون 60.",
+                        code: `    cout << "They meet again in " << meet_time << " seconds."; \n    // Output: 60 seconds\n}`
+                    }
+                ];
+
+                return (
+                    <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                        <div className="max-w-6xl mx-auto w-full space-y-4">
+                            <div className="bg-white p-4 rounded border border-slate-200 shadow-sm text-center">
+                                <h2 className="text-lg font-bold text-slate-800">تفصيل الكود الأصلي والمجزء</h2>
+                                <p className="text-xs text-slate-600 mt-1">
+                                    الجهة اليسرى تحتوي على الكود الأصلي (دون أي تعديل). الجهة اليمنى تشرح للطالب ما الذي يحلّه هذا الجزء بالتحديد.
+                                </p>
+                            </div>
+
+                            <div className="space-y-4">
+                                {codeSegments.map((seg, idx) => (
+                                    <div key={idx} className="flex flex-col md:flex-row bg-white rounded shadow-sm border border-slate-200 overflow-hidden">
+                                        
+                                        <div className="w-full md:w-5/12 bg-slate-50 p-4 border-b md:border-b-0 md:border-l border-slate-200 flex flex-col justify-center">
+                                            <h3 className="font-bold text-indigo-800 mb-2 text-sm">{seg.title}</h3>
+                                            <p className="text-xs text-slate-700 leading-relaxed">{seg.desc}</p>
+                                        </div>
+                                        
+                                        <div className="w-full md:w-7/12 bg-[#1e1e1e] p-4 overflow-x-auto" dir="ltr">
+                                            <pre className="m-0">
+                                                <code className="text-xs font-mono text-[#d4d4d4] whitespace-pre" style={{lineHeight: '1.6'}}>
+                                                    {seg.code}
+                                                </code>
+                                            </pre>
+                                        </div>
+
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div className="flex flex-col h-full bg-slate-200">
+                    <header className="bg-white px-4 py-3 shadow-sm z-30 flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-200">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-indigo-700 rounded flex items-center justify-center text-white text-sm shadow">
+                                <i className="fa-solid fa-bolt"></i>
+                            </div>
+                            <div>
+                                <h1 className="text-sm font-bold text-slate-800 leading-tight">The Meeting Point</h1>
+                                <p className="text-slate-500 text-[10px] font-semibold">المضاعف المشترك الأصغر (LCM)</p>
+                            </div>
+                        </div>
+                        
+                        <div className="flex bg-slate-100 p-1 rounded border border-slate-200 gap-1 overflow-x-auto text-xs shadow-inner">
+                            {['problem', 'concept', 'strategy', 'visualizer', 'code'].map((tabKey, idx) => {
+                                const labels = ["1. المسألة الأصلية", "2. المفهوم الرياضي", "3. استراتيجية الحل", "4. التتبع البصري", "5. تفصيل الكود"];
+                                return (
+                                    <button 
+                                        key={tabKey}
+                                        onClick={() => setActiveTab(tabKey)} 
+                                        className={`px-3 py-1.5 rounded font-bold transition-all whitespace-nowrap ${activeTab === tabKey ? 'bg-white text-indigo-800 shadow border border-slate-200' : 'text-slate-600 hover:bg-slate-200'}`}
+                                    >
+                                        {labels[idx]}
+                                    </button>
+                                )
+                            })}
+                        </div>
+                    </header>
+
+                    <main className="flex-1 overflow-hidden">
+                        {activeTab === 'problem' && renderProblem()}
+                        {activeTab === 'concept' && renderConcept()}
+                        {activeTab === 'strategy' && renderStrategy()}
+                        {activeTab === 'visualizer' && renderVisualizer()}
+                        {activeTab === 'code' && renderCode()}
+                    </main>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
