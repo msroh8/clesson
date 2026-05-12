@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شرح خوارزمية Building Teams (Bipartite Graph)</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Cairo', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        body { background-color: #f8fafc; margin: 0; height: 100vh; overflow: hidden; font-size: 14px; }
+        #root { height: 100%; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .pop-in { animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .graph-node { transition: all 0.3s ease; }
+        .graph-edge { transition: all 0.3s ease; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useRef } = React;
+
+        // سنستخدم رسم بياني يحتوي على مثلث (دورة فردية) لإظهار التناقض
+        // 1-2, 2-3, 3-1
+        const N = 3;
+        const EDGES = [[1, 2], [2, 3], [3, 1]];
+        
+        const NODE_POS = {
+            1: { x: 150, y: 30 },
+            2: { x: 60, y: 150 },
+            3: { x: 240, y: 150 }
+        };
+
+        function generateSteps() {
+            let steps = [];
+            let vis = Array(N + 1).fill(false);
+            let clr = Array(N + 1).fill(null); // null = uncolored, 0 = Blue, 1 = Red
+            let contradiction = false;
+
+            const cloneState = (curr = null, activeEdge = null, conflictEdge = null) => ({
+                v: [...vis],
+                clr: [...clr],
+                c: curr,
+                contradiction,
+                edge: activeEdge,
+                conflict: conflictEdge
+            });
+
+            // 1. Initial State
+            steps.push({
+                happened: "البرنامج بدأ. لا توجد أي عقدة مُزارة ولم نقم بتلوين أي تلميذ. المتغير contradiction قيمته False.",
+                next: "سنمر على الرؤوس واحداً تلو الآخر للبحث عن مكون غير مُزار. سنبدأ بالتلميذ رقم 1.",
+                state: cloneState()
+            });
+
+            // 2. Start DFS(1)
+            vis[1] = true;
+            clr[1] = 0; // Team 1 (Blue)
+            steps.push({
+                happened: "التلميذ 1 لم يكن مُزاراً. أطلقنا عليه dfs(1) وعيناه للفريق الأول (الأزرق).",
+                next: "سنبحث في جيران التلميذ 1. الجار الأول هو التلميذ 2.",
+                state: cloneState(1)
+            });
+
+            // 3. DFS(1) -> 2
+            steps.push({
+                happened: "نفحص الجار 2. هل سبق وتمت زيارته وتلوينه؟ الإجابة: لا.",
+                next: "بما أنه غير مُزار، سنقوم بتلوينه باللون العكسي للتلميذ 1 (أي الفريق الثاني - الأحمر) ونطلق dfs(2).",
+                state: cloneState(1, [1, 2])
+            });
+
+            vis[2] = true;
+            clr[2] = 1; // Team 2 (Red)
+            steps.push({
+                happened: "نحن الآن داخل dfs(2). تم تلوين التلميذ 2 بالأحمر.",
+                next: "سنفحص جيران التلميذ 2 (وهما 1 و 3). التلميذ 1 تمت زيارته ولونه يختلف عن 2 (لا مشكلة). ننتقل للتلميذ 3.",
+                state: cloneState(2)
+            });
+
+            // 4. DFS(2) -> 3
+            steps.push({
+                happened: "نفحص الجار 3. هل تمت زيارته؟ الإجابة: لا.",
+                next: "سنقوم بتلوينه باللون العكسي للتلميذ 2 (أي نعود للفريق الأول - الأزرق) ونطلق dfs(3).",
+                state: cloneState(2, [2, 3])
+            });
+
+            vis[3] = true;
+            clr[3] = 0; // Team 1 (Blue)
+            steps.push({
+                happened: "نحن الآن داخل dfs(3). تم تلوين التلميذ 3 بالأزرق.",
+                next: "سنفحص جيران التلميذ 3 (وهما 2 و 1). سنفحص الجار 1 الآن.",
+                state: cloneState(3)
+            });
+
+            // 5. DFS(3) -> 1 (CONTRADICTION)
+            steps.push({
+                happened: "نفحص الجار 1 انطلاقاً من 3. هل تمت زيارته؟ نعم، التلميذ 1 مُزار ومُلون مسبقاً.",
+                next: "اللحظة الحاسمة: سنتحقق هل لونه (أزرق) يطابق لون التلميذ 3 (أزرق)؟",
+                state: cloneState(3, [3, 1])
+            });
+
+            contradiction = true;
+            steps.push({
+                happened: "اكتشفنا الكارثة! التلميذ 1 (أزرق) والتلميذ 3 (أزرق) جيران، أي أنهما أصدقاء ويقعان في نفس الفريق!",
+                next: "هذا يكسر شرط المسألة. سيتم تفعيل متغير (contradiction = true) وتتوقف المحاولات.",
+                state: cloneState(3, null, [3, 1])
+            });
+
+            // 6. Done
+            steps.push({
+                happened: "انتهى الفحص. بما أن contradiction أصبحت True، سيطبع البرنامج IMPOSSIBLE.",
+                next: "انتهى التتبع البصري. (المثلثات أو 'الدورات الفردية' مستحيل تقسيمها لفريقين!).",
+                state: cloneState(null, null, [3, 1])
+            });
+
+            return steps;
+        }
+
+        function App() {
+            const [activeTab, setActiveTab] = useState('problem'); 
+            const stepsRef = useRef(generateSteps());
+            const [stepIdx, setStepIdx] = useState(0);
+
+            const renderProblem = () => (
+                <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                    <div className="max-w-4xl mx-auto w-full space-y-4">
+                        <div className="bg-white p-5 rounded border border-slate-200 shadow-sm">
+                            <h2 className="text-lg font-bold mb-4 text-indigo-800 border-b pb-2">نص المسألة (Building Teams)</h2>
+                            
+                            <div className="text-sm space-y-4 text-slate-700 leading-relaxed">
+                                <p className="font-semibold bg-slate-100 p-4 rounded border border-slate-200 shadow-inner">
+                                    يوجد <span dir="ltr" className="font-mono text-indigo-700 font-bold mx-1">n</span> تلميذاً في الصف، و <span dir="ltr" className="font-mono text-indigo-700 font-bold mx-1">m</span> صداقة بينهم.<br/>
+                                    مهمتك هي تقسيم التلاميذ إلى <strong>فريقين فقط</strong> بحيث <strong>لا يكون أي تلميذين في فريق واحد صديقين</strong>. يمكنك اختيار أحجام الفرق بحرية.
+                                </p>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                    <div className="bg-slate-50 p-4 rounded border border-slate-200">
+                                        <h3 className="font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">المدخلات (Input)</h3>
+                                        <ul className="list-disc list-inside space-y-1 text-xs">
+                                            <li>السطر الأول: عدد التلاميذ <code className="font-mono">n</code> وعدد الصداقات <code className="font-mono">m</code>.</li>
+                                            <li><code className="font-mono">m</code> أسطر: كل سطر يحتوي على <code className="font-mono">a, b</code> يمثل صداقة بين تلميذين.</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div className="bg-slate-50 p-4 rounded border border-slate-200">
+                                        <h3 className="font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">المخرجات (Output)</h3>
+                                        <ul className="list-disc list-inside space-y-1 text-xs">
+                                            <li>اطبع رقماً <code className="font-mono">1</code> أو <code className="font-mono">2</code> لكل تلميذ يمثل رقم فريقه.</li>
+                                            <li>إذا كان التقسيم مستحيلاً، اطبع <code className="font-mono">IMPOSSIBLE</code>.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col md:flex-row gap-4 mt-4">
+                                    <div className="flex-1 bg-[#1e1e1e] text-slate-300 p-3 rounded border border-slate-700 font-mono text-xs" dir="ltr">
+                                        <div className="text-slate-400 mb-2 border-b border-slate-600 pb-1">// Example Input</div>
+                                        <div>5 3 <span className="text-slate-500 text-[10px] ml-2">// 5 pupils, 3 friendships</span></div>
+                                        <div>1 2</div>
+                                        <div>1 3</div>
+                                        <div>4 5</div>
+                                    </div>
+                                    <div className="flex-1 bg-[#1e1e1e] text-slate-300 p-3 rounded border border-slate-700 font-mono text-xs" dir="ltr">
+                                        <div className="text-slate-400 mb-2 border-b border-slate-600 pb-1">// Expected Output</div>
+                                        <div className="text-emerald-400">1 2 2 1 2</div>
+                                        <div className="mt-2 text-slate-500 text-[10px] whitespace-pre-wrap">
+                                            // Pupil 1 in Team 1.
+                                            // Pupils 2 & 3 in Team 2 (Safe).
+                                            // Pupil 4 in Team 1, Pupil 5 in Team 2.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const renderConcept = () => (
+                <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                    <div className="max-w-4xl mx-auto w-full space-y-4">
+                        <div className="bg-white p-5 rounded border border-slate-200 shadow-sm">
+                            <h2 className="text-lg font-bold mb-4 text-indigo-800 border-b pb-2">فهم الرسوم ثنائية الأجزاء (Bipartite Graphs)</h2>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-3">
+                                    <h3 className="text-sm font-bold text-slate-700 bg-slate-200 p-2 rounded">نمذجة المشكلة</h3>
+                                    <p className="text-xs text-slate-700 leading-relaxed">
+                                        تخيل أن التلاميذ هم "رؤوس" (Nodes)، وأن كل صداقة هي "خط" (Edge) يربط بينهم.
+                                        <br/>المطلوب هو تقسيم هذه الرؤوس إلى مجموعتين (فريقين) بحيث لا يربط أي خط بين رأسين في نفس المجموعة. رياضياً، هذا يُعرف بالرسم البياني ثنائي الأجزاء.
+                                    </p>
+                                    <div className="bg-emerald-50 border border-emerald-200 p-3 rounded text-xs text-emerald-800 shadow-sm">
+                                        <strong className="block mb-1">التلوين الثنائي (2-Coloring):</strong>
+                                        أسهل طريقة للحل هي محاولة "تلوين" الرؤوس بلونين (مثلاً أزرق وأحمر). إذا لونا طالباً بالأزرق، <strong>يجب</strong> أن نلون كل أصدقائه بالأحمر.
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <h3 className="text-sm font-bold text-slate-700 bg-rose-100 p-2 rounded">متى يكون التقسيم مستحيلاً؟</h3>
+                                    <p className="text-xs text-slate-700 leading-relaxed">
+                                        تنجح هذه الخطة دائماً، <strong>إلا في حالة واحدة!</strong> 
+                                        إذا كان هناك مجموعة من الأصدقاء يشكلون "حلقة" تتكون من عدد فردي من الأشخاص (مثلاً مثلث: أ صديق ب، ب صديق ج، ج صديق أ).
+                                    </p>
+                                    <div className="bg-white border border-rose-200 p-3 rounded text-xs shadow-sm font-mono" dir="ltr">
+                                        <div className="text-slate-500 mb-1 border-b pb-1">Odd Cycle (Triangle):</div>
+                                        <div className="text-indigo-600">A (Team 1) -> B (Team 2)</div>
+                                        <div className="text-indigo-600">B (Team 2) -> C (Team 1)</div>
+                                        <div className="text-rose-600 font-bold">C (Team 1) -> A (Team 1) !!!</div>
+                                        <div className="text-[10px] text-slate-400 mt-1">Conflict! A & C are friends but in the same team.</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const renderStrategy = () => (
+                <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                    <div className="max-w-4xl mx-auto w-full space-y-6">
+                        <div className="bg-white p-6 rounded border border-slate-200 shadow-sm">
+                            <h2 className="text-lg font-bold mb-4 text-indigo-800 border-b pb-2 flex items-center gap-2">
+                                <i className="fa-solid fa-chess-knight"></i> استراتيجية الحل البرمجية
+                            </h2>
+                            <p className="text-sm text-slate-600 mb-6">الحل يعتمد على استكشاف الرسم البياني باستخدام خوارزمية (DFS) لتوزيع الألوان، مع فحص التناقضات أثناء الطيران.</p>
+                            
+                            <div className="space-y-5 text-sm text-slate-700 leading-relaxed">
+                                
+                                <div className="bg-blue-50/50 p-4 rounded border border-blue-100">
+                                    <h3 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
+                                        <span className="bg-blue-200 text-blue-800 w-6 h-6 flex items-center justify-center rounded-full text-xs">1</span>
+                                        مصفوفة الألوان (Color Array)
+                                    </h3>
+                                    <p className="mb-2 text-xs">نستخدم مصفوفة منطقية <code dir="ltr" className="font-mono bg-white px-1 border rounded mx-1">clr[N]</code> لتخزين الفرق. <code className="font-mono">0</code> للفريق الأول، و <code className="font-mono">1</code> للفريق الثاني. (سنقوم بجمع 1 عند الطباعة لتصبح 1 و 2).
+                                    ونستخدم مصفوفة <code dir="ltr" className="font-mono bg-white px-1 border rounded mx-1">vis[N]</code> لتتبع من تم تلوينه.</p>
+                                </div>
+
+                                <div className="bg-purple-50/50 p-4 rounded border border-purple-100">
+                                    <h3 className="font-bold text-purple-900 mb-2 flex items-center gap-2">
+                                        <span className="bg-purple-200 text-purple-800 w-6 h-6 flex items-center justify-center rounded-full text-xs">2</span>
+                                        منطق الـ DFS (التلوين العكسي)
+                                    </h3>
+                                    <p className="mb-2 text-xs">
+                                        عند زيارة تلميذ <code className="font-mono">u</code>، نمر على كل أصدقائه <code className="font-mono">v</code>:
+                                        <br/>- إذا كان <code className="font-mono">v</code> غير مُزار: نلونه باللون <strong>العكسي</strong> للون <code className="font-mono">u</code> باستخدام المعامل المنطقي: <code dir="ltr" className="font-mono font-bold bg-white px-1 border rounded">clr[v] = !clr[u]</code> ثم نرسل DFS لزيارته.
+                                    </p>
+                                </div>
+
+                                <div className="bg-rose-50/50 p-4 rounded border border-rose-100">
+                                    <h3 className="font-bold text-rose-900 mb-2 flex items-center gap-2">
+                                        <span className="bg-rose-200 text-rose-800 w-6 h-6 flex items-center justify-center rounded-full text-xs">3</span>
+                                        اكتشاف التناقض (The Alarm)
+                                    </h3>
+                                    <p className="mb-2 text-xs">
+                                        أثناء الفحص، إذا وجدنا أن الجار <code className="font-mono">v</code> قد تمت زيارته وتلوينه مسبقاً، يجب أن نطلق صافرة الإنذار إذا كان لونه <strong>يطابق</strong> لون التلميذ الحالي <code className="font-mono">u</code>.
+                                        <br/><code dir="ltr" className="block mt-2 font-mono text-rose-700 bg-white p-2 border rounded">if (clr[v] == clr[u]) contradiction = true;</code>
+                                    </p>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const renderVisualizer = () => {
+                const s = stepsRef.current[stepIdx].state;
+                const currentStepInfo = stepsRef.current[stepIdx];
+
+                return (
+                    <div className="flex flex-col lg:flex-row h-full bg-slate-100 fade-in overflow-hidden">
+                        
+                        {/* Control Panel */}
+                        <div className="w-full lg:w-1/3 bg-white border-l border-slate-200 shadow-lg z-20 flex flex-col">
+                            <div className="p-3 bg-slate-800 text-white border-b border-slate-700">
+                                <h2 className="text-sm font-bold">التتبع البصري التفاعلي</h2>
+                                <p className="text-[10px] text-slate-400">مثال يوضح حالة الاستحالة (IMPOSSIBLE).</p>
+                            </div>
+                            
+                            <div className="p-4 flex-1 overflow-y-auto space-y-4">
+                                <div className="bg-slate-50 border border-slate-200 p-3 rounded relative shadow-sm">
+                                    <h3 className="font-bold text-xs text-slate-800 mb-1 border-b border-slate-200 pb-1 flex items-center gap-2">
+                                        <i className="fa-solid fa-check-circle text-emerald-600"></i> ماذا حدث للتو؟
+                                    </h3>
+                                    <p className="text-xs text-slate-700 leading-relaxed mt-2">{currentStepInfo.happened}</p>
+                                </div>
+
+                                <div className="bg-indigo-50 border border-indigo-200 p-3 rounded relative shadow-sm">
+                                    <h3 className="font-bold text-xs text-indigo-900 mb-1 border-b border-indigo-200 pb-1 flex items-center gap-2">
+                                        <i className="fa-solid fa-arrow-left text-indigo-600"></i> ماذا سيحدث الآن؟
+                                    </h3>
+                                    <p className="text-xs text-indigo-800 leading-relaxed mt-2">{currentStepInfo.next}</p>
+                                </div>
+                            </div>
+
+                            <div className="p-4 bg-slate-50 border-t border-slate-200">
+                                <button 
+                                    onClick={() => setStepIdx(Math.min(stepsRef.current.length - 1, stepIdx + 1))} 
+                                    disabled={stepIdx === stepsRef.current.length - 1}
+                                    className="w-full py-3 rounded bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-bold text-sm shadow transition flex items-center justify-center gap-2"
+                                >
+                                    {stepIdx === stepsRef.current.length - 1 ? 'انتهى التنفيذ' : 'تنفيذ الخطوة التالية'}
+                                    {stepIdx < stepsRef.current.length - 1 && <i className="fa-solid fa-play text-xs"></i>}
+                                </button>
+                                
+                                <div className="flex justify-between mt-3">
+                                    <button onClick={() => setStepIdx(0)} disabled={stepIdx === 0} className="text-xs text-slate-500 hover:text-slate-800 transition disabled:opacity-50 flex items-center gap-1">
+                                        <i className="fa-solid fa-rotate-right"></i> إعادة من البداية
+                                    </button>
+                                    <span className="text-xs font-mono text-slate-400 bg-slate-200 px-2 py-0.5 rounded">
+                                        خطوة {stepIdx + 1} / {stepsRef.current.length}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Visual Area */}
+                        <div className="flex-1 p-4 flex flex-col items-center justify-start bg-slate-100 overflow-y-auto relative" dir="ltr">
+                            
+                            {/* SVG Graph */}
+                            <div className="relative w-full max-w-sm h-64 bg-white rounded shadow border border-slate-200 mb-6 flex justify-center items-center mt-4">
+                                <svg className="absolute w-full h-full inset-0 pointer-events-none">
+                                    {EDGES.map((edge, idx) => {
+                                        const [u, v] = edge;
+                                        const isActive = s.edge && ((s.edge[0] === u && s.edge[1] === v) || (s.edge[1] === u && s.edge[0] === v));
+                                        const isConflict = s.conflict && ((s.conflict[0] === u && s.conflict[1] === v) || (s.conflict[1] === u && s.conflict[0] === v));
+                                        
+                                        let strokeColor = "#cbd5e1"; // slate-300
+                                        let strokeWidth = "3";
+                                        
+                                        if (isConflict) { strokeColor = "#e11d48"; strokeWidth = "6"; } // rose-600
+                                        else if (isActive) { strokeColor = "#6366f1"; strokeWidth = "5"; } // indigo-500
+
+                                        return (
+                                            <line 
+                                                key={`e${idx}`}
+                                                x1={NODE_POS[u].x + 20} y1={NODE_POS[u].y + 20} 
+                                                x2={NODE_POS[v].x + 20} y2={NODE_POS[v].y + 20} 
+                                                stroke={strokeColor} 
+                                                strokeWidth={strokeWidth}
+                                                className={`transition-all duration-300 ${isConflict ? 'animate-pulse' : ''}`}
+                                            />
+                                        );
+                                    })}
+                                </svg>
+                                
+                                {Object.keys(NODE_POS).map(nodeId => {
+                                    const id = parseInt(nodeId);
+                                    const isCurrent = s.c === id;
+                                    const colorVal = s.clr[id]; // 0: Blue, 1: Red
+
+                                    let bgClasses = "bg-white border-2 border-slate-300 text-slate-500";
+                                    
+                                    if (colorVal === 0) bgClasses = "bg-indigo-500 border-2 border-indigo-700 text-white shadow-md";
+                                    if (colorVal === 1) bgClasses = "bg-rose-500 border-2 border-rose-700 text-white shadow-md";
+                                    
+                                    if (isCurrent) bgClasses += " scale-125 ring-4 ring-yellow-400 z-10 pop-in";
+
+                                    return (
+                                        <div 
+                                            key={id} 
+                                            className={`absolute flex flex-col items-center justify-center w-10 h-10 rounded-full font-bold text-sm transition-all duration-300 graph-node ${bgClasses}`}
+                                            style={{ left: NODE_POS[id].x, top: NODE_POS[id].y }}
+                                        >
+                                            {id}
+                                            {colorVal !== null && !isCurrent && (
+                                                <span className="absolute -bottom-5 text-[9px] text-slate-500 font-mono bg-white/80 px-1 rounded">
+                                                    Team {colorVal + 1}
+                                                </span>
+                                            )}
+                                        </div>
+                                    )
+                                })}
+                            </div>
+
+                            {/* Contradiction Alert */}
+                            {s.contradiction && (
+                                <div className="w-full max-w-sm bg-rose-100 border border-rose-400 text-rose-800 p-4 rounded shadow-lg text-center pop-in mb-4">
+                                    <h3 className="font-black text-lg mb-1"><i className="fa-solid fa-triangle-exclamation mr-2"></i>CONTRADICTION!</h3>
+                                    <p className="text-xs font-bold">Impossible to divide into 2 teams.</p>
+                                </div>
+                            )}
+
+                        </div>
+                    </div>
+                );
+            };
+
+            const renderCode = () => {
+                const codeSegments = [
+                    {
+                        title: "1. الإعدادات والمتغيرات",
+                        desc: "نعرف مصفوفة الزيارات (vis) لتجنب الدوران، ومصفوفة الألوان (clr) لتعيين الفرق (صواب/خطأ)، وقائمة التجاور (adj) لبناء الشبكة. الأهم هو المتغير contradiction الذي يعمل كصافرة إنذار إذا اكتشفنا خطأ.",
+                        code: `#include <iostream>\n#include <vector>\nusing namespace std;\n\nconst int maxN = 200'001;\nbool vis[maxN], clr[maxN], contradiction = false;\nvector<int> adj[maxN];`
+                    },
+                    {
+                        title: "2. دالة الفحص والتلوين (DFS)",
+                        desc: "بمجرد دخول التلميذ u، نعتبره مُزاراً. نمر على أصدقائه v. إذا كان الصديق مُزاراً من قبل، نفحص لونه: إذا كان نفس لون التلميذ الحالي، نطلق صافرة الإنذار (contradiction = true).",
+                        code: `void dfs (int u) {\n    vis[u] = true;\n    for (int v : adj[u]) {\n        if (vis[v]) {\n            if (clr[v] == clr[u]) contradiction = true;\n        }`
+                    },
+                    {
+                        title: "3. التلوين العكسي",
+                        desc: "أما إذا كان الصديق v غير مُزار، نعطيه اللون المعاكس تماماً للتلميذ u (باستخدام المعامل !)، ثم نستدعي الدالة ليقوم هذا الصديق بدوره بتلوين أصدقائه.",
+                        code: `        else {\n            clr[v] = !clr[u];\n            dfs(v);\n        }\n    }\n}`
+                    },
+                    {
+                        title: "4. البداية والقراءة",
+                        desc: "نقرأ المدخلات ونبني الصداقات في اتجاهين (لأن الصداقة متبادلة). نمر على كل التلاميذ، وأي تلميذ لم يتم ضمه لأي فريق (غير مُزار)، نطلق عليه الـ DFS ليبدأ سلسلة التلوين لشبكة أصدقائه.",
+                        code: `int main () { \n    int n, m;\n    cin >> n >> m;\n    for (int i = 0 ; i < m ; i++) {\n        int u, v;\n        cin >> u >> v;\n        adj[u].push_back(v);\n        adj[v].push_back(u);\n    }\n    for (int i = 1 ; i <= n ; i++) \n        if (!vis[i]) dfs(i);`
+                    },
+                    {
+                        title: "5. طباعة النتيجة النهائية",
+                        desc: "بعد انتهاء التلوين، نفحص صافرة الإنذار. إذا كانت تعمل، نطبع IMPOSSIBLE. وإلا، نقوم بطباعة الفرق. نجمع (1 + لون التلميذ) ليتحول الصفر والواحد إلى فرق رقم 1 و 2.",
+                        code: `    if (contradiction) cout << "IMPOSSIBLE";\n    else {\n        for (int i = 1 ; i <= n ; i++) \n            cout << 1 + clr[i] << ' ';\n    }\n    return 0;\n}`
+                    }
+                ];
+
+                return (
+                    <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                        <div className="max-w-6xl mx-auto w-full space-y-4">
+                            <div className="bg-white p-4 rounded border border-slate-200 shadow-sm text-center">
+                                <h2 className="text-lg font-bold text-slate-800">تفصيل الكود الأصلي والمجزء</h2>
+                                <p className="text-xs text-slate-600 mt-1">
+                                    الجهة اليسرى تحتوي على الكود الأصلي كما هو. الجهة اليمنى تشرح للطالب وظيفة كل مقطع برمجياً.
+                                </p>
+                            </div>
+
+                            <div className="space-y-4">
+                                {codeSegments.map((seg, idx) => (
+                                    <div key={idx} className="flex flex-col md:flex-row bg-white rounded shadow-sm border border-slate-200 overflow-hidden">
+                                        
+                                        <div className="w-full md:w-5/12 bg-slate-50 p-4 border-b md:border-b-0 md:border-l border-slate-200 flex flex-col justify-center">
+                                            <h3 className="font-bold text-indigo-800 mb-2 text-sm">{seg.title}</h3>
+                                            <p className="text-xs text-slate-700 leading-relaxed">{seg.desc}</p>
+                                        </div>
+                                        
+                                        <div className="w-full md:w-7/12 bg-[#1e1e1e] p-4 overflow-x-auto" dir="ltr">
+                                            <pre className="m-0">
+                                                <code className="text-xs font-mono text-[#d4d4d4] whitespace-pre" style={{lineHeight: '1.6'}}>
+                                                    {seg.code}
+                                                </code>
+                                            </pre>
+                                        </div>
+
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div className="flex flex-col h-full bg-slate-200">
+                    <header className="bg-white px-4 py-3 shadow-sm z-30 flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-200">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-indigo-700 rounded flex items-center justify-center text-white text-sm shadow">
+                                <i className="fa-solid fa-users"></i>
+                            </div>
+                            <div>
+                                <h1 className="text-sm font-bold text-slate-800 leading-tight">Building Teams</h1>
+                                <p className="text-slate-500 text-[10px] font-semibold">التلوين الثنائي للرسوم البيانية (Bipartite Graph)</p>
+                            </div>
+                        </div>
+                        
+                        <div className="flex bg-slate-100 p-1 rounded border border-slate-200 gap-1 overflow-x-auto text-xs shadow-inner">
+                            {['problem', 'concept', 'strategy', 'visualizer', 'code'].map((tabKey, idx) => {
+                                const labels = ["1. المسألة الأصلية", "2. المفهوم الرياضي", "3. استراتيجية الحل", "4. التتبع البصري", "5. تفصيل الكود"];
+                                return (
+                                    <button 
+                                        key={tabKey}
+                                        onClick={() => setActiveTab(tabKey)} 
+                                        className={`px-3 py-1.5 rounded font-bold transition-all whitespace-nowrap ${activeTab === tabKey ? 'bg-white text-indigo-800 shadow border border-slate-200' : 'text-slate-600 hover:bg-slate-200'}`}
+                                    >
+                                        {labels[idx]}
+                                    </button>
+                                )
+                            })}
+                        </div>
+                    </header>
+
+                    <main className="flex-1 overflow-hidden">
+                        {activeTab === 'problem' && renderProblem()}
+                        {activeTab === 'concept' && renderConcept()}
+                        {activeTab === 'strategy' && renderStrategy()}
+                        {activeTab === 'visualizer' && renderVisualizer()}
+                        {activeTab === 'code' && renderCode()}
+                    </main>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
