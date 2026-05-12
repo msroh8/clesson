@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شرح خوارزمية Building Roads (Connected Components)</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Cairo', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        body { background-color: #f8fafc; margin: 0; height: 100vh; overflow: hidden; font-size: 14px; }
+        #root { height: 100%; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .graph-node { transition: all 0.3s ease; }
+        .graph-edge { transition: all 0.3s ease; stroke-dasharray: 1000; stroke-dashoffset: 0; }
+        @keyframes drawLine {
+            from { stroke-dashoffset: 100; }
+            to { stroke-dashoffset: 0; }
+        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // إعداد شبكة وهمية للتتبع البصري
+        // 6 مدن، 3 مكونات متصلة
+        // المكون 1: 1-2, 1-3
+        // المكون 2: 4-5
+        // المكون 3: 6
+        const N = 6;
+        const INITIAL_EDGES = [[1, 2], [1, 3], [4, 5]];
+        
+        const NODE_POS = {
+            1: { x: 70, y: 70 },
+            2: { x: 140, y: 30 },
+            3: { x: 140, y: 110 },
+            4: { x: 260, y: 40 },
+            5: { x: 330, y: 40 },
+            6: { x: 200, y: 180 }
+        };
+
+        function generateSteps() {
+            let steps = [];
+            let vis = Array(N + 1).fill(false);
+            let sources = [];
+            let newRoads = [];
+
+            const cloneState = (loopIndex = null, dfsCurrent = null) => ({
+                v: [...vis],
+                s: [...sources],
+                currI: loopIndex,
+                dfsNode: dfsCurrent,
+                addedRoads: [...newRoads]
+            });
+
+            // 1. Initial State
+            steps.push({
+                happened: "بدأ البرنامج. المصفوفات فارغة، ولا توجد أي مدينة مُزارة (جميع القِيم false).",
+                next: "سنبدأ حلقة التكرار (for loop) للمرور على المدن من 1 إلى N للبحث عن المكونات غير المتصلة.",
+                state: cloneState()
+            });
+
+            // 2. Loop i = 1
+            steps.push({
+                happened: "المؤشر i يقف عند المدينة 1. فحصنا هل زُرناها (vis[1])؟ الإجابة: لا (!vis[1] == true).",
+                next: "هذا يعني أننا وجدنا 'مكوناً متصلاً' جديداً! سنضيف المدينة 1 إلى قائمة الممثلين (sources) ونطلق دالة dfs(1).",
+                state: cloneState(1)
+            });
+
+            sources.push(1);
+            steps.push({
+                happened: "أضفنا 1 إلى قائمة sources. انطلق الآن الـ DFS لزيارة المدينة 1 وكل من يتصل بها.",
+                next: "سيقوم DFS بزيارة المدينة 1 ثم ينتقل لجيرانها (2 و 3) ليعلّمهم كمُزارين.",
+                state: cloneState(1, 1)
+            });
+
+            vis[1] = true;
+            vis[2] = true;
+            vis[3] = true;
+            steps.push({
+                happened: "أنهى الـ DFS عمله. تم تلوين المدن (1، 2، 3) كمُزارة (True). الآن لن يتم اعتبارها مكونات جديدة لاحقاً.",
+                next: "نعود لحلقة التكرار الرئيسية لنفحص المدينة التالية (i = 2).",
+                state: cloneState(null, null)
+            });
+
+            // 3. Loop i = 2 & 3
+            steps.push({
+                happened: "المدينتان 2 و 3 مُزارتان مسبقاً بفعل الـ DFS. يتجاهلهما المؤشر ولا ينفذ شيء.",
+                next: "المؤشر سيقفز للبحث في المدينة رقم 4.",
+                state: cloneState(4)
+            });
+
+            // 4. Loop i = 4
+            steps.push({
+                happened: "المؤشر عند المدينة 4. هل هي مُزارة؟ لا. إذن هي بداية لجزيرة (مكون) جديدة تماماً!",
+                next: "سنضيف المدينة 4 إلى قائمة sources ونطلق dfs(4).",
+                state: cloneState(4)
+            });
+
+            sources.push(4);
+            steps.push({
+                happened: "أضفنا 4 لقائمة sources. انطلق الـ DFS.",
+                next: "سيقوم الـ DFS بزيارة المدينة 4 وجارتها 5.",
+                state: cloneState(4, 4)
+            });
+
+            vis[4] = true;
+            vis[5] = true;
+            steps.push({
+                happened: "تمت زيارة المكون الثاني بالكامل (المدن 4 و 5).",
+                next: "نكمل الحلقة. نتجاهل المدينة 5 لأنها مُزارة، وننتقل للمدينة 6.",
+                state: cloneState(6)
+            });
+
+            // 5. Loop i = 6
+            steps.push({
+                happened: "المدينة 6 غير مُزارة وهي معزولة تماماً. مكون ثالث جديد!",
+                next: "نضيف 6 للـ sources ونشغل الـ dfs(6).",
+                state: cloneState(6)
+            });
+
+            sources.push(6);
+            vis[6] = true;
+            steps.push({
+                happened: "أضفنا 6 للقائمة، وزرناها. انتهت حلقة التكرار الرئيسية لأننا مررنا على كل المدن.",
+                next: "سنلقي نظرة على قائمة الممثلين (sources). عددها يمثل عدد المكونات المنفصلة.",
+                state: cloneState()
+            });
+
+            // 6. Connect components
+            steps.push({
+                happened: "لدينا 3 مكونات منفصلة ممثلة بالمدن [1, 4, 6]. لربط K مكون نحتاج (K-1) طريق. أي نحتاج طرقاً عددها (3 - 1 = 2).",
+                next: "سنأخذ الممثل الأول sources[0] وهو المدينة 1، ونبني طريقاً بينه وبين الممثل الثاني (المدينة 4).",
+                state: cloneState()
+            });
+
+            newRoads.push([1, 4]);
+            steps.push({
+                happened: "تم طباعة وبناء طريق جديد يربط (1 بـ 4). المكونان الأول والثاني اندمجا.",
+                next: "سنبني الطريق الأخير، نربط sources[0] (المدينة 1) بـ sources[2] (المدينة 6).",
+                state: cloneState()
+            });
+
+            newRoads.push([1, 6]);
+            steps.push({
+                happened: "تم بناء الطريق (1 بـ 6). الآن أصبحت جميع المدن في الرسم البياني متصلة ببعضها بفضل الـ 2 طرق الإضافية.",
+                next: "انتهى البرنامج بنجاح.",
+                state: cloneState()
+            });
+
+            return steps;
+        }
+
+        function App() {
+            const [activeTab, setActiveTab] = useState('problem'); 
+            const stepsRef = useRef(generateSteps());
+            const [stepIdx, setStepIdx] = useState(0);
+
+            const renderProblem = () => (
+                <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                    <div className="max-w-4xl mx-auto w-full space-y-4">
+                        <div className="bg-white p-5 rounded border border-slate-200 shadow-sm">
+                            <h2 className="text-lg font-bold mb-4 text-indigo-800 border-b pb-2">نص المسألة (Building Roads)</h2>
+                            
+                            <div className="text-sm space-y-4 text-slate-700 leading-relaxed">
+                                <p className="font-semibold bg-slate-100 p-4 rounded text-center">
+                                    يوجد <span dir="ltr" className="font-mono text-xs mx-1">n</span> مدينة، و <span dir="ltr" className="font-mono text-xs mx-1">m</span> طريقاً بينها. <br/>
+                                    مهمتك هي إيجاد الحد الأدنى من عدد الطرق التي يجب إضافتها بحيث يكون هناك مسار (طريق متصل) بين أي مدينتين، وأيضاً تحديد أي الطرق تحديداً يجب بناؤها لتحقيق ذلك.
+                                </p>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                    <div className="bg-slate-50 p-4 rounded border border-slate-200">
+                                        <h3 className="font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">المدخلات (Input)</h3>
+                                        <ul className="list-disc list-inside space-y-1 text-xs">
+                                            <li>السطر الأول: عدد المدن <code className="font-mono">n</code> وعدد الطرق <code className="font-mono">m</code>.</li>
+                                            <li>الأسطر التالية (<code className="font-mono">m</code> سطر): كل سطر يحتوي على مدينتين <code className="font-mono">u, v</code> يعني وجود طريق بينهما.</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div className="bg-slate-50 p-4 rounded border border-slate-200">
+                                        <h3 className="font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">المخرجات (Output)</h3>
+                                        <ul className="list-disc list-inside space-y-1 text-xs">
+                                            <li>سطر واحد يطبع رقماً: وهو أقل عدد من الطرق الجديدة المطلوبة.</li>
+                                            <li>أسطر تالية: كل سطر يطبع <code className="font-mono">u v</code> وهي المدن التي تقترح بناء طريق بينها.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col md:flex-row gap-4">
+                                    <div className="flex-1 bg-[#1e1e1e] text-slate-300 p-3 rounded border border-slate-700 font-mono text-xs" dir="ltr">
+                                        <div className="text-slate-400 mb-2 border-b border-slate-600 pb-1">// مثال المدخلات</div>
+                                        <div>4 2</div>
+                                        <div>1 2</div>
+                                        <div>3 4</div>
+                                        <div className="mt-2 text-slate-500 text-[10px] whitespace-pre-wrap">
+                                            // لدينا 4 مدن. 
+                                            // (1 متصلة بـ 2). 
+                                            // (3 متصلة بـ 4). 
+                                            // لكن لا يوجد طريق بين المجموعتين.
+                                        </div>
+                                    </div>
+                                    <div className="flex-1 bg-[#1e1e1e] text-slate-300 p-3 rounded border border-slate-700 font-mono text-xs" dir="ltr">
+                                        <div className="text-slate-400 mb-2 border-b border-slate-600 pb-1">// مثال المخرجات المتوقعة</div>
+                                        <div className="text-emerald-400">1</div>
+                                        <div className="text-emerald-400">2 3</div>
+                                        <div className="mt-2 text-slate-500 text-[10px] whitespace-pre-wrap">
+                                            // طريق واحد يكفي لحل المشكلة.
+                                            // إذا بنينا طريقاً بين 2 و 3، 
+                                            // ستتصل كل المدن الأربع ببعضها.
+                                            // (طباعة 1 3 أو 1 4 تعتبر صحيحة أيضاً).
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const renderConcept = () => (
+                <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                    <div className="max-w-4xl mx-auto w-full space-y-4">
+                        <div className="bg-white p-5 rounded border border-slate-200 shadow-sm">
+                            <h2 className="text-lg font-bold mb-4 text-indigo-800 border-b pb-2">فهم المكونات المتصلة (Connected Components)</h2>
+                            <p className="text-sm text-slate-600 mb-4">في عالم الرسوم البيانية (Graphs)، يُقال عن مجموعة من المدن أنها "مكون متصل" إذا كان بإمكانك السفر بين أي مدينتين فيها باستخدام الطرق المتاحة.</p>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-3">
+                                    <h3 className="text-sm font-bold text-slate-700 bg-slate-200 p-2 rounded">تشخيص المشكلة</h3>
+                                    <p className="text-xs text-slate-700 leading-relaxed">
+                                        لو تخيلنا أن المدن هي جزر، والطرق هي جسور. الرسم البياني قد يتكون من جزيرة واحدة ضخمة (متصل بالكامل) أو عدة جزر منفصلة عن بعضها.
+                                    </p>
+                                    <div className="bg-rose-50 border border-rose-200 p-3 rounded text-xs text-rose-800 shadow-sm">
+                                        الهدف من المسألة ببساطة هو: <strong>معرفة عدد الجزر المنفصلة</strong>. 
+                                        لأن القاعدة الرياضية تقول: إذا كان لديك <code dir="ltr" className="font-mono mx-1">k</code> جزر منفصلة، فإنك تحتاج لبناء جسور عددها <code dir="ltr" className="font-mono mx-1">k - 1</code> لتربطهم جميعاً لتصبح جزيرة واحدة ضخمة.
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <h3 className="text-sm font-bold text-slate-700 bg-emerald-100 p-2 rounded">الفكرة البرمجية للحل</h3>
+                                    <p className="text-xs text-slate-700 leading-relaxed">
+                                        كيف يمكن للكمبيوتر عدّ الجزر (المكونات)؟ سنستخدم قائمة التجاور (Adjacency List) ومصفوفة الزيارات <code dir="ltr" className="font-mono text-indigo-700 mx-1">vis</code>.
+                                    </p>
+                                    <ul className="list-decimal list-inside text-xs space-y-2 text-slate-600 bg-white border border-slate-200 p-3 rounded">
+                                        <li>نمر على المدن من 1 إلى <code dir="ltr" className="font-mono">n</code>.</li>
+                                        <li>إذا وجدنا مدينة لم تتم زيارتها <code dir="ltr" className="font-mono">!vis[i]</code>، فهذه بداية لجزيرة جديدة!</li>
+                                        <li>نحفظ هذه المدينة في قائمة <code dir="ltr" className="font-mono">sources</code> كممثل (سفير) لهذه الجزيرة.</li>
+                                        <li>نرسل دالة الـ <code dir="ltr" className="font-mono">dfs</code> لتطوف هذه الجزيرة وتعلّم كل مدنها كـ "مُزارة" لكي لا نحسبهم مرة أخرى.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const renderStrategy = () => (
+                <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                    <div className="max-w-4xl mx-auto w-full space-y-6">
+                        <div className="bg-white p-6 rounded border border-slate-200 shadow-sm">
+                            <h2 className="text-lg font-bold mb-4 text-indigo-800 border-b pb-2 flex items-center gap-2">
+                                <i className="fa-solid fa-chess-knight"></i> استراتيجية الحل المفصلة
+                            </h2>
+                            <p className="text-sm text-slate-600 mb-6">الآن بعد أن فهمنا المبدأ، دعونا نفصل الأدوات التي نستخدمها لتمثيل الخطة داخل الكود.</p>
+                            
+                            <div className="space-y-6 text-sm text-slate-700 leading-relaxed">
+                                
+                                {/* Tools */}
+                                <div className="bg-blue-50/50 p-4 rounded border border-blue-100">
+                                    <h3 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
+                                        <span className="bg-blue-200 text-blue-800 w-6 h-6 flex items-center justify-center rounded-full text-xs">1</span>
+                                        الأدوات (Data Structures)
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                                        <div className="bg-white p-3 rounded border-b-4 border-blue-400 shadow-sm">
+                                            <div dir="ltr" className="font-mono font-bold text-indigo-700 mb-1 text-left">vis[N]</div>
+                                            <p className="text-xs font-bold text-slate-800 mb-1 border-b pb-1">مصفوفة الزيارات</p>
+                                            <p className="text-[11px] text-slate-600 mt-2">قيمتها الابتدائية <code dir="ltr" className="font-mono bg-slate-50 px-1 rounded">false</code>. تضمن لنا عدم الدوران في نفس المكون. عندما يمر الـ DFS على مدينة، يجعلها <code dir="ltr" className="font-mono bg-emerald-50 text-emerald-700 px-1 rounded">true</code>.</p>
+                                        </div>
+                                        <div className="bg-white p-3 rounded border-b-4 border-blue-400 shadow-sm">
+                                            <div dir="ltr" className="font-mono font-bold text-indigo-700 mb-1 text-left">vector&lt;int&gt; sources</div>
+                                            <p className="text-xs font-bold text-slate-800 mb-1 border-b pb-1">قائمة الممثلين</p>
+                                            <p className="text-[11px] text-slate-600 mt-2">نضع فيها "رأس" واحد من كل مكون متصل نكتشفه. لو كان حجم هذه القائمة 3، فهذا يعني أن لدينا 3 مكونات مفصولة.</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Connecting phase */}
+                                <div className="bg-purple-50/50 p-4 rounded border border-purple-100">
+                                    <h3 className="font-bold text-purple-900 mb-2 flex items-center gap-2">
+                                        <span className="bg-purple-200 text-purple-800 w-6 h-6 flex items-center justify-center rounded-full text-xs">2</span>
+                                        كيف نربط المكونات برمجياً؟
+                                    </h3>
+                                    <p className="mb-3 text-xs">بعد انتهاء البحث، تكون <code dir="ltr" className="font-mono px-1">sources</code> ممتلئة بأرقام المدن التي تمثل الجزر. هناك عدة طرق لربطها، وأسهل وأذكى طريقة هي التوصيل <strong>بشكل مركزي</strong> أو متسلسل.</p>
+                                    
+                                    <div className="bg-white p-4 rounded border border-purple-200 text-xs font-mono shadow-sm" dir="ltr">
+                                        <div className="text-slate-400 mb-2">// sources = [1, 4, 6]  (3 islands)</div>
+                                        <div className="text-indigo-600 font-bold">cout &lt;&lt; sources.size() - 1 &lt;&lt; endl;</div>
+                                        <div className="text-slate-400 mb-2">// prints: 2 (we need 2 bridges)</div>
+                                        
+                                        <div className="text-emerald-700 font-bold mt-4">for (int i = 1 ; i &lt; sources.size() ; i++) {'{'}</div>
+                                        <div className="ml-4 text-slate-700">cout &lt;&lt; <span className="bg-yellow-100 px-1">sources[0]</span> &lt;&lt; ' ' &lt;&lt; <span className="bg-blue-100 px-1">sources[i]</span> &lt;&lt; endl;</div>
+                                        <div className="text-emerald-700 font-bold">{'}'}</div>
+                                        <div className="text-slate-400 mt-2">// Output will be:</div>
+                                        <div className="text-slate-400">// 1 4</div>
+                                        <div className="text-slate-400">// 1 6</div>
+                                    </div>
+                                    <p className="text-xs text-purple-800 mt-3 font-semibold">تأمل الكود السابق: أخذنا الممثل الأول (رقم 1)، وجعلناه المركز، وربطناه بكل الممثلين الآخرين. هكذا تندمج كل المكونات بمكون واحد كبير بحد أدنى من الطرق!</p>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const renderVisualizer = () => {
+                const s = stepsRef.current[stepIdx].state;
+                const currentStepInfo = stepsRef.current[stepIdx];
+
+                return (
+                    <div className="flex flex-col lg:flex-row h-full bg-slate-100 fade-in overflow-hidden">
+                        
+                        <div className="w-full lg:w-1/3 bg-white border-l border-slate-200 shadow-lg z-20 flex flex-col">
+                            <div className="p-3 bg-slate-800 text-white border-b border-slate-700">
+                                <h2 className="text-sm font-bold">التتبع البصري التفاعلي</h2>
+                                <p className="text-[10px] text-slate-400">انقر لتتقدم خطوة بخطوة وتفهم ما يجري.</p>
+                            </div>
+                            
+                            <div className="p-4 flex-1 overflow-y-auto space-y-4">
+                                <div className="bg-slate-50 border border-slate-200 p-3 rounded relative shadow-sm">
+                                    <h3 className="font-bold text-xs text-slate-800 mb-1 border-b border-slate-200 pb-1 flex items-center gap-2">
+                                        <i className="fa-solid fa-check-circle text-emerald-600"></i> ماذا حدث للتو؟
+                                    </h3>
+                                    <p className="text-xs text-slate-700 leading-relaxed mt-2">{currentStepInfo.happened}</p>
+                                </div>
+
+                                <div className="bg-indigo-50 border border-indigo-200 p-3 rounded relative shadow-sm">
+                                    <h3 className="font-bold text-xs text-indigo-900 mb-1 border-b border-indigo-200 pb-1 flex items-center gap-2">
+                                        <i className="fa-solid fa-arrow-left text-indigo-600"></i> ماذا سيحدث الآن؟
+                                    </h3>
+                                    <p className="text-xs text-indigo-800 leading-relaxed mt-2">{currentStepInfo.next}</p>
+                                </div>
+                            </div>
+
+                            <div className="p-4 bg-slate-50 border-t border-slate-200">
+                                <button 
+                                    onClick={() => setStepIdx(Math.min(stepsRef.current.length - 1, stepIdx + 1))} 
+                                    disabled={stepIdx === stepsRef.current.length - 1}
+                                    className="w-full py-3 rounded bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-bold text-sm shadow transition flex items-center justify-center gap-2"
+                                >
+                                    {stepIdx === stepsRef.current.length - 1 ? 'انتهى التنفيذ' : 'تنفيذ الخطوة التالية'}
+                                    {stepIdx < stepsRef.current.length - 1 && <i className="fa-solid fa-play text-xs"></i>}
+                                </button>
+                                
+                                <div className="flex justify-between mt-3">
+                                    <button onClick={() => setStepIdx(0)} disabled={stepIdx === 0} className="text-xs text-slate-500 hover:text-slate-800 transition disabled:opacity-50 flex items-center gap-1">
+                                        <i className="fa-solid fa-rotate-right"></i> إعادة من البداية
+                                    </button>
+                                    <span className="text-xs font-mono text-slate-400 bg-slate-200 px-2 py-0.5 rounded">
+                                        خطوة {stepIdx + 1} / {stepsRef.current.length}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex-1 p-4 flex flex-col items-center justify-center bg-slate-100 overflow-y-auto relative" dir="ltr">
+                            
+                            {/* SVG Graph Base */}
+                            <div className="relative w-full max-w-md h-64 bg-white rounded shadow border border-slate-200 mb-6 flex justify-center items-center">
+                                <svg className="absolute w-full h-full inset-0 pointer-events-none">
+                                    {/* Existing Edges */}
+                                    {INITIAL_EDGES.map((edge, idx) => {
+                                        const [u, v] = edge;
+                                        return (
+                                            <line 
+                                                key={`e${idx}`}
+                                                x1={NODE_POS[u].x + 20} y1={NODE_POS[u].y + 20} 
+                                                x2={NODE_POS[v].x + 20} y2={NODE_POS[v].y + 20} 
+                                                stroke="#cbd5e1" 
+                                                strokeWidth="3"
+                                            />
+                                        );
+                                    })}
+                                    
+                                    {/* Newly Added Roads (Dotted) */}
+                                    {s.addedRoads.map((edge, idx) => {
+                                        const [u, v] = edge;
+                                        return (
+                                            <line 
+                                                key={`ne${idx}`}
+                                                x1={NODE_POS[u].x + 20} y1={NODE_POS[u].y + 20} 
+                                                x2={NODE_POS[v].x + 20} y2={NODE_POS[v].y + 20} 
+                                                stroke="#10b981" 
+                                                strokeWidth="4"
+                                                strokeDasharray="6,4"
+                                                className="fade-in"
+                                            />
+                                        );
+                                    })}
+                                </svg>
+                                
+                                {/* Nodes */}
+                                {Object.keys(NODE_POS).map(nodeId => {
+                                    const id = parseInt(nodeId);
+                                    const isCurrentLoop = s.currI === id;
+                                    const isDfsActive = s.dfsNode === id;
+                                    const isVisited = s.v[id];
+                                    const isSource = s.s.includes(id);
+
+                                    let bgClasses = "bg-white border-2 border-slate-300 text-slate-500";
+                                    
+                                    if (isDfsActive) bgClasses = "bg-purple-500 border-2 border-purple-600 text-white shadow-lg scale-110";
+                                    else if (isCurrentLoop && !isVisited) bgClasses = "bg-yellow-400 border-2 border-yellow-500 text-yellow-900 shadow-lg scale-110";
+                                    else if (isSource) bgClasses = "bg-indigo-600 border-2 border-indigo-800 text-white shadow ring-4 ring-indigo-100";
+                                    else if (isVisited) bgClasses = "bg-slate-200 border-2 border-slate-400 text-slate-600";
+                                    else if (isCurrentLoop && isVisited) bgClasses = "bg-slate-200 border-2 border-yellow-400 text-slate-600 shadow-lg scale-110";
+
+                                    return (
+                                        <div 
+                                            key={id} 
+                                            className={`absolute flex flex-col items-center justify-center w-10 h-10 rounded-full font-bold text-sm shadow-sm graph-node z-10 ${bgClasses}`}
+                                            style={{ left: NODE_POS[id].x, top: NODE_POS[id].y }}
+                                        >
+                                            {id}
+                                            {isSource && <span className="absolute -top-5 text-[9px] bg-indigo-100 text-indigo-800 px-1 rounded whitespace-nowrap border border-indigo-200">Source</span>}
+                                        </div>
+                                    )
+                                })}
+                            </div>
+
+                            {/* Data trackers */}
+                            <div className="flex gap-4 w-full max-w-md">
+                                <div className="flex-1 bg-white p-3 rounded shadow border border-slate-200">
+                                    <h4 className="text-slate-500 font-bold mb-2 text-[10px] uppercase tracking-wider border-b pb-1 text-center">vis Array (الزيارات)</h4>
+                                    <div className="flex gap-1 justify-center font-mono text-[10px] flex-wrap">
+                                        {[1, 2, 3, 4, 5, 6].map(id => (
+                                            <div key={id} className="flex flex-col items-center">
+                                                <div className="text-slate-400 mb-0.5">{id}</div>
+                                                <div className={`w-6 h-6 flex items-center justify-center rounded border ${s.v[id] ? 'bg-emerald-100 border-emerald-300 text-emerald-700' : 'bg-slate-50 border-slate-200 text-slate-300'}`}>
+                                                    {s.v[id] ? 'T' : 'F'}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="flex-1 bg-white p-3 rounded shadow border border-slate-200">
+                                    <h4 className="text-slate-500 font-bold mb-2 text-[10px] uppercase tracking-wider border-b pb-1 text-center">sources (الممثلين)</h4>
+                                    <div className="flex gap-1 justify-center font-mono text-[10px] min-h-[24px]">
+                                        {s.s.length === 0 ? <span className="text-slate-400 italic">Empty</span> : s.s.map((src, i) => (
+                                            <div key={i} className="w-6 h-6 bg-indigo-100 border border-indigo-300 text-indigo-800 rounded flex items-center justify-center font-bold">
+                                                {src}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                );
+            };
+
+            const renderCode = () => {
+                const codeSegments = [
+                    {
+                        title: "1. الإعدادات العامة للرسم البياني",
+                        desc: "تعريف ثوابت ومصفوفات عامة. maxN للحد الأقصى للمدن، vis لمعرفة هل المدينة مُزارة أم لا (لمنع الدوران المفرغ)، و adj وهي مصفوفة من الـ vectors تمثل قائمة التجاور لبناء الطرق المتصلة.",
+                        code: `const int maxN = 200'001;\nbool vis[maxN];\nvector<int> adj[maxN];`
+                    },
+                    {
+                        title: "2. دالة الاستكشاف (DFS)",
+                        desc: "وظيفة هذه الدالة بسيطة: بمجرد أن تهبط في مدينة u، تجعلها مُزارة (vis[u] = true). ثم تمر على كل المدن المتصلة بها v، وإذا كانت غير مُزارة تنادي نفسها وتنتقل إليها. الغرض منها هو تلوين كامل المكون المتصل لكي لا نحسبه كمكون جديد لاحقاً.",
+                        code: `void dfs (int u) {\n    vis[u] = true;\n    for (int v : adj[u]) {\n        if (!vis[v]) dfs(v);\n    }\n}`
+                    },
+                    {
+                        title: "3. قراءة المدخلات وبناء الشبكة",
+                        desc: "في الدالة الرئيسية، نقرأ عدد المدن n والطرق m. ثم نقرأ أطراف الطرق u و v ونضيفها للاتجاهين (لأن الطرق تسمح بالذهاب والإياب - Undirected Graph).",
+                        code: `int main () {\n    int n, m;\n    cin >> n >> m;\n    for (int i = 0 ; i < m ; i++) {\n        int u, v;\n        cin >> u >> v;\n        adj[u].push_back(v);\n        adj[v].push_back(u);\n    }`
+                    },
+                    {
+                        title: "4. اكتشاف المكونات المتصلة",
+                        desc: "هنا يكمن ذكاء الخوارزمية! ننشئ vector لجمع ممثلي الجزر. نمر على كل المدن من 1 إلى n، إذا وجدنا مدينة لم يسبق زيارتها، فهذا يعني أننا عثرنا على جزيرة جديدة. نأخذ هذه المدينة كممثل للجزيرة (sources.push_back)، ثم نرسل DFS لزيارة كل من معها.",
+                        code: `    vector<int> sources;\n    for (int i = 1 ; i <= n ; i++) {\n        if (!vis[i]) {\n            sources.push_back(i);\n            dfs(i);\n        }\n    }`
+                    },
+                    {
+                        title: "5. طباعة الحد الأدنى لربطهم",
+                        desc: "عدد المكونات المنفصلة هو حجم sources. لربطها نحتاج (حجم المكونات - 1) طريقاً. نقوم بطباعة هذا الرقم. ثم نستخدم حلقة تكرار لربط الممثل الأول sources[0] بكل ممثل آخر، وبذلك ندمج كل الجزر في جزيرة واحدة.",
+                        code: `    cout << sources.size() - 1 << endl;\n    for (int i = 1 ; i < sources.size() ; i++) {\n        cout << sources[0] << ' ' << sources[i] << endl;\n    }\n    return 0;\n}`
+                    }
+                ];
+
+                return (
+                    <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                        <div className="max-w-6xl mx-auto w-full space-y-4">
+                            <div className="bg-white p-4 rounded border border-slate-200 shadow-sm text-center">
+                                <h2 className="text-lg font-bold text-slate-800">تفصيل الكود الأصلي والمجزء</h2>
+                                <p className="text-xs text-slate-600 mt-1">
+                                    الجهة اليسرى تحتوي على الكود الأصلي (دون أي تعديل). الجهة اليمنى تشرح للطالب ما الذي يحلّه هذا الجزء بالتحديد.
+                                </p>
+                            </div>
+
+                            <div className="space-y-4">
+                                {codeSegments.map((seg, idx) => (
+                                    <div key={idx} className="flex flex-col md:flex-row bg-white rounded shadow-sm border border-slate-200 overflow-hidden">
+                                        
+                                        <div className="w-full md:w-5/12 bg-slate-50 p-4 border-b md:border-b-0 md:border-l border-slate-200 flex flex-col justify-center">
+                                            <h3 className="font-bold text-indigo-800 mb-2 text-sm">{seg.title}</h3>
+                                            <p className="text-xs text-slate-700 leading-relaxed">{seg.desc}</p>
+                                        </div>
+                                        
+                                        <div className="w-full md:w-7/12 bg-[#1e1e1e] p-4 overflow-x-auto" dir="ltr">
+                                            <pre className="m-0">
+                                                <code className="text-xs font-mono text-[#d4d4d4] whitespace-pre" style={{lineHeight: '1.6'}}>
+                                                    {seg.code}
+                                                </code>
+                                            </pre>
+                                        </div>
+
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div className="flex flex-col h-full bg-slate-200">
+                    <header className="bg-white px-4 py-3 shadow-sm z-30 flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-200">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-indigo-700 rounded flex items-center justify-center text-white text-sm shadow">
+                                <i className="fa-solid fa-road"></i>
+                            </div>
+                            <div>
+                                <h1 className="text-sm font-bold text-slate-800 leading-tight">Building Roads</h1>
+                                <p className="text-slate-500 text-[10px] font-semibold">المكونات المتصلة (Connected Components)</p>
+                            </div>
+                        </div>
+                        
+                        <div className="flex bg-slate-100 p-1 rounded border border-slate-200 gap-1 overflow-x-auto text-xs shadow-inner">
+                            {['problem', 'concept', 'strategy', 'visualizer', 'code'].map((tabKey, idx) => {
+                                const labels = ["1. المسألة الأصلية", "2. تكوين المكونات", "3. استراتيجية الحل", "4. التتبع البصري", "5. تفصيل الكود"];
+                                return (
+                                    <button 
+                                        key={tabKey}
+                                        onClick={() => setActiveTab(tabKey)} 
+                                        className={`px-3 py-1.5 rounded font-bold transition-all whitespace-nowrap ${activeTab === tabKey ? 'bg-white text-indigo-800 shadow border border-slate-200' : 'text-slate-600 hover:bg-slate-200'}`}
+                                    >
+                                        {labels[idx]}
+                                    </button>
+                                )
+                            })}
+                        </div>
+                    </header>
+
+                    <main className="flex-1 overflow-hidden">
+                        {activeTab === 'problem' && renderProblem()}
+                        {activeTab === 'concept' && renderConcept()}
+                        {activeTab === 'strategy' && renderStrategy()}
+                        {activeTab === 'visualizer' && renderVisualizer()}
+                        {activeTab === 'code' && renderCode()}
+                    </main>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

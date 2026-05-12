@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شرح خوارزمية Cyclic Components</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Cairo', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        body { background-color: #f8fafc; margin: 0; height: 100vh; overflow: hidden; font-size: 14px; }
+        #root { height: 100%; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .graph-node { transition: all 0.3s ease; }
+        .graph-edge { transition: all 0.3s ease; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useRef } = React;
+
+        // للتبسيط البصري، سنستخدم رسم بياني مكون من 6 رؤوس مقسمة لمكونين:
+        // المكون 1 (دورة حقيقية): 1-2, 2-3, 3-1
+        // المكون 2 (ليس دورة - خط): 4-5, 5-6
+        const N = 6;
+        const EDGES = [[1, 2], [2, 3], [3, 1], [4, 5], [5, 6]];
+        
+        const NODE_POS = {
+            1: { x: 140, y: 30 },
+            2: { x: 80, y: 120 },
+            3: { x: 200, y: 120 },
+            4: { x: 300, y: 40 },
+            5: { x: 300, y: 100 },
+            6: { x: 300, y: 160 }
+        };
+
+        const DEGREE = { 1: 2, 2: 2, 3: 2, 4: 1, 5: 2, 6: 1 };
+
+        function generateSteps() {
+            let steps = [];
+            let vis = Array(N + 1).fill(false);
+            let ans = 0;
+
+            const cloneState = (curr = null, compStatus = null, highlightCycle = []) => ({
+                v: [...vis],
+                c: curr,
+                ans: ans,
+                status: compStatus, // true = is cycle so far, false = broken
+                cycleNodes: [...highlightCycle]
+            });
+
+            // 1. Initial State
+            steps.push({
+                happened: "البرنامج بدأ. جميع الرؤوس غير مُزارة، وعداد الدورات (ans) يساوي 0.",
+                next: "حلقة for الرئيسية ستبدأ بالمرور على الرؤوس للبحث عن مكونات لم تُزر. سنبدأ بالرأس رقم 1.",
+                state: cloneState()
+            });
+
+            // --- Component 1 (1, 2, 3) ---
+            steps.push({
+                happened: "المؤشر عند الرأس 1. لم تتم زيارته مسبقاً، إذن هو بداية مكون جديد.",
+                next: "سنطلق دالة dfs(1) لاختبار هذا المكون بالكامل.",
+                state: cloneState(1)
+            });
+
+            vis[1] = true;
+            steps.push({
+                happened: `دخلنا dfs(1). تم تعليمه كمُزار. هل عدد جيرانه يساوي 2؟ نعم (Degree = 2). إذن المكون حتى الآن سليم (True).`,
+                next: "سينتقل الـ DFS لزيارة الجار غير المُزار، وهو الرأس 2.",
+                state: cloneState(1, true)
+            });
+
+            vis[2] = true;
+            steps.push({
+                happened: `نحن في dfs(2). الرأس 2 مُزار الآن. عدد جيرانه يساوي 2. النتيجة السليمة تُحفظ (True).`,
+                next: "سنكمل الغوص في الجار التالي، وهو الرأس 3.",
+                state: cloneState(2, true)
+            });
+
+            vis[3] = true;
+            steps.push({
+                happened: `نحن في dfs(3). الرأس 3 مُزار. عدد جيرانه يساوي 2. النتيجة ستبقى (True).`,
+                next: "جيران 3 هم 1 و 2 (كلاهما مُزار). سيبدأ الـ DFS بالعودة للخلف (Backtrack) وإنهاء هذا المكون.",
+                state: cloneState(3, true)
+            });
+
+            ans += 1;
+            steps.push({
+                happened: `انتهى الـ DFS للمكون الأول. جميع العقد أعادت (True) لأن كل رأس يملك بالضبط جارتين.`,
+                next: "سيتم زيادة عداد الدورات (ans) بواحد. وسنكمل حلقة البحث الرئيسية للرأس 4.",
+                state: cloneState(null, null, [1, 2, 3])
+            });
+
+            // --- Component 2 (4, 5, 6) ---
+            steps.push({
+                happened: "المؤشر الآن عند 4 (2 و 3 تم تخطيهم لأنهم مُزارون). الرأس 4 غير مُزار، مكون جديد!",
+                next: "سنطلق dfs(4) لاختبار هذا المكون.",
+                state: cloneState(4, null, [1, 2, 3])
+            });
+
+            vis[4] = true;
+            steps.push({
+                happened: `دخلنا dfs(4). هل عدد جيران 4 يساوي 2؟ لا! يملك جاراً واحداً فقط.`,
+                next: "تم كسر الشرط! حالة هذا المكون أصبحت (False) ولن تتغير أبداً بفضل عملية (AND). سننتقل لجاره 5.",
+                state: cloneState(4, false, [1, 2, 3])
+            });
+
+            vis[5] = true;
+            steps.push({
+                happened: `نحن في dfs(5). الرأس 5 يملك جارين (الشرط صحيح هنا)، ولكن حالة المكون ككل لا تزال (False) بسبب الرأس 4.`,
+                next: "سننتقل للجار الأخير، الرأس 6.",
+                state: cloneState(5, false, [1, 2, 3])
+            });
+
+            vis[6] = true;
+            steps.push({
+                happened: `نحن في dfs(6). الرأس 6 يملك جاراً واحداً فقط. الشرط مكسور مرة أخرى (False).`,
+                next: "انتهى المكون. سيعود الـ DFS للخلف بالنتيجة النهائية (False).",
+                state: cloneState(6, false, [1, 2, 3])
+            });
+
+            steps.push({
+                happened: `انتهى فحص المكون الثاني وأعاد (False) لأنه ليس دورة مغلقة. لن يتم زيادة العداد.`,
+                next: "البرنامج انتهى! تمت زيارة جميع الرؤوس (vis كلها true). العداد النهائي ans = 1.",
+                state: cloneState(null, null, [1, 2, 3])
+            });
+
+            return steps;
+        }
+
+        function App() {
+            const [activeTab, setActiveTab] = useState('problem'); 
+            const stepsRef = useRef(generateSteps());
+            const [stepIdx, setStepIdx] = useState(0);
+
+            const renderProblem = () => (
+                <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                    <div className="max-w-4xl mx-auto w-full space-y-4">
+                        <div className="bg-white p-5 rounded border border-slate-200 shadow-sm">
+                            <h2 className="text-lg font-bold mb-4 text-indigo-800 border-b pb-2">نص المسألة (Cyclic Components)</h2>
+                            
+                            <div className="text-sm space-y-4 text-slate-700 leading-relaxed">
+                                <p className="font-semibold bg-slate-100 p-4 rounded border border-slate-200 shadow-inner">
+                                    مُعطى رسم بياني غير موجه (Undirected Graph).<br/>
+                                    المطلوب: احسب عدد <strong>المكونات المتصلة</strong> التي تُشكل <strong>دورة (Cycle)</strong>.<br/><br/>
+                                    <span className="text-xs text-indigo-700">تعريف الدورة في هذه المسألة:</span><br/>
+                                    مكون يتكون من <span dir="ltr" className="font-mono font-bold mx-1">v</span> رأساً، يُعتبر "دورة" إذا كان يحتوي على بالضبط <span dir="ltr" className="font-mono font-bold mx-1">v</span> حرفاً (طريقاً)، بحيث يمكن ترتيب الرؤوس كحلقة متصلة.
+                                </p>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                    <div className="bg-slate-50 p-4 rounded border border-slate-200">
+                                        <h3 className="font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">المدخلات (Input)</h3>
+                                        <ul className="list-disc list-inside space-y-1 text-xs">
+                                            <li>السطر الأول: عدد الرؤوس <code className="font-mono">n</code> وعدد الحواف <code className="font-mono">m</code>.</li>
+                                            <li>الأسطر التالية (<code className="font-mono">m</code> سطر): كل سطر يحتوي على <code className="font-mono">u, v</code> يعني وجود اتصال بينهما.</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div className="bg-slate-50 p-4 rounded border border-slate-200">
+                                        <h3 className="font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">المخرجات (Output)</h3>
+                                        <ul className="list-disc list-inside space-y-1 text-xs">
+                                            <li>رقم واحد (Integer): يمثل عدد المكونات المتصلة التي ينطبق عليها شرط الدورة.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col md:flex-row gap-4 mt-4">
+                                    <div className="flex-1 bg-[#1e1e1e] text-slate-300 p-3 rounded border border-slate-700 font-mono text-xs" dir="ltr">
+                                        <div className="text-slate-400 mb-2 border-b border-slate-600 pb-1">// Example Input</div>
+                                        <div>6 5</div>
+                                        <div>1 2</div>
+                                        <div>2 3</div>
+                                        <div>3 1</div>
+                                        <div>4 5</div>
+                                        <div>5 6</div>
+                                    </div>
+                                    <div className="flex-1 bg-[#1e1e1e] text-slate-300 p-3 rounded border border-slate-700 font-mono text-xs" dir="ltr">
+                                        <div className="text-slate-400 mb-2 border-b border-slate-600 pb-1">// Expected Output</div>
+                                        <div className="text-emerald-400 font-bold">1</div>
+                                        <div className="mt-2 text-slate-500 text-[10px] whitespace-pre-wrap">
+                                            // The first 3 nodes form a cycle (1-2-3-1).
+                                            // The last 3 form a line (4-5-6), not a cycle.
+                                            // Total cycles = 1.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const renderConcept = () => (
+                <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                    <div className="max-w-4xl mx-auto w-full space-y-4">
+                        <div className="bg-white p-5 rounded border border-slate-200 shadow-sm">
+                            <h2 className="text-lg font-bold mb-4 text-indigo-800 border-b pb-2">فهم المكونات والدورات (Concepts)</h2>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-3">
+                                    <h3 className="text-sm font-bold text-slate-700 bg-slate-200 p-2 rounded">ما هي "الدورة" (Cycle)؟</h3>
+                                    <p className="text-xs text-slate-700 leading-relaxed">
+                                        تخيل مجموعة من الأشخاص يقفون في دائرة ويمسكون أيدي بعضهم البعض. 
+                                        في هذه الحالة، كل شخص يمسك بيد شخصين بالضبط (واحد عن يمينه وواحد عن يساره).
+                                        في علم الرسوم البيانية، نقول أن <strong>درجة الرأس (Degree) تساوي 2</strong>.
+                                    </p>
+                                    <div className="bg-emerald-50 border border-emerald-200 p-3 rounded text-xs text-emerald-800 shadow-sm flex items-center gap-3">
+                                        <div className="w-10 h-10 shrink-0 bg-white rounded-full border-2 border-emerald-500 flex items-center justify-center font-bold text-emerald-600">✓</div>
+                                        <div>
+                                            إذا كان <strong>كل رأس</strong> في المكون يمتلك بالضبط اتصالين (2 Edges)، فهذا المكون هو حلقة مفرغة (دورة) حتماً.
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <h3 className="text-sm font-bold text-slate-700 bg-rose-100 p-2 rounded">متى يفسد المكون ولا يعتبر دورة؟</h3>
+                                    <p className="text-xs text-slate-700 leading-relaxed">
+                                        يكفي أن يوجد <strong>رأس واحد فقط</strong> يكسر هذه القاعدة ليفسد المكون بالكامل!
+                                    </p>
+                                    <ul className="list-disc list-inside text-xs space-y-2 text-slate-600">
+                                        <li>إذا كان هناك رأس متصل بنقطة واحدة فقط (<code className="font-mono">Degree = 1</code>)، فهذا يعني أنه "طرف" لخط مستقيم، والدورة لا أطراف لها.</li>
+                                        <li>إذا كان هناك رأس متصل بـ 3 نقاط أو أكثر (<code className="font-mono">Degree >= 3</code>)، فهذا يعني وجود تفرع أو تقاطع، وهذا يكسر شكل الحلقة البسيطة.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const renderStrategy = () => (
+                <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                    <div className="max-w-4xl mx-auto w-full space-y-6">
+                        <div className="bg-white p-6 rounded border border-slate-200 shadow-sm">
+                            <h2 className="text-lg font-bold mb-4 text-indigo-800 border-b pb-2 flex items-center gap-2">
+                                <i className="fa-solid fa-chess-knight"></i> استراتيجية الحل المفصلة
+                            </h2>
+                            <p className="text-sm text-slate-600 mb-6">الحل يعتمد على إطلاق خوارزمية البحث بالعمق (DFS) ليس فقط للزيارة، بل <strong>كجاسوس</strong> يفحص كل نقطة ويعود بتقرير نهائي.</p>
+                            
+                            <div className="space-y-6 text-sm text-slate-700 leading-relaxed">
+                                
+                                <div className="bg-blue-50/50 p-4 rounded border border-blue-100">
+                                    <h3 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
+                                        <span className="bg-blue-200 text-blue-800 w-6 h-6 flex items-center justify-center rounded-full text-xs">1</span>
+                                        الشرط الكافي (The Condition)
+                                    </h3>
+                                    <p className="mb-2 text-xs">أهم سطر في الخوارزمية هو فحص حجم قائمة التجاور للرأس الحالي <code dir="ltr" className="font-mono text-indigo-700 bg-white px-1 border rounded mx-1">u</code>:</p>
+                                    <div className="bg-slate-800 text-white p-3 rounded font-mono text-xs" dir="ltr">
+                                        bool ret = (adj[u].size() == 2);
+                                    </div>
+                                    <p className="mt-2 text-xs text-slate-600">هذا السطر يعطي <code dir="ltr" className="font-mono text-emerald-600 mx-1">true</code> إذا كان يمتلك جارين، و <code dir="ltr" className="font-mono text-rose-600 mx-1">false</code> بخلاف ذلك.</p>
+                                </div>
+
+                                <div className="bg-purple-50/50 p-4 rounded border border-purple-100">
+                                    <h3 className="font-bold text-purple-900 mb-2 flex items-center gap-2">
+                                        <span className="bg-purple-200 text-purple-800 w-6 h-6 flex items-center justify-center rounded-full text-xs">2</span>
+                                        سحر بوابة (AND) المنطقية
+                                    </h3>
+                                    <p className="mb-3 text-xs">عندما ينتقل الـ DFS للرأس التالي <code dir="ltr" className="font-mono mx-1">v</code>، فإنه لا يتجاهل النتيجة السابقة، بل يدمجها باستخدام عملية الـ Bitwise AND <code dir="ltr" className="font-mono font-bold mx-1">&amp;=</code> :</p>
+                                    
+                                    <div className="bg-white p-4 rounded border border-purple-200 text-xs font-mono shadow-sm" dir="ltr">
+                                        <div className="text-emerald-700 font-bold mb-1">ret &amp;= dfs(v);</div>
+                                    </div>
+                                    
+                                    <p className="text-xs text-purple-800 mt-3 font-semibold leading-relaxed">
+                                        <strong>لماذا هذه الحركة عبقرية؟</strong><br/>
+                                        لأن بوابة (AND) تتطلب أن يكون الجميع <code dir="ltr" className="font-mono">True</code> لكي تكون النتيجة النهائية <code dir="ltr" className="font-mono">True</code>. 
+                                        بمجرد أن يجد الـ DFS رأساً واحداً فقط يمتلك جاراً واحداً أو 3 جيران، فإن <code dir="ltr" className="font-mono">dfs(v)</code> سيعيد <code dir="ltr" className="font-mono">False</code>. 
+                                        وهذا الـ False سيضرب في كل النتائج السابقة واللاحقة (لأن <code dir="ltr" className="font-mono">True AND False = False</code>)، مفسداً المكون بأكمله ومبلّغاً الدالة الرئيسية أن هذا المكون ليس دورة!
+                                    </p>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const renderVisualizer = () => {
+                const s = stepsRef.current[stepIdx].state;
+                const currentStepInfo = stepsRef.current[stepIdx];
+
+                return (
+                    <div className="flex flex-col lg:flex-row h-full bg-slate-100 fade-in overflow-hidden">
+                        
+                        {/* Control Panel */}
+                        <div className="w-full lg:w-1/3 bg-white border-l border-slate-200 shadow-lg z-20 flex flex-col">
+                            <div className="p-3 bg-slate-800 text-white border-b border-slate-700">
+                                <h2 className="text-sm font-bold">تتبع فحص الدورات (DFS)</h2>
+                                <p className="text-[10px] text-slate-400">انقر لتفهم كيف يكتشف الـ DFS الخلل باستخدام (AND).</p>
+                            </div>
+                            
+                            <div className="p-4 flex-1 overflow-y-auto space-y-4">
+                                <div className="bg-slate-50 border border-slate-200 p-3 rounded relative shadow-sm">
+                                    <h3 className="font-bold text-xs text-slate-800 mb-1 border-b border-slate-200 pb-1 flex items-center gap-2">
+                                        <i className="fa-solid fa-check-circle text-emerald-600"></i> ماذا حدث للتو؟
+                                    </h3>
+                                    <p className="text-xs text-slate-700 leading-relaxed mt-2">{currentStepInfo.happened}</p>
+                                </div>
+
+                                <div className="bg-indigo-50 border border-indigo-200 p-3 rounded relative shadow-sm">
+                                    <h3 className="font-bold text-xs text-indigo-900 mb-1 border-b border-indigo-200 pb-1 flex items-center gap-2">
+                                        <i className="fa-solid fa-arrow-left text-indigo-600"></i> ماذا سيحدث الآن؟
+                                    </h3>
+                                    <p className="text-xs text-indigo-800 leading-relaxed mt-2">{currentStepInfo.next}</p>
+                                </div>
+
+                                {/* Current Status Tracker */}
+                                {s.status !== null && (
+                                    <div className={`p-3 rounded border text-xs font-bold text-center ${s.status ? 'bg-emerald-100 border-emerald-300 text-emerald-800' : 'bg-rose-100 border-rose-300 text-rose-800'}`}>
+                                        حالة المكون الحالي: {s.status ? 'True (سليم حتى الآن)' : 'False (مكسور!)'}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="p-4 bg-slate-50 border-t border-slate-200">
+                                <button 
+                                    onClick={() => setStepIdx(Math.min(stepsRef.current.length - 1, stepIdx + 1))} 
+                                    disabled={stepIdx === stepsRef.current.length - 1}
+                                    className="w-full py-3 rounded bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-bold text-sm shadow transition flex items-center justify-center gap-2"
+                                >
+                                    {stepIdx === stepsRef.current.length - 1 ? 'انتهى التنفيذ' : 'تنفيذ الخطوة التالية'}
+                                    {stepIdx < stepsRef.current.length - 1 && <i className="fa-solid fa-play text-xs"></i>}
+                                </button>
+                                
+                                <div className="flex justify-between mt-3">
+                                    <button onClick={() => setStepIdx(0)} disabled={stepIdx === 0} className="text-xs text-slate-500 hover:text-slate-800 transition disabled:opacity-50 flex items-center gap-1">
+                                        <i className="fa-solid fa-rotate-right"></i> إعادة من البداية
+                                    </button>
+                                    <span className="text-xs font-mono text-slate-400 bg-slate-200 px-2 py-0.5 rounded">
+                                        خطوة {stepIdx + 1} / {stepsRef.current.length}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Visual Area */}
+                        <div className="flex-1 p-4 flex flex-col items-center justify-center bg-slate-100 overflow-y-auto relative" dir="ltr">
+                            
+                            <div className="relative w-full max-w-md h-64 bg-white rounded shadow border border-slate-200 mb-6 flex justify-center items-center">
+                                <svg className="absolute w-full h-full inset-0 pointer-events-none">
+                                    {EDGES.map((edge, idx) => {
+                                        const [u, v] = edge;
+                                        const isCycleEdge = s.cycleNodes.includes(u) && s.cycleNodes.includes(v);
+                                        return (
+                                            <line 
+                                                key={`e${idx}`}
+                                                x1={NODE_POS[u].x + 20} y1={NODE_POS[u].y + 20} 
+                                                x2={NODE_POS[v].x + 20} y2={NODE_POS[v].y + 20} 
+                                                stroke={isCycleEdge ? "#10b981" : "#cbd5e1"} 
+                                                strokeWidth={isCycleEdge ? "4" : "3"}
+                                                className="transition-all duration-300"
+                                            />
+                                        );
+                                    })}
+                                </svg>
+                                
+                                {Object.keys(NODE_POS).map(nodeId => {
+                                    const id = parseInt(nodeId);
+                                    const isCurrent = s.c === id;
+                                    const isVisited = s.v[id];
+                                    const inCycle = s.cycleNodes.includes(id);
+
+                                    let bgClasses = "bg-white border-2 border-slate-300 text-slate-500";
+                                    
+                                    if (inCycle) bgClasses = "bg-emerald-500 border-2 border-emerald-600 text-white shadow-lg";
+                                    else if (isCurrent) bgClasses = "bg-yellow-400 border-2 border-yellow-500 text-yellow-900 shadow-lg scale-110";
+                                    else if (isVisited) bgClasses = "bg-indigo-100 border-2 border-indigo-300 text-indigo-700";
+
+                                    return (
+                                        <div 
+                                            key={id} 
+                                            className={`absolute flex flex-col items-center justify-center w-10 h-10 rounded-full font-bold text-sm shadow-sm graph-node z-10 ${bgClasses}`}
+                                            style={{ left: NODE_POS[id].x, top: NODE_POS[id].y }}
+                                        >
+                                            {id}
+                                            {isCurrent && (
+                                                <div className="absolute -top-8 bg-slate-800 text-white text-[9px] px-2 py-1 rounded whitespace-nowrap shadow">
+                                                    Degree: {DEGREE[id]} {DEGREE[id] === 2 ? '✅' : '❌'}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )
+                                })}
+                            </div>
+
+                            {/* Answer Tracker */}
+                            <div className="flex gap-4 w-full max-w-md">
+                                <div className="flex-1 bg-white p-3 rounded shadow border border-slate-200 text-center">
+                                    <h4 className="text-slate-500 font-bold mb-1 text-[10px] uppercase tracking-wider border-b pb-1">عدد الدورات (ans)</h4>
+                                    <div className="text-2xl font-black text-indigo-700 font-mono">
+                                        {s.ans}
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                );
+            };
+
+            const renderCode = () => {
+                const codeSegments = [
+                    {
+                        title: "1. الإعدادات العامة للرسم البياني",
+                        desc: "تعريف الحد الأقصى للرؤوس، مصفوفة الزيارات (vis)، وقائمة التجاور (adj) التي ستبنى بناءً على المدخلات.",
+                        code: `const int maxN = 200'001;\nvector<int> adj[maxN];\nbool vis[maxN];`
+                    },
+                    {
+                        title: "2. دالة الفحص الذكية (DFS)",
+                        desc: "هنا يكمن الحل! تدخل الدالة فتسجل الرأس كمُزار. السطر الثاني (ret) يفحص فوراً: هل عدد جيران هذا الرأس يساوي 2؟ (يعطي true/false).",
+                        code: `bool dfs (int u) {\n    vis[u] = 1;\n    bool ret = (adj[u].size() == 2);`
+                    },
+                    {
+                        title: "3. تمرير حالة الخطأ (AND Gate)",
+                        desc: "تمر الدالة على جيران الرأس. إذا كان الجار غير مُزار، تدخله بواسطة dfs(v). لكن الأهم أنها تستخدم المعامل (&=) لدمج النتيجة. إذا أعاد أي جار في المكون قيمة False (لأنه لا يملك جارين)، فإن ret ستصبح False للمكون بأكمله ولن تتغير.",
+                        code: `    for (int v : adj[u]) {\n        if (!vis[v]) ret &= dfs(v);\n    } \n    return ret;\n}`
+                    },
+                    {
+                        title: "4. قراءة وبناء الرسم",
+                        desc: "في الدالة الرئيسية، نقرأ عدد الرؤوس n والحواف m. نبني الرسم البياني غير الموجه (Undirected) بإضافة الاتصالات في الاتجاهين.",
+                        code: `int main () { \n    int n, m;\n    cin >> n >> m; \n    for (int i = 0 ; i < m ; i++) {\n        int u, v;\n        cin >> u >> v;\n        adj[u].push_back(v);\n        adj[v].push_back(u);\n    }`
+                    },
+                    {
+                        title: "5. إحصاء الدورات الصحيحة",
+                        desc: "نمر على كل الرؤوس. إذا وجدنا رأساً لم يُزر، نطلق عليه دالة dfs. هذه الدالة ستفحص كامل المكون المتصل وتعيد 1 (True) إذا كان دورة، أو 0 (False) إذا لم يكن. نضيف النتيجة للعداد ans ونطبعه في النهاية.",
+                        code: `    int ans = 0; \n    for (int i = 1 ; i <= n ; i++) {\n        if (!vis[i]) ans += dfs(i);\n    }\n    cout << ans << endl;\n}`
+                    }
+                ];
+
+                return (
+                    <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                        <div className="max-w-6xl mx-auto w-full space-y-4">
+                            <div className="bg-white p-4 rounded border border-slate-200 shadow-sm text-center">
+                                <h2 className="text-lg font-bold text-slate-800">تفصيل الكود الأصلي والمجزء</h2>
+                                <p className="text-xs text-slate-600 mt-1">
+                                    الجهة اليسرى تحتوي على الكود الأصلي كما هو. الجهة اليمنى تشرح للطالب وظيفة كل مقطع برمجياً.
+                                </p>
+                            </div>
+
+                            <div className="space-y-4">
+                                {codeSegments.map((seg, idx) => (
+                                    <div key={idx} className="flex flex-col md:flex-row bg-white rounded shadow-sm border border-slate-200 overflow-hidden">
+                                        
+                                        <div className="w-full md:w-5/12 bg-slate-50 p-4 border-b md:border-b-0 md:border-l border-slate-200 flex flex-col justify-center">
+                                            <h3 className="font-bold text-indigo-800 mb-2 text-sm">{seg.title}</h3>
+                                            <p className="text-xs text-slate-700 leading-relaxed">{seg.desc}</p>
+                                        </div>
+                                        
+                                        <div className="w-full md:w-7/12 bg-[#1e1e1e] p-4 overflow-x-auto" dir="ltr">
+                                            <pre className="m-0">
+                                                <code className="text-xs font-mono text-[#d4d4d4] whitespace-pre" style={{lineHeight: '1.6'}}>
+                                                    {seg.code}
+                                                </code>
+                                            </pre>
+                                        </div>
+
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div className="flex flex-col h-full bg-slate-200">
+                    <header className="bg-white px-4 py-3 shadow-sm z-30 flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-200">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-indigo-700 rounded flex items-center justify-center text-white text-sm shadow">
+                                <i className="fa-solid fa-circle-notch"></i>
+                            </div>
+                            <div>
+                                <h1 className="text-sm font-bold text-slate-800 leading-tight">Cyclic Components</h1>
+                                <p className="text-slate-500 text-[10px] font-semibold">اكتشاف الدورات المغلقة باستخدام DFS</p>
+                            </div>
+                        </div>
+                        
+                        <div className="flex bg-slate-100 p-1 rounded border border-slate-200 gap-1 overflow-x-auto text-xs shadow-inner">
+                            {['problem', 'concept', 'strategy', 'visualizer', 'code'].map((tabKey, idx) => {
+                                const labels = ["1. المسألة الأصلية", "2. فهم الدورات", "3. استراتيجية الحل", "4. التتبع البصري", "5. تفصيل الكود"];
+                                return (
+                                    <button 
+                                        key={tabKey}
+                                        onClick={() => setActiveTab(tabKey)} 
+                                        className={`px-3 py-1.5 rounded font-bold transition-all whitespace-nowrap ${activeTab === tabKey ? 'bg-white text-indigo-800 shadow border border-slate-200' : 'text-slate-600 hover:bg-slate-200'}`}
+                                    >
+                                        {labels[idx]}
+                                    </button>
+                                )
+                            })}
+                        </div>
+                    </header>
+
+                    <main className="flex-1 overflow-hidden">
+                        {activeTab === 'problem' && renderProblem()}
+                        {activeTab === 'concept' && renderConcept()}
+                        {activeTab === 'strategy' && renderStrategy()}
+                        {activeTab === 'visualizer' && renderVisualizer()}
+                        {activeTab === 'code' && renderCode()}
+                    </main>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
