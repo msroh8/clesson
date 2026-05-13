@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شرح خوارزمية Zero Sum Array (Constructive Algorithms)</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Cairo', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        body { background-color: #f8fafc; margin: 0; height: 100vh; overflow: hidden; font-size: 14px; }
+        #root { height: 100%; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .pop-in { animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .scale-balance { transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useRef } = React;
+
+        function generateSteps() {
+            let steps = [];
+            const N = 5; // Using 5 as an example (odd number to show the '0' case)
+
+            const cloneState = (phase, i, arr, sum) => ({
+                phase,
+                i,
+                arr: [...arr],
+                sum
+            });
+
+            // 1. Initial State
+            steps.push({
+                happened: `بدأ البرنامج. المستخدم أدخل الرقم N = ${N}. المطلوب تكوين مصفوفة من 5 أرقام مختلفة مجموعها 0.`,
+                next: `الكمبيوتر سيحسب الحد الأقصى للحلقة: (N / 2) = ${Math.floor(N/2)}. سيبدأ المؤشر i من 1.`,
+                state: cloneState('start', 0, [], 0)
+            });
+
+            let currentArr = [];
+            let currentSum = 0;
+
+            // 2. Loop i = 1
+            currentArr.push(1);
+            currentArr.push(-1);
+            currentSum += (1 + (-1));
+            steps.push({
+                happened: `المؤشر i = 1. الكود طبع i و -i (طبع 1 ثم -1). المجموع حالياً = 0.`,
+                next: "سننتقل للمؤشر التالي i = 2.",
+                state: cloneState('loop', 1, currentArr, currentSum)
+            });
+
+            // 3. Loop i = 2
+            currentArr.push(2);
+            currentArr.push(-2);
+            currentSum += (2 + (-2));
+            steps.push({
+                happened: `المؤشر i = 2. الكود طبع 2 ثم -2. المجموع لا يزال متوازناً = 0.`,
+                next: `وصلنا لمنتصف الرقم N (5 / 2 = 2). انتهت حلقة التكرار. سننتقل لفحص الفردية.`,
+                state: cloneState('loop', 2, currentArr, currentSum)
+            });
+
+            // 4. Odd Check
+            steps.push({
+                happened: `انتهت الحلقة وقمنا بتوليد 4 أرقام. لكن المطلوب 5 أرقام! نفحص (N % 2 != 0). النتيجة: نعم 5 رقم فردي.`,
+                next: `بما أننا نحتاج رقماً خامساً دون أن نُفسد المجموع (0)، فالحل هو طباعة الرقم 0 نفسه.`,
+                state: cloneState('check_odd', 2, currentArr, currentSum)
+            });
+
+            // 5. Done
+            currentArr.push(0);
+            steps.push({
+                happened: `تمت طباعة الرقم 0. اكتملت المصفوفة من 5 عناصر مختلفة [1, -1, 2, -2, 0] ومجموعها صفر تماماً.`,
+                next: "انتهى البرنامج. يمكنك إعادة التتبع.",
+                state: cloneState('done', 2, currentArr, currentSum)
+            });
+
+            return steps;
+        }
+
+        function App() {
+            const [activeTab, setActiveTab] = useState('problem'); 
+            const stepsRef = useRef(generateSteps());
+            const [stepIdx, setStepIdx] = useState(0);
+
+            const renderProblem = () => (
+                <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                    <div className="max-w-4xl mx-auto w-full space-y-4">
+                        <div className="bg-white p-5 rounded border border-slate-200 shadow-sm">
+                            <h2 className="text-lg font-bold mb-4 text-indigo-800 border-b pb-2">نص المسألة (Zero Sum Array)</h2>
+                            
+                            <div className="text-sm space-y-4 text-slate-700 leading-relaxed">
+                                <p className="font-semibold bg-slate-100 p-4 rounded border border-slate-200 shadow-inner">
+                                    لديك عدد صحيح <span dir="ltr" className="font-mono text-indigo-700 font-bold mx-1">N</span>. 
+                                    المطلوب: اطبع <span dir="ltr" className="font-mono mx-1">N</span> <strong>أعداداً صحيحة مختلفة</strong> بحيث يكون مجموعها النهائي مساوياً للصفر (0).
+                                </p>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                    <div className="bg-slate-50 p-4 rounded border border-slate-200">
+                                        <h3 className="font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">المدخلات (Input)</h3>
+                                        <ul className="list-disc list-inside space-y-1 text-xs">
+                                            <li>عدد صحيح واحد <code className="font-mono">N</code>.</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div className="bg-slate-50 p-4 rounded border border-slate-200">
+                                        <h3 className="font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">المخرجات (Output)</h3>
+                                        <ul className="list-disc list-inside space-y-1 text-xs">
+                                            <li>مصفوفة من <code className="font-mono">N</code> أرقام صحيحة يفصل بينها مسافة، مجموعها يساوي صفر.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col md:flex-row gap-4 mt-4">
+                                    <div className="flex-1 bg-[#1e1e1e] text-slate-300 p-3 rounded border border-slate-700 font-mono text-xs" dir="ltr">
+                                        <div className="text-slate-400 mb-2 border-b border-slate-600 pb-1">// Example Inputs</div>
+                                        <div>2 <span className="text-slate-500 text-[10px] ml-2">// Generate 2 numbers</span></div>
+                                        <div>3 <span className="text-slate-500 text-[10px] ml-2">// Generate 3 numbers</span></div>
+                                        <div>5 <span className="text-slate-500 text-[10px] ml-2">// Generate 5 numbers</span></div>
+                                    </div>
+                                    <div className="flex-1 bg-[#1e1e1e] text-slate-300 p-3 rounded border border-slate-700 font-mono text-xs" dir="ltr">
+                                        <div className="text-slate-400 mb-2 border-b border-slate-600 pb-1">// Possible Outputs</div>
+                                        <div className="text-emerald-400">1 -1 <span className="text-slate-500 text-[10px] ml-2">// sum: 0</span></div>
+                                        <div className="text-emerald-400">1 -1 0 <span className="text-slate-500 text-[10px] ml-2">// sum: 0</span></div>
+                                        <div className="text-emerald-400">1 -1 2 -2 0 <span className="text-slate-500 text-[10px] ml-2">// sum: 0</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const renderConcept = () => (
+                <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                    <div className="max-w-4xl mx-auto w-full space-y-4">
+                        <div className="bg-white p-5 rounded border border-slate-200 shadow-sm">
+                            <h2 className="text-lg font-bold mb-4 text-indigo-800 border-b pb-2">كيف تعمل المسائل البنائية؟ (Constructive Algorithms)</h2>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-3">
+                                    <h3 className="text-sm font-bold text-slate-700 bg-rose-100 p-2 rounded">ليست كباقي الخوارزميات!</h3>
+                                    <p className="text-xs text-slate-700 leading-relaxed">
+                                        المسائل البنائية (Constructive) لا تستخدم خوارزميات مباشرة ومحفوظة مثل (Dijkstra) أو البرمجة الديناميكية (DP). 
+                                        بدلاً من البحث المعقد أو تجربة أرقام عشوائية، تعتمد هذه المسائل على <strong>اكتشاف نمط رياضي ثابت ومكرر (Pattern)</strong> لبناء الإجابة بشكل مباشر وسريع.
+                                    </p>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <h3 className="text-sm font-bold text-slate-700 bg-emerald-100 p-2 rounded">اكتشاف النمط لمسألة الصفر</h3>
+                                    <p className="text-xs text-slate-700 leading-relaxed">
+                                        نعلم رياضياً أن أي عدد زائد معكوسه يساوي صفر: <code dir="ltr" className="font-mono text-indigo-700 mx-1 font-bold bg-white px-1 border rounded">x + (-x) = 0</code>.
+                                    </p>
+                                    <div className="bg-white border border-slate-200 p-3 rounded text-xs shadow-sm space-y-2">
+                                        <p>لذلك، لإنشاء مصفوفة من <code className="font-mono">N</code> عناصر مجموعها صفر، يمكننا ببساطة إنتاج "أزواج" متضادة (مثلاً: 1 و -1، 2 و -2).</p>
+                                        <p className="font-bold text-rose-700 border-t pt-2 mt-2">ماذا لو كان N فردياً؟ (مثال N=5)</p>
+                                        <p>الأزواج ستعطينا 4 أرقام (1, -1, 2, -2). يتبقى لنا رقم واحد لنكمل الـ 5. 
+                                        الرقم الوحيد الذي يمكننا إضافته دون أن يُفسد المجموع (الذي هو صفر أصلاً) هو <strong>الرقم 0 نفسه!</strong></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const renderStrategy = () => (
+                <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                    <div className="max-w-4xl mx-auto w-full space-y-6">
+                        
+                        {/* Logic Explanation */}
+                        <div className="bg-white p-6 rounded border border-slate-200 shadow-sm">
+                            <h2 className="text-lg font-bold mb-4 text-indigo-800 border-b pb-2 flex items-center gap-2">
+                                <i className="fa-solid fa-code"></i> استراتيجية كود الحل
+                            </h2>
+                            <div className="space-y-4 text-sm text-slate-700 leading-relaxed">
+                                <div className="bg-blue-50/50 p-4 rounded border border-blue-100">
+                                    <h3 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
+                                        <span className="bg-blue-200 text-blue-800 w-6 h-6 flex items-center justify-center rounded-full text-xs">1</span>
+                                        توليد الأزواج (The Pairs Loop)
+                                    </h3>
+                                    <p className="text-xs">
+                                        نقوم بحلقة تكرار تبدأ من 1 وحتى نصف العدد <code className="font-mono px-1">N / 2</code>. في كل دورة، نطبع الرقم <code className="font-mono px-1">i</code> وعكسه <code className="font-mono px-1">-i</code>. هذا يضمن لنا عدد عناصر زوجي مجموعه دائماً صفر.
+                                    </p>
+                                </div>
+                                <div className="bg-purple-50/50 p-4 rounded border border-purple-100">
+                                    <h3 className="font-bold text-purple-900 mb-2 flex items-center gap-2">
+                                        <span className="bg-purple-200 text-purple-800 w-6 h-6 flex items-center justify-center rounded-full text-xs">2</span>
+                                        ترقيع العدد الفردي (Odd Patching)
+                                    </h3>
+                                    <p className="text-xs">
+                                        إذا كان <code className="font-mono px-1">N</code> فردياً <code className="font-mono px-1">(n % 2 != 0)</code>، فإن حلقة النصف لن تطبع العنصر الأخير المطلوب. لتعويض النقص، نطبع <code className="font-mono font-bold px-1">0</code> خارج الحلقة.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Bonus Constructive Algorithms Rules */}
+                        <div className="bg-slate-800 p-6 rounded shadow-lg text-slate-300">
+                            <h2 className="text-lg font-bold mb-4 text-amber-400 border-b border-slate-600 pb-2 flex items-center gap-2">
+                                <i className="fa-solid fa-star text-yellow-400"></i> قواعد ذهبية لحل المسائل البنائية (Constructive)
+                            </h2>
+                            <p className="text-xs mb-4">في المسابقات، أحياناً يكون الحل إثبات استحالة، أو اكتشاف نمط. إليك أهم الاستراتيجيات للتعامل مع هذا النوع:</p>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="bg-slate-900 p-3 rounded border border-slate-700 text-xs">
+                                    <h4 className="font-bold text-emerald-400 mb-1"><i className="fa-solid fa-pen-to-square mr-1"></i> 1. جرّب قيماً صغيرة بالورقة والقلم</h4>
+                                    <p className="text-slate-400">لا تفكر في معادلة لـ N=1000. ارسم الحل لـ N=1, 2, 3 واستنتج النمط. (تماما كما فعلنا في مسألة المصفوفة الصفرية).</p>
+                                </div>
+                                <div className="bg-slate-900 p-3 rounded border border-slate-700 text-xs">
+                                    <h4 className="font-bold text-emerald-400 mb-1"><i className="fa-solid fa-scale-balanced mr-1"></i> 2. راقب الفردية والزوجية (Parity)</h4>
+                                    <p className="text-slate-400">مثال: هل يمكن جعل رقمين متساويين بإضافة 2؟ مستحيل إذا كان أحدهما فردي والآخر زوجي، لأن إضافة 2 لا تغير النوع.</p>
+                                </div>
+                                <div className="bg-slate-900 p-3 rounded border border-slate-700 text-xs">
+                                    <h4 className="font-bold text-emerald-400 mb-1"><i className="fa-solid fa-ban mr-1"></i> 3. أحياناً البناء هو إثبات "الاستحالة"</h4>
+                                    <p className="text-slate-400">مثال "رقعة الشطرنج المنقوصة الزاويتين": الزوايا المتقابلة من نفس اللون. إذا أزلنا زاويتين بيضاء، سيبقى 32 أسود و30 أبيض. الدومينو يغطي 1 أسود و1 أبيض، لذا <strong>مستحيل</strong> تغطيتها.</p>
+                                </div>
+                                <div className="bg-slate-900 p-3 rounded border border-slate-700 text-xs">
+                                    <h4 className="font-bold text-emerald-400 mb-1"><i className="fa-solid fa-bolt mr-1"></i> 4. تحقق من الحلول البديهية</h4>
+                                    <p className="text-slate-400">قبل التعقيد، اختبر: هل الحل هو مصفوفة مرتبة 1,2,3..؟ أو معكوسة N,N-1..؟ أو جميعها أصفار؟</p>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            );
+
+            const renderVisualizer = () => {
+                const s = stepsRef.current[stepIdx].state;
+                const currentStepInfo = stepsRef.current[stepIdx];
+
+                // Calculate tilt for balance scale
+                let tilt = s.sum > 0 ? 15 : s.sum < 0 ? -15 : 0;
+
+                return (
+                    <div className="flex flex-col lg:flex-row h-full bg-slate-100 fade-in overflow-hidden">
+                        
+                        {/* Control Panel */}
+                        <div className="w-full lg:w-1/3 bg-white border-l border-slate-200 shadow-lg z-20 flex flex-col">
+                            <div className="p-3 bg-slate-800 text-white border-b border-slate-700">
+                                <h2 className="text-sm font-bold">تتبع التوليد (Generation)</h2>
+                                <p className="text-[10px] text-slate-400">تتبع بناء مصفوفة لمثال N = 5.</p>
+                            </div>
+                            
+                            <div className="p-4 flex-1 overflow-y-auto space-y-4">
+                                <div className="bg-slate-50 border border-slate-200 p-3 rounded relative shadow-sm">
+                                    <h3 className="font-bold text-xs text-slate-800 mb-1 border-b border-slate-200 pb-1 flex items-center gap-2">
+                                        <i className="fa-solid fa-check-circle text-emerald-600"></i> ماذا حدث للتو؟
+                                    </h3>
+                                    <p className="text-xs text-slate-700 leading-relaxed mt-2">{currentStepInfo.happened}</p>
+                                </div>
+
+                                <div className="bg-indigo-50 border border-indigo-200 p-3 rounded relative shadow-sm">
+                                    <h3 className="font-bold text-xs text-indigo-900 mb-1 border-b border-indigo-200 pb-1 flex items-center gap-2">
+                                        <i className="fa-solid fa-arrow-left text-indigo-600"></i> ماذا سيحدث الآن؟
+                                    </h3>
+                                    <p className="text-xs text-indigo-800 leading-relaxed mt-2">{currentStepInfo.next}</p>
+                                </div>
+                            </div>
+
+                            <div className="p-4 bg-slate-50 border-t border-slate-200">
+                                <button 
+                                    onClick={() => setStepIdx(Math.min(stepsRef.current.length - 1, stepIdx + 1))} 
+                                    disabled={stepIdx === stepsRef.current.length - 1}
+                                    className="w-full py-3 rounded bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-bold text-sm shadow transition flex items-center justify-center gap-2"
+                                >
+                                    {stepIdx === stepsRef.current.length - 1 ? 'انتهى التنفيذ' : 'تنفيذ الخطوة التالية'}
+                                    {stepIdx < stepsRef.current.length - 1 && <i className="fa-solid fa-play text-xs"></i>}
+                                </button>
+                                
+                                <div className="flex justify-between mt-3">
+                                    <button onClick={() => setStepIdx(0)} disabled={stepIdx === 0} className="text-xs text-slate-500 hover:text-slate-800 transition disabled:opacity-50 flex items-center gap-1">
+                                        <i className="fa-solid fa-rotate-right"></i> إعادة من البداية
+                                    </button>
+                                    <span className="text-xs font-mono text-slate-400 bg-slate-200 px-2 py-0.5 rounded">
+                                        خطوة {stepIdx + 1} / {stepsRef.current.length}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Visual Area */}
+                        <div className="flex-1 p-4 flex flex-col items-center justify-center bg-slate-100 overflow-y-auto relative" dir="ltr">
+                            
+                            {/* Visual Scale (Balance) */}
+                            <div className="w-full max-w-sm mb-12 flex flex-col items-center justify-center relative h-32">
+                                {/* Base */}
+                                <div className="w-4 h-16 bg-slate-400 absolute bottom-0"></div>
+                                <div className="w-16 h-2 bg-slate-500 absolute bottom-0 rounded-t"></div>
+                                {/* Pivot */}
+                                <div className="w-4 h-4 rounded-full bg-slate-600 absolute bottom-14 z-10"></div>
+                                {/* Beam */}
+                                <div 
+                                    className="w-48 h-2 bg-slate-700 absolute bottom-16 rounded scale-balance"
+                                    style={{ transform: `rotate(${tilt}deg)` }}
+                                >
+                                    {/* Left Pan (Negative) */}
+                                    <div className="absolute -left-4 top-2 w-10 h-10 border-b-4 border-l-2 border-r-2 border-slate-400 rounded-b-lg flex flex-wrap justify-center items-end p-1">
+                                        {s.arr.filter(n => n < 0).map((num, idx) => (
+                                            <div key={`neg${idx}`} className="text-[10px] font-bold text-rose-600 bg-rose-100 px-1 rounded m-0.5 pop-in">{num}</div>
+                                        ))}
+                                    </div>
+                                    {/* Right Pan (Positive) */}
+                                    <div className="absolute -right-4 top-2 w-10 h-10 border-b-4 border-l-2 border-r-2 border-slate-400 rounded-b-lg flex flex-wrap justify-center items-end p-1">
+                                         {s.arr.filter(n => n > 0).map((num, idx) => (
+                                            <div key={`pos${idx}`} className="text-[10px] font-bold text-emerald-600 bg-emerald-100 px-1 rounded m-0.5 pop-in">+{num}</div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Sum Indicator */}
+                                <div className={`absolute top-0 px-3 py-1 rounded-full font-mono text-sm font-bold border-2 transition-colors ${s.sum === 0 ? 'bg-emerald-100 border-emerald-400 text-emerald-700' : 'bg-rose-100 border-rose-400 text-rose-700'}`}>
+                                    Total Sum = {s.sum}
+                                </div>
+                            </div>
+
+                            {/* Array Display */}
+                            <div className="w-full max-w-lg bg-white p-6 rounded shadow border border-slate-200 text-center">
+                                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 border-b pb-2">Output Array (N = 5)</h3>
+                                
+                                <div className="flex justify-center gap-2">
+                                    {/* Render placeholders or actual numbers */}
+                                    {[...Array(5).keys()].map((idx) => {
+                                        const val = s.arr[idx];
+                                        const isPopulated = val !== undefined;
+                                        
+                                        let style = "bg-slate-50 border-slate-200 text-slate-300 border-dashed";
+                                        if (isPopulated) {
+                                            if (val > 0) style = "bg-emerald-50 border-emerald-400 text-emerald-700 border-solid shadow-sm pop-in";
+                                            else if (val < 0) style = "bg-rose-50 border-rose-400 text-rose-700 border-solid shadow-sm pop-in";
+                                            else style = "bg-indigo-50 border-indigo-400 text-indigo-700 border-solid shadow-md scale-110 pop-in font-bold";
+                                        }
+
+                                        return (
+                                            <div key={idx} className={`w-12 h-12 flex items-center justify-center rounded-lg border-2 transition-all duration-300 text-lg font-mono ${style}`}>
+                                                {isPopulated ? val : '?'}
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+
+                                {s.phase === 'done' && (
+                                    <div className="mt-6 bg-emerald-100 text-emerald-800 p-2 rounded text-sm font-bold pop-in">
+                                        <i className="fa-solid fa-check mr-2"></i> Array Generated Successfully!
+                                    </div>
+                                )}
+                            </div>
+
+                        </div>
+                    </div>
+                );
+            };
+
+            const renderCode = () => {
+                const codeSegments = [
+                    {
+                        title: "1. الإعدادات والمدخلات",
+                        desc: "نستدعي المكتبة الأساسية ونقرأ المتغير n الذي يمثل عدد الأرقام المطلوب طباعتها.",
+                        code: `#include <iostream>\nusing namespace std;\n\nint main() {\n    int n;\n    cin >> n;`
+                    },
+                    {
+                        title: "2. بناء الأزواج المتعاكسة",
+                        desc: "حلقة التكرار تعمل حتى نصف العدد المطلوب (n / 2). في كل دورة، نطبع الرقم (i) والرقم المعاكس له (-i). هذا يضمن أن مجموع كل رقمين يتم طباعتهما هو صفر تماماً.",
+                        code: `    // Generate pairs of positive and negative numbers\n    for (int i = 1; i <= n / 2; i++) {\n        cout << i << " " << -i << " ";\n    }`
+                    },
+                    {
+                        title: "3. التعامل مع العدد الفردي",
+                        desc: "إذا كان العدد n فردياً، فإن حلقة النصف السابقة ستترك مكاناً فارغاً واحداً. الرقم الوحيد الذي يمكننا طباعته دون أن نغير المجموع النهائي (الذي هو صفر أصلاً) هو الرقم 0 نفسه.",
+                        code: `    // If n is odd, print 0 to complete the array\n    // without changing the total sum.\n    if (n % 2 != 0) {\n        cout << 0;\n    }\n    \n    cout << endl;\n    return 0;\n}`
+                    }
+                ];
+
+                return (
+                    <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                        <div className="max-w-6xl mx-auto w-full space-y-4">
+                            <div className="bg-white p-4 rounded border border-slate-200 shadow-sm text-center">
+                                <h2 className="text-lg font-bold text-slate-800">تفصيل الكود الأصلي والمجزء</h2>
+                                <p className="text-xs text-slate-600 mt-1">
+                                    الجهة اليسرى تحتوي على الكود الأصلي كما هو. الجهة اليمنى تشرح للطالب وظيفة كل مقطع برمجياً لارتباطه بالنمط البنائي (Constructive Pattern).
+                                </p>
+                            </div>
+
+                            <div className="space-y-4">
+                                {codeSegments.map((seg, idx) => (
+                                    <div key={idx} className="flex flex-col md:flex-row bg-white rounded shadow-sm border border-slate-200 overflow-hidden">
+                                        
+                                        <div className="w-full md:w-5/12 bg-slate-50 p-4 border-b md:border-b-0 md:border-l border-slate-200 flex flex-col justify-center">
+                                            <h3 className="font-bold text-indigo-800 mb-2 text-sm">{seg.title}</h3>
+                                            <p className="text-xs text-slate-700 leading-relaxed">{seg.desc}</p>
+                                        </div>
+                                        
+                                        <div className="w-full md:w-7/12 bg-[#1e1e1e] p-4 overflow-x-auto" dir="ltr">
+                                            <pre className="m-0">
+                                                <code className="text-xs font-mono text-[#d4d4d4] whitespace-pre" style={{lineHeight: '1.6'}}>
+                                                    {seg.code}
+                                                </code>
+                                            </pre>
+                                        </div>
+
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div className="flex flex-col h-full bg-slate-200">
+                    <header className="bg-white px-4 py-3 shadow-sm z-30 flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-200">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-indigo-700 rounded flex items-center justify-center text-white text-sm shadow">
+                                <i className="fa-solid fa-scale-balanced"></i>
+                            </div>
+                            <div>
+                                <h1 className="text-sm font-bold text-slate-800 leading-tight">Zero Sum Array</h1>
+                                <p className="text-slate-500 text-[10px] font-semibold">تطبيق للمسائل البنائية (Constructive Algorithms)</p>
+                            </div>
+                        </div>
+                        
+                        <div className="flex bg-slate-100 p-1 rounded border border-slate-200 gap-1 overflow-x-auto text-xs shadow-inner">
+                            {['problem', 'concept', 'strategy', 'visualizer', 'code'].map((tabKey, idx) => {
+                                const labels = ["1. المسألة الأصلية", "2. الفكرة والنمط", "3. استراتيجية الحل (نصائح ذهبية)", "4. التتبع البصري", "5. تفصيل الكود"];
+                                return (
+                                    <button 
+                                        key={tabKey}
+                                        onClick={() => setActiveTab(tabKey)} 
+                                        className={`px-3 py-1.5 rounded font-bold transition-all whitespace-nowrap ${activeTab === tabKey ? 'bg-white text-indigo-800 shadow border border-slate-200' : 'text-slate-600 hover:bg-slate-200'}`}
+                                    >
+                                        {labels[idx]}
+                                    </button>
+                                )
+                            })}
+                        </div>
+                    </header>
+
+                    <main className="flex-1 overflow-hidden">
+                        {activeTab === 'problem' && renderProblem()}
+                        {activeTab === 'concept' && renderConcept()}
+                        {activeTab === 'strategy' && renderStrategy()}
+                        {activeTab === 'visualizer' && renderVisualizer()}
+                        {activeTab === 'code' && renderCode()}
+                    </main>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
