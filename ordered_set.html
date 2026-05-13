@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شرح Sliding Window Median</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Cairo', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        body { background-color: #f8fafc; margin: 0; height: 100vh; overflow: hidden; font-size: 14px; }
+        #root { height: 100%; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .pop-in { animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .list-move { transition: transform 0.5s ease; }
+        .list-enter { opacity: 0; transform: translateX(30px); }
+        .list-enter-active { opacity: 1; transform: translateX(0); transition: all 0.5s ease; }
+        .list-exit { opacity: 1; }
+        .list-exit-active { opacity: 0; transform: scale(0.8); transition: all 0.3s ease; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useRef, useEffect } = React;
+
+        function generateSteps() {
+            let steps = [];
+            
+            // Initial array
+            const a = [2, 4, 3, 5, 8, 1, 2, 1];
+            const k = 3;
+            // Median index for k=3 (odd) is 1 (0-indexed). If k was 4 (even), median index would be k/2 - 1 = 1.
+            const medianIdx = Math.floor((k - 1) / 2); 
+
+            const cloneState = (phase, arr, windowStart, orderedSet, ansList, info = {}) => ({
+                phase,
+                a: [...arr],
+                windowStart,
+                k,
+                orderedSet: [...orderedSet], // Array representing the internal sorted state of ordered_set
+                ansList: [...ansList],
+                info
+            });
+
+            // 1. Initial State
+            steps.push({
+                happened: `بدأ البرنامج. لدينا مصفوفة A مكونة من ${a.length} عناصر. حجم النافذة المطلوبة k = ${k}.`,
+                next: `سنقوم بإدخال أول ${k} عناصر من المصفوفة إلى الـ ordered_set (التي ترتب العناصر تلقائياً).`,
+                state: cloneState('start', a, 0, [], [], { type: 'Init', text: `k = ${k}, Median Index = ${medianIdx}` })
+            });
+
+            // 2. Insert first window
+            let currentSet = [
+                { val: a[0], id: 0 },
+                { val: a[1], id: 1 },
+                { val: a[2], id: 2 }
+            ].sort((x, y) => x.val === y.val ? x.id - y.id : x.val - y.val);
+
+            steps.push({
+                happened: `قمنا بإدخال عناصر النافذة الأولى [2, 4, 3] إلى الـ ordered_set. تم ترتيبها تلقائياً لتصبح [2, 3, 4]. (لاحظ حفظ الموقع كزوج Pair لمنع دمج المكررات)`,
+                next: `سنستخرج الوسيط للنافذة الأولى. بما أن k فردي، فالوسيط هو العنصر في المنتصف (الفهرس ${medianIdx}).`,
+                state: cloneState('first_window', a, 0, currentSet, [], { type: 'Insert', text: `Insert a[0..2] into ordered_set` })
+            });
+
+            // 3. First window answer
+            let ans = [currentSet[medianIdx].val];
+            steps.push({
+                happened: `باستخدام دالة find_by_order(${medianIdx})، حصلنا على الوسيط للنافذة الأولى وهو ${ans[0]}. تم طباعة النتيجة.`,
+                next: `سنبدأ الآن بتحريك النافذة خطوة واحدة لليمين (Sliding Window). سنقوم بحذف أقدم عنصر وإضافة العنصر الجديد.`,
+                state: cloneState('first_ans', a, 0, currentSet, ans, { type: 'Query', text: `find_by_order(${medianIdx}) -> ${ans[0]}` })
+            });
+
+            // 4. Slide 1
+            // Remove a[0], insert a[3]
+            currentSet = currentSet.filter(item => item.id !== 0);
+            steps.push({
+                happened: `تحركت النافذة! الخطوة الأولى: حذفنا العنصر a[0] (قيمته 2) الذي خرج من النافذة من الـ ordered_set.`,
+                next: `الخطوة الثانية: سندخل العنصر الجديد الذي دخل النافذة a[3] (قيمته 5).`,
+                state: cloneState('slide_erase', a, 1, currentSet, ans, { type: 'Erase', text: `Erase a[0] (val: 2)` })
+            });
+
+            currentSet.push({ val: a[3], id: 3 });
+            currentSet.sort((x, y) => x.val === y.val ? x.id - y.id : x.val - y.val);
+            steps.push({
+                happened: `أدخلنا a[3] (قيمته 5). ترتبت الـ ordered_set تلقائياً لتصبح [3, 4, 5].`,
+                next: `نستخرج الوسيط للنافذة الحالية باستخدام find_by_order(${medianIdx}).`,
+                state: cloneState('slide_insert', a, 1, currentSet, ans, { type: 'Insert', text: `Insert a[3] (val: 5)` })
+            });
+
+            ans.push(currentSet[medianIdx].val);
+            steps.push({
+                happened: `الوسيط للنافذة الحالية [4, 3, 5] هو ${ans[1]}. تمت إضافته للإجابات.`,
+                next: `سنحرك النافذة مرة أخرى بحذف a[1] وإضافة a[4].`,
+                state: cloneState('slide_ans', a, 1, currentSet, ans, { type: 'Query', text: `find_by_order(${medianIdx}) -> ${ans[1]}` })
+            });
+
+            // 5. Slide 2
+             currentSet = currentSet.filter(item => item.id !== 1);
+             currentSet.push({ val: a[4], id: 4 });
+             currentSet.sort((x, y) => x.val === y.val ? x.id - y.id : x.val - y.val);
+             ans.push(currentSet[medianIdx].val);
+
+             steps.push({
+                happened: `حركنا النافذة! حذفنا a[1] (4) وأضفنا a[4] (8). النافذة الآن [3, 5, 8]. الـ ordered_set أصبحت [3, 5, 8]. الوسيط هو ${ans[2]}.`,
+                next: `تحريك أخير لشرح المكررات: سنحذف a[2] ونضيف a[5].`,
+                state: cloneState('slide2', a, 2, currentSet, ans, { type: 'Slide', text: `Window: [3, 5, 8], Median: 5` })
+            });
+
+            // 6. Slide 3 (Handling duplicates concept indirectly if we had same values, but let's just do next slide)
+             currentSet = currentSet.filter(item => item.id !== 2);
+             currentSet.push({ val: a[5], id: 5 });
+             currentSet.sort((x, y) => x.val === y.val ? x.id - y.id : x.val - y.val);
+             ans.push(currentSet[medianIdx].val);
+
+             steps.push({
+                happened: `حركنا النافذة مرة أخرى. حذفنا a[2] (3) وأضفنا a[5] (1). النافذة الآن [5, 8, 1]. الـ ordered_set ترتبها لـ [1, 5, 8]. الوسيط هو ${ans[3]}.`,
+                next: `وهكذا تستمر العملية حتى نصل لنهاية المصفوفة، بنقلة واحدة (حذف وإضافة) لكل نافذة دون الحاجة لترتيب العناصر من الصفر!`,
+                state: cloneState('slide3', a, 3, currentSet, ans, { type: 'Slide', text: `Window: [5, 8, 1], Median: 5` })
+            });
+            
+             steps.push({
+                happened: `توضيح: استخدام الأزواج (Pairs) مثل (القيمة: 1, الموقع: 5) يضمن أنه حتى لو كان لدينا عنصران بقيمة 1، فإن هيكل الـ set سيعتبرهما مختلفين بناءً على الموقع!`,
+                next: `انتهى التتبع البصري التوضيحي.`,
+                state: cloneState('done', a, 3, currentSet, ans, { type: 'Done', text: `Sliding Window Completed!` })
+            });
+
+            return steps;
+        }
+
+        function App() {
+            const [activeTab, setActiveTab] = useState('problem'); 
+            const stepsRef = useRef(generateSteps());
+            const [stepIdx, setStepIdx] = useState(0);
+
+            const renderProblem = () => (
+                <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                    <div className="max-w-4xl mx-auto w-full space-y-4">
+                        <div className="bg-white p-5 rounded border border-slate-200 shadow-sm">
+                            <h2 className="text-lg font-bold mb-4 text-indigo-800 border-b pb-2">نص المسألة (Sliding Window Median)</h2>
+                            
+                            <div className="text-sm space-y-4 text-slate-700 leading-relaxed">
+                                <p className="font-semibold bg-slate-100 p-4 rounded border border-slate-200 shadow-inner">
+                                    لديك مصفوفة تحتوي على <span dir="ltr" className="font-mono text-indigo-700 font-bold mx-1">n</span> عنصرًا وقيمة نافذة <span dir="ltr" className="font-mono font-bold mx-1">k</span>.
+                                    المطلوب: اطبع الوسيط (Median) لكل المصفوفات الجزئية (النوافذ المنزلقة) بطول <code className="font-mono">k</code>.
+                                </p>
+                                
+                                <div className="bg-amber-50 border border-amber-200 p-3 rounded text-xs text-amber-900 shadow-sm">
+                                    <strong className="block mb-1">تعريف الوسيط:</strong>
+                                    هو العنصر الأوسط في المجموعة <strong>بعد ترتيب عناصرها</strong> تصاعدياً.
+                                    <ul className="list-disc list-inside mt-1 ml-2 space-y-1">
+                                        <li>إذا كان عدد العناصر فردياً: الوسيط هو العنصر في المنتصف تماماً.</li>
+                                        <li>إذا كان عدد العناصر زوجيًا: هناك وسيطان محتملان، المسألة تطلب أخذ <strong>القيمة الصغرى</strong> بينهما.</li>
+                                    </ul>
+                                </div>
+
+                                <div className="flex flex-col md:flex-row gap-4 mt-4">
+                                    <div className="flex-1 bg-[#1e1e1e] text-slate-300 p-3 rounded border border-slate-700 font-mono text-xs" dir="ltr">
+                                        <div className="text-slate-400 mb-2 border-b border-slate-600 pb-1">// Example Input</div>
+                                        <div>8 3 <span className="text-slate-500 text-[10px] ml-2">// Array of 8 elements, window size k=3</span></div>
+                                        <div>2 4 3 5 8 1 2 1</div>
+                                    </div>
+                                    <div className="flex-1 bg-[#1e1e1e] text-slate-300 p-3 rounded border border-slate-700 font-mono text-xs" dir="ltr">
+                                        <div className="text-slate-400 mb-2 border-b border-slate-600 pb-1">// Expected Output</div>
+                                        <div className="text-emerald-400">3 4 5 5 2 1</div>
+                                        <div className="text-slate-500 text-[10px] mt-2 leading-tight">
+                                            // Windows:<br/>
+                                            // [2 4 3] -> sort [2 3 4] -> median: 3<br/>
+                                            // [4 3 5] -> sort [3 4 5] -> median: 4<br/>
+                                            // [3 5 8] -> sort [3 5 8] -> median: 5<br/>
+                                            // ...
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const renderConcept = () => (
+                <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                    <div className="max-w-4xl mx-auto w-full space-y-4">
+                        <div className="bg-white p-5 rounded border border-slate-200 shadow-sm">
+                            <h2 className="text-lg font-bold mb-4 text-indigo-800 border-b pb-2">فهم الهياكل والمفاهيم</h2>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-3">
+                                    <h3 className="text-sm font-bold text-slate-700 bg-rose-100 p-2 rounded">1. تقنية النافذة المنزلقة (Sliding Window)</h3>
+                                    <p className="text-xs text-slate-700 leading-relaxed">
+                                        بدلاً من استخراج مصفوفة جزئية جديدة في كل خطوة وإعادة ترتيبها من الصفر (مما يسبب بطئاً شديداً)، نستفيد من حقيقة أن النافذة الجديدة تتشارك في معظم عناصرها مع النافذة السابقة.
+                                        <br/><strong>الفكرة:</strong> مع كل خطوة نتحركها، نحذف فقط العنصر الذي خرج من النافذة (من اليسار)، ونضيف العنصر الذي دخل حديثاً (من اليمين).
+                                    </p>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <h3 className="text-sm font-bold text-slate-700 bg-emerald-100 p-2 rounded">2. معضلة البحث عن الوسيط</h3>
+                                    <p className="text-xs text-slate-700 leading-relaxed">
+                                        لمعرفة الوسيط بسرعة مع كل تحديث للنافذة، نحتاج لهيكل بيانات:
+                                        <br/>1. يبقي العناصر مرتبة تلقائياً عند الإضافة والحذف.
+                                        <br/>2. يسمح لنا بالوصول للعنصر رقم <code className="font-mono mx-1">x</code> (الذي في المنتصف) بسرعة فائقة.
+                                        <br/>هيكل <code className="font-mono text-indigo-600 bg-white px-1 border rounded">std::set</code> العادي يرتب العناصر، لكنه <strong>لا يملك خاصية الوصول بالرقم التسلسلي</strong> (لا يمكننا كتابة <code className="font-mono">set[k/2]</code>).
+                                    </p>
+                                </div>
+                                
+                                <div className="col-span-1 md:col-span-2 mt-2">
+                                    <h3 className="text-sm font-bold text-slate-700 bg-indigo-100 p-2 rounded mb-2">3. الحل السحري: ordered_set (PBDS)</h3>
+                                    <div className="bg-white border border-slate-200 p-3 rounded text-xs shadow-sm space-y-2">
+                                        <p>لغة C++ (مترجم GCC تحديداً) توفر مكتبة خفية تسمى Policy Based Data Structures تحتوي على شجرة قوية جداً تعمل كـ Set وتدعم دوال إضافية سحرية:</p>
+                                        <ul className="list-disc list-inside text-indigo-800 bg-indigo-50 p-2 rounded font-mono">
+                                            <li><code className="font-bold">find_by_order(x)</code>: تعيد مؤشراً للعنصر الذي ترتيبه <code className="mx-1">x</code> في المجموعة المرتبة في زمن <code className="text-[10px]">O(log N)</code>.</li>
+                                        </ul>
+                                        <p className="font-bold text-rose-600 mt-2">مشكلة صغيرة وحلها:</p>
+                                        <p>هذه الشجرة (مثل الـ set) <strong>لا تقبل القيم المكررة</strong>. فلو كان في النافذة رقمان قيمتهما "2"، ستحذف أحدهما! 
+                                        <br/><strong>الحل:</strong> بدلاً من تخزين أرقام مجردة، سنخزن "أزواجاً" (Pairs) تتكون من: <code className="font-mono">(القيمة، الموقع في المصفوفة)</code>. بما أن الموقع مستحيل أن يتكرر، فإن كل الأزواج ستعتبر مميزة ولن يُحذف شيء، مع بقاء الفرز معتمداً على "القيمة" أولاً!</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const renderStrategy = () => (
+                <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                    <div className="max-w-4xl mx-auto w-full space-y-6">
+                        <div className="bg-white p-6 rounded border border-slate-200 shadow-sm">
+                            <h2 className="text-lg font-bold mb-4 text-indigo-800 border-b pb-2 flex items-center gap-2">
+                                <i className="fa-solid fa-chess-knight"></i> استراتيجية الحل البرمجية
+                            </h2>
+                            
+                            <div className="space-y-5 text-sm text-slate-700 leading-relaxed">
+                                
+                                <div className="bg-blue-50/50 p-4 rounded border border-blue-100">
+                                    <h3 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
+                                        <span className="bg-blue-200 text-blue-800 w-6 h-6 flex items-center justify-center rounded-full text-xs">1</span>
+                                        تجهيز الأزواج (Pairs)
+                                    </h3>
+                                    <p className="mb-2 text-xs">
+                                        نقرأ المصفوفة ونحولها لمصفوفة من الأزواج لضمان التميز:
+                                        <br/><code className="font-mono bg-white px-2 py-1 rounded border mt-2 inline-block">a[i] = make_pair(القيمة, الفهرس i)</code>
+                                    </p>
+                                </div>
+
+                                <div className="bg-purple-50/50 p-4 rounded border border-purple-100">
+                                    <h3 className="font-bold text-purple-900 mb-2 flex items-center gap-2">
+                                        <span className="bg-purple-200 text-purple-800 w-6 h-6 flex items-center justify-center rounded-full text-xs">2</span>
+                                        تهيئة النافذة الأولى
+                                    </h3>
+                                    <p className="mb-2 text-xs">
+                                        ندخل أول <code className="font-mono">k</code> عناصر في الـ <code className="font-mono">ordered_set</code>. 
+                                        نحسب موقع الوسيط <code className="font-mono">median</code> (مثلاً إذا كان k=3 فالوسيط هو الفهرس 1). نستخرج الوسيط الأول ونطبعه باستخدام <code className="font-mono">find_by_order(median)</code>.
+                                    </p>
+                                </div>
+                                
+                                <div className="bg-emerald-50/50 p-4 rounded border border-emerald-100">
+                                    <h3 className="font-bold text-emerald-900 mb-2 flex items-center gap-2">
+                                        <span className="bg-emerald-200 text-emerald-800 w-6 h-6 flex items-center justify-center rounded-full text-xs">3</span>
+                                        التزحلق (Sliding)
+                                    </h3>
+                                    <p className="mb-2 text-xs">
+                                        نقوم بحلقة تكرار تبدأ من 0 وحتى ما قبل نهاية المصفوفة. في كل خطوة:
+                                        <ul className="list-disc list-inside space-y-1 mt-2 text-slate-800">
+                                            <li><strong className="text-rose-600">حذف القديم:</strong> <code className="font-mono">os.erase(a[i])</code></li>
+                                            <li><strong className="text-emerald-600">إضافة الجديد:</strong> <code className="font-mono">os.insert(a[i + k])</code></li>
+                                            <li><strong className="text-indigo-600">استخراج الوسيط:</strong> نستخدم <code className="font-mono">find_by_order</code> مجدداً للنافذة الجديدة.</li>
+                                        </ul>
+                                    </p>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const renderVisualizer = () => {
+                const s = stepsRef.current[stepIdx].state;
+                const currentStepInfo = stepsRef.current[stepIdx];
+
+                return (
+                    <div className="flex flex-col lg:flex-row h-full bg-slate-100 fade-in overflow-hidden">
+                        
+                        {/* Control Panel */}
+                        <div className="w-full lg:w-1/3 bg-white border-l border-slate-200 shadow-lg z-20 flex flex-col">
+                            <div className="p-3 bg-slate-800 text-white border-b border-slate-700">
+                                <h2 className="text-sm font-bold">التتبع البصري (Sliding Window)</h2>
+                                <p className="text-[10px] text-slate-400">تحريك النافذة وتحديث الشجرة خطوة بخطوة.</p>
+                            </div>
+                            
+                            <div className="p-4 flex-1 overflow-y-auto space-y-4">
+                                <div className="bg-slate-50 border border-slate-200 p-3 rounded relative shadow-sm">
+                                    <h3 className="font-bold text-xs text-slate-800 mb-1 border-b border-slate-200 pb-1 flex items-center gap-2">
+                                        <i className="fa-solid fa-check-circle text-emerald-600"></i> ماذا حدث للتو؟
+                                    </h3>
+                                    <p className="text-xs text-slate-700 leading-relaxed mt-2">{currentStepInfo.happened}</p>
+                                </div>
+
+                                <div className="bg-indigo-50 border border-indigo-200 p-3 rounded relative shadow-sm">
+                                    <h3 className="font-bold text-xs text-indigo-900 mb-1 border-b border-indigo-200 pb-1 flex items-center gap-2">
+                                        <i className="fa-solid fa-arrow-left text-indigo-600"></i> ماذا سيحدث الآن؟
+                                    </h3>
+                                    <p className="text-xs text-indigo-800 leading-relaxed mt-2">{currentStepInfo.next}</p>
+                                </div>
+                            </div>
+
+                            <div className="p-4 bg-slate-50 border-t border-slate-200">
+                                <button 
+                                    onClick={() => setStepIdx(Math.min(stepsRef.current.length - 1, stepIdx + 1))} 
+                                    disabled={stepIdx === stepsRef.current.length - 1}
+                                    className="w-full py-3 rounded bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-bold text-sm shadow transition flex items-center justify-center gap-2"
+                                >
+                                    {stepIdx === stepsRef.current.length - 1 ? 'انتهى التنفيذ' : 'تنفيذ الخطوة التالية'}
+                                    {stepIdx < stepsRef.current.length - 1 && <i className="fa-solid fa-play text-xs"></i>}
+                                </button>
+                                
+                                <div className="flex justify-between mt-3">
+                                    <button onClick={() => setStepIdx(0)} disabled={stepIdx === 0} className="text-xs text-slate-500 hover:text-slate-800 transition disabled:opacity-50 flex items-center gap-1">
+                                        <i className="fa-solid fa-rotate-right"></i> إعادة من البداية
+                                    </button>
+                                    <span className="text-xs font-mono text-slate-400 bg-slate-200 px-2 py-0.5 rounded">
+                                        خطوة {stepIdx + 1} / {stepsRef.current.length}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Visual Area */}
+                        <div className="flex-1 p-4 flex flex-col items-center justify-start bg-slate-100 overflow-y-auto relative" dir="ltr">
+                            
+                            {/* Current Action Indicator */}
+                            {s.info && s.info.type && (
+                                <div className="w-full max-w-2xl mb-4 bg-slate-800 text-white p-3 rounded shadow flex items-center gap-3 fade-in">
+                                    <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${
+                                        s.info.type === 'Erase' ? 'bg-rose-500' : 
+                                        s.info.type === 'Insert' ? 'bg-emerald-500' : 
+                                        s.info.type === 'Query' ? 'bg-indigo-500' : 'bg-slate-500'}`}>
+                                        {s.info.type}
+                                    </span>
+                                    <span className="font-mono text-sm">{s.info.text}</span>
+                                </div>
+                            )}
+
+                            {/* Array and Window */}
+                            <div className="w-full max-w-2xl bg-white p-6 rounded shadow border border-slate-200 mb-6">
+                                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 text-center border-b pb-2">1. The Array & Sliding Window</h3>
+                                <div className="flex justify-center gap-1 flex-wrap relative">
+                                    {s.a.map((val, idx) => {
+                                        const isInWindow = idx >= s.windowStart && idx < s.windowStart + s.k;
+                                        
+                                        let style = "bg-slate-50 border-slate-300 text-slate-600";
+                                        if (isInWindow) style = "bg-indigo-100 border-indigo-400 text-indigo-900 shadow-inner font-bold transform scale-105 z-10";
+                                        
+                                        return (
+                                            <div key={`arr${idx}`} className="flex flex-col items-center">
+                                                <span className="text-[10px] text-slate-400 mb-1">{idx}</span>
+                                                <div className={`w-10 h-10 flex items-center justify-center rounded border transition-all duration-300 text-lg font-mono ${style}`}>
+                                                    {val}
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                    
+                                    {/* Window Highlight Box (approximate visual) */}
+                                    {s.phase !== 'start' && (
+                                        <div 
+                                            className="absolute border-b-4 border-indigo-500 transition-all duration-500 rounded-b"
+                                            style={{
+                                                bottom: '-10px',
+                                                left: `calc(50% - ${(s.a.length * 44) / 2}px + ${s.windowStart * 44}px)`,
+                                                width: `${s.k * 44 - 4}px`,
+                                                height: '10px'
+                                            }}
+                                        />
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Ordered Set visual */}
+                            <div className="w-full max-w-2xl bg-white p-6 rounded shadow border border-slate-200 mb-6 flex flex-col items-center">
+                                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 text-center border-b pb-2 w-full">2. ordered_set (Auto Sorted & Handles Pairs)</h3>
+                                <div className="text-[10px] text-slate-400 mb-4 text-center">Format: (Value, Original Index)</div>
+                                
+                                <div className="flex justify-center gap-3 min-h-[60px]">
+                                    {s.orderedSet.length === 0 ? (
+                                        <span className="text-sm text-slate-400 italic flex items-center h-full">Empty...</span>
+                                    ) : (
+                                        s.orderedSet.map((item, idx) => {
+                                            const isMedian = idx === Math.floor((s.k - 1) / 2);
+                                            
+                                            return (
+                                                <div key={`set${item.id}`} className="pop-in flex flex-col items-center">
+                                                    <span className="text-[10px] text-slate-400 mb-1">Rank {idx}</span>
+                                                    <div className={`px-3 py-2 flex items-center justify-center rounded border-2 transition-all duration-300 font-mono shadow-sm
+                                                        ${isMedian ? 'bg-amber-100 border-amber-500 text-amber-900 font-bold scale-110 z-10' : 'bg-slate-50 border-slate-300 text-slate-700'}`}>
+                                                        ({item.val}, <span className="text-[10px] text-slate-500 ml-1">{item.id}</span>)
+                                                    </div>
+                                                    {isMedian && <div className="text-[10px] font-bold text-amber-600 mt-1 uppercase">Median</div>}
+                                                </div>
+                                            )
+                                        })
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Answer Box */}
+                            <div className="w-full max-w-2xl bg-slate-800 text-white p-4 rounded shadow border border-slate-700">
+                                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 border-b border-slate-600 pb-2">3. Medians Output</h3>
+                                <div className="flex gap-2 font-mono text-lg flex-wrap min-h-[30px]">
+                                    {s.ansList.map((ans, i) => (
+                                        <span key={`ans${i}`} className="bg-indigo-600 text-white px-2 rounded pop-in">{ans}</span>
+                                    ))}
+                                    {s.ansList.length === 0 && <span className="text-slate-500 text-sm italic">Waiting for queries...</span>}
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                );
+            };
+
+            const renderCode = () => {
+                const codeSegments = [
+                    {
+                        title: "1. استيراد مكتبة PBDS",
+                        desc: "لكي نستخدم الـ ordered_set، نحتاج لاستيراد مكتبات خاصة بـ GNU C++ (غير موجودة في الـ standard library العادية) وتعريف مساحات الأسماء الخاصة بها.",
+                        code: `#include <iostream>\nusing namespace std;\n\n// PBDS Headers\n#include <ext/pb_ds/assoc_container.hpp>\n#include <ext/pb_ds/tree_policy.hpp>\nusing namespace __gnu_pbds;`
+                    },
+                    {
+                        title: "2. تعريف الـ ordered_set المخصصة",
+                        desc: "نقوم بتعريف alias (اسم مختصر) للشجرة الموازنة باستخدام قالب (template). لاحظ الترتيب less<T> وأن التحديثات تعتمد على tree_order_statistics لدعم دوال الوصول للترتيب.",
+                        code: `template<typename T>\nusing ordered_set = tree<\n    T,\n    null_type,\n    less<T>,\n    rb_tree_tag,\n    tree_order_statistics_node_update\n>;`
+                    },
+                    {
+                        title: "3. قراءة المدخلات وتجهيز الأزواج",
+                        desc: "نقرأ N و K. ثم نقرأ المصفوفة، ولكن بدلاً من حفظ الأرقام العادية، نخزنها كـ Pair (القيمة، الفهرس). هذا يمنع الشجرة من حذف الأرقام المتشابهة في القيمة.",
+                        code: `int main() {\n    int n, k;\n    cin >> n >> k;\n    pair<int, int> a[n];\n    \n    for (int i = 0; i < n; i++) {\n        cin >> a[i].first;\n        a[i].second  = i;\n    }`
+                    },
+                    {
+                        title: "4. تهيئة النافذة الأولى وحساب موقع الوسيط",
+                        desc: "ندخل أول K عناصر من المصفوفة إلى الشجرة. ثم نحدد أي فهرس يمثل الوسيط. إذا كان فردياً فهو K/2 (بسبب الصفر إندكس)، وإذا كان زوجياً نأخذ الذي قبله K/2 - 1 لأنه يُطلب القيمة الصغرى.",
+                        code: `    ordered_set<pair<int ,int> > os;\n    \n    // أدخل النافذة الأولى\n    for (int i = 0 ; i < k; i++){\n        os.insert(a[i]);\n    }\n\n    // أوجد موقع الوسيط (الفهرس)\n    int median;\n    if (k % 2 == 0) {\n        median = k/2 - 1;\n    } else {\n        median = k/2;\n    }`
+                    },
+                    {
+                        title: "5. طباعة الوسيط للنافذة الأولى",
+                        desc: "نستخدم الدالة السحرية find_by_order لإيجاد العنصر الموجود في مكان الوسيط في الشجرة المرتبة. الدالة تعيد مؤشراً (iterator) لذا نستخدم النجمة (*) لاستخراج الزوج، ثم نطبع قيمته (first).",
+                        code: `    pair<int ,int> ans = *os.find_by_order(median);\n    cout << ans.first << ' ';`
+                    },
+                    {
+                        title: "6. حلقة التزحلق (Sliding Window)",
+                        desc: "ندور عبر باقي المصفوفة. في كل خطوة، نحذف العنصر القديم الذي ترك النافذة (a[i])، وندخل العنصر الجديد الذي وصلته النافذة (a[i+k]).",
+                        code: `    //تحرك عبر جميع النوافذ\n    for( int i = 0 ; i < n - k ; i++){\n        // احذف القيمة الأولى في النافذة القديمة\n        os.erase(a[i]);\n        \n        // أضف القيمة الجديدة في نهاية النافذة\n        os.insert(a[i + k]);`
+                    },
+                    {
+                        title: "7. استخراج الوسيط للنافذة الجديدة",
+                        desc: "بعد التحديث، الشجرة قامت بترتيب نفسها داخلياً في وقت سريع جداً O(log N). نستخرج الوسيط الجديد بنفس الطريقة ونطبعه. وهكذا حتى تنتهي المصفوفة.",
+                        code: `        // اطبع الحل للنافذة الحالية\n        pair<int , int> ans = *os.find_by_order(median);\n        cout << ans.first << ' ';\n    }\n    return 0;\n}`
+                    }
+                ];
+
+                return (
+                    <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                        <div className="max-w-6xl mx-auto w-full space-y-4">
+                            <div className="bg-white p-4 rounded border border-slate-200 shadow-sm text-center">
+                                <h2 className="text-lg font-bold text-slate-800">تفصيل الكود الأصلي والمجزء</h2>
+                                <p className="text-xs text-slate-600 mt-1">
+                                    الجهة اليسرى تحتوي على الكود الأصلي كما هو. الجهة اليمنى تشرح للطالب وظيفة كل مقطع برمجياً.
+                                </p>
+                            </div>
+
+                            <div className="space-y-4">
+                                {codeSegments.map((seg, idx) => (
+                                    <div key={idx} className="flex flex-col md:flex-row bg-white rounded shadow-sm border border-slate-200 overflow-hidden">
+                                        
+                                        <div className="w-full md:w-5/12 bg-slate-50 p-4 border-b md:border-b-0 md:border-l border-slate-200 flex flex-col justify-center">
+                                            <h3 className="font-bold text-indigo-800 mb-2 text-sm">{seg.title}</h3>
+                                            <p className="text-xs text-slate-700 leading-relaxed">{seg.desc}</p>
+                                        </div>
+                                        
+                                        <div className="w-full md:w-7/12 bg-[#1e1e1e] p-4 overflow-x-auto" dir="ltr">
+                                            <pre className="m-0">
+                                                <code className="text-xs font-mono text-[#d4d4d4] whitespace-pre" style={{lineHeight: '1.6'}}>
+                                                    {seg.code}
+                                                </code>
+                                            </pre>
+                                        </div>
+
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div className="flex flex-col h-full bg-slate-200">
+                    <header className="bg-white px-4 py-3 shadow-sm z-30 flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-200">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-indigo-700 rounded flex items-center justify-center text-white text-sm shadow">
+                                <i className="fa-solid fa-arrows-left-right"></i>
+                            </div>
+                            <div>
+                                <h1 className="text-sm font-bold text-slate-800 leading-tight">Sliding Window Median</h1>
+                                <p className="text-slate-500 text-[10px] font-semibold">PBDS ordered_set Technique</p>
+                            </div>
+                        </div>
+                        
+                        <div className="flex bg-slate-100 p-1 rounded border border-slate-200 gap-1 overflow-x-auto text-xs shadow-inner">
+                            {['problem', 'concept', 'strategy', 'visualizer', 'code'].map((tabKey, idx) => {
+                                const labels = ["1. المسألة الأصلية", "2. الفكرة وهيكل البيانات", "3. استراتيجية الحل", "4. التتبع البصري", "5. تفصيل الكود"];
+                                return (
+                                    <button 
+                                        key={tabKey}
+                                        onClick={() => setActiveTab(tabKey)} 
+                                        className={`px-3 py-1.5 rounded font-bold transition-all whitespace-nowrap ${activeTab === tabKey ? 'bg-white text-indigo-800 shadow border border-slate-200' : 'text-slate-600 hover:bg-slate-200'}`}
+                                    >
+                                        {labels[idx]}
+                                    </button>
+                                )
+                            })}
+                        </div>
+                    </header>
+
+                    <main className="flex-1 overflow-hidden">
+                        {activeTab === 'problem' && renderProblem()}
+                        {activeTab === 'concept' && renderConcept()}
+                        {activeTab === 'strategy' && renderStrategy()}
+                        {activeTab === 'visualizer' && renderVisualizer()}
+                        {activeTab === 'code' && renderCode()}
+                    </main>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
