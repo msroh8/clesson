@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شرح تقنية Segment Tree (شجرة القطع)</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Cairo', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        body { background-color: #f8fafc; margin: 0; height: 100vh; overflow: hidden; font-size: 14px; }
+        #root { height: 100%; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .pop-in { animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .tree-line {
+            stroke: #cbd5e1;
+            stroke-width: 2;
+            transition: all 0.3s ease;
+        }
+        .tree-line.active {
+            stroke: #6366f1;
+            stroke-width: 3;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useRef } = React;
+
+        function generateSteps() {
+            let steps = [];
+            
+            // Initial array (size 4 for simple tree visual)
+            let a = [5, 2, 8, 1];
+            let n = 4;
+            let N = 4; // next power of 2
+            let seg = Array(2 * N).fill('∞');
+
+            const cloneState = (phase, arr, segTree, hlNodes = [], hlLines = [], info = {}) => ({
+                phase,
+                a: [...arr],
+                seg: [...segTree],
+                hlNodes: [...hlNodes], // node IDs to highlight
+                hlLines: [...hlLines], // pairs [parent, child]
+                info
+            });
+
+            // 1. Initial State
+            steps.push({
+                happened: "بدأ البرنامج. لدينا مصفوفة A مكونة من 4 عناصر [5, 2, 8, 1]. حجم الشجرة الأساسي (N) هو أقرب قوة للعدد 2 (وهنا هو 4).",
+                next: "سنقوم بوضع عناصر المصفوفة الأساسية في أوراق الشجرة (Leaf Nodes) في أسفل المصفوفة `seg`.",
+                state: cloneState('start', a, seg, [], [], { type: 'Init', text: 'N = 4 (Leaves start at index 4)' })
+            });
+
+            // 2. Insert Leaves
+            for (let i = 0; i < n; i++) {
+                seg[i + N] = a[i];
+            }
+            steps.push({
+                happened: "تم إدراج عناصر المصفوفة في الأوراق (الفهارس من 4 إلى 7).",
+                next: "سنبدأ ببناء الشجرة من الأسفل إلى الأعلى. سنحسب القيمة الصغرى لكل عقدة أب من ابنيها.",
+                state: cloneState('build_leaves', a, seg, [4, 5, 6, 7], [], { type: 'Build', text: 'Inserting leaves' })
+            });
+
+            // 3. Build Level 1 (Parents of leaves)
+            seg[2] = Math.min(seg[4], seg[5]); // 2
+            steps.push({
+                happened: "العقدة رقم 2 (الابن الأيسر للرئيسية) تأخذ القيمة الصغرى من ابنيها 4 و 5: min(5, 2) = 2.",
+                next: "سنحسب العقدة رقم 3 بنفس الطريقة.",
+                state: cloneState('build_lvl1_left', a, seg, [2, 4, 5], [[2, 4], [2, 5]], { type: 'Build', text: 'seg[2] = min(seg[4], seg[5])' })
+            });
+
+            seg[3] = Math.min(seg[6], seg[7]); // 1
+            steps.push({
+                happened: "العقدة رقم 3 (الابن الأيمن للرئيسية) تأخذ القيمة الصغرى من ابنيها 6 و 7: min(8, 1) = 1.",
+                next: "سنحسب الآن العقدة الجذرية (Root) رقم 1.",
+                state: cloneState('build_lvl1_right', a, seg, [3, 6, 7], [[3, 6], [3, 7]], { type: 'Build', text: 'seg[3] = min(seg[6], seg[7])' })
+            });
+
+            // 4. Build Root
+            seg[1] = Math.min(seg[2], seg[3]); // 1
+            steps.push({
+                happened: "العقدة الجذرية (Root) رقم 1 تأخذ القيمة الصغرى من ابنيها 2 و 3: min(2, 1) = 1. اكتمل بناء الشجرة!",
+                next: "سنتلقى الآن استعلام تحديث لتغيير القيمة في الفهرس 3 (والذي يقابله الورقة 6).",
+                state: cloneState('build_root', a, seg, [1, 2, 3], [[1, 2], [1, 3]], { type: 'Build', text: 'seg[1] = min(seg[2], seg[3])' })
+            });
+
+            // 5. Point Update (j=3, v=0)
+            let j = 3; // 1-based index 3 -> a[2]
+            let v = 0;
+            let idx = j + N - 1; // 3 + 4 - 1 = 6
+            a[2] = v;
+            seg[idx] = v;
+            
+            steps.push({
+                happened: `استعلام تحديث: تغيير العنصر رقم ${j} إلى ${v}. تم تحديث الورقة المقابلة (رقم ${idx}).`,
+                next: "يجب أن يتصاعد هذا التحديث للأعلى (إلى الأب، ثم إلى الجذر) لإصلاح القيم الصغرى.",
+                state: cloneState('update_leaf', a, seg, [idx], [], { type: 'Update', text: `seg[${idx}] = ${v}` })
+            });
+
+            // Update ascend 1
+            let parent1 = Math.floor(idx / 2); // 3
+            seg[parent1] = Math.min(seg[parent1 * 2], seg[parent1 * 2 + 1]); // min(seg[6], seg[7]) -> min(0, 1) = 0
+            steps.push({
+                happened: `تصاعد التحديث للأب رقم ${parent1}. القيمة الجديدة: min(0, 1) = 0.`,
+                next: "سيتصاعد التحديث مرة أخرى إلى الجذر.",
+                state: cloneState('update_ascend1', a, seg, [parent1, parent1 * 2, parent1 * 2 + 1], [[parent1, parent1 * 2], [parent1, parent1 * 2 + 1]], { type: 'Update', text: `seg[${parent1}] updated` })
+            });
+
+            // Update ascend 2 (Root)
+            let parent2 = Math.floor(parent1 / 2); // 1
+            seg[parent2] = Math.min(seg[parent2 * 2], seg[parent2 * 2 + 1]); // min(seg[2], seg[3]) -> min(2, 0) = 0
+            steps.push({
+                happened: `وصل التحديث للجذر (رقم 1). القيمة الصغرى الكلية أصبحت 0. انتهى التحديث في وقت قصير جداً (log N)!`,
+                next: "الآن سنتلقى استعلام بحث في النطاق [1, 2].",
+                state: cloneState('update_root', a, seg, [1, 2, 3], [[1, 2], [1, 3]], { type: 'Update', text: 'Root updated' })
+            });
+
+            // 6. Range Query [1, 2]
+            steps.push({
+                happened: "استعلام بحث: ما هي القيمة الصغرى في النطاق من 1 إلى 2؟ (الذي يمثل العقد 4 و 5).",
+                next: "سيبدأ البحث من الجذر (1) وينزل للأسفل.",
+                state: cloneState('query_start', a, seg, [1], [], { type: 'Query', text: 'Min in range [1, 2]' })
+            });
+
+            steps.push({
+                happened: "نحن في الجذر (1). النطاق المطلوب [1, 2] يقع بالكامل في الجهة اليسرى (التي تغطي 1 و 2).",
+                next: "سننتقل للابن الأيسر (العقدة 2) ولن نهدر الوقت في البحث في الجهة اليمنى.",
+                state: cloneState('query_descend', a, seg, [2], [[1, 2]], { type: 'Query', text: 'Descend left' })
+            });
+
+            steps.push({
+                happened: "نحن في العقدة (2). النطاق الذي تغطيه هذه العقدة هو بالضبط [1, 2] وهو النطاق المطلوب تماماً!",
+                next: "سنرجع القيمة المخزنة في العقدة (2) وهي القيمة (2) دون الحاجة للنزول للأوراق. هذا هو سحر الـ Segment Tree!",
+                state: cloneState('query_done', a, seg, [2], [], { type: 'Done', text: 'Exact match! Return 2' })
+            });
+
+            return steps;
+        }
+
+        function App() {
+            const [activeTab, setActiveTab] = useState('problem'); 
+            const stepsRef = useRef(generateSteps());
+            const [stepIdx, setStepIdx] = useState(0);
+
+            const renderProblem = () => (
+                <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                    <div className="max-w-4xl mx-auto w-full space-y-4">
+                        <div className="bg-white p-5 rounded border border-slate-200 shadow-sm">
+                            <h2 className="text-lg font-bold mb-4 text-indigo-800 border-b pb-2">نص المسألة (Dynamic Range Minimum Queries)</h2>
+                            
+                            <div className="text-sm space-y-4 text-slate-700 leading-relaxed">
+                                <p className="font-semibold bg-slate-100 p-4 rounded border border-slate-200 shadow-inner">
+                                    لديك مصفوفة تتكون من <span dir="ltr" className="font-mono text-indigo-700 font-bold mx-1">n</span> عنصر، وسيطلب منك تنفيذ <span dir="ltr" className="font-mono font-bold mx-1">q</span> استعلام عليها. كل استعلام يكون من أحد النوعين التاليين:
+                                </p>
+                                
+                                <ul className="list-disc list-inside space-y-2 text-xs text-slate-700 bg-white p-4 border border-slate-200 rounded">
+                                    <li><strong className="text-rose-600">تحديث (Type 1):</strong> تحديث وتغيير القيمة في الفهرس (الموقع) <code className="font-mono">k</code> لتصبح <code className="font-mono">u</code>.</li>
+                                    <li><strong className="text-emerald-600">بحث (Type 2):</strong> ما هي القيمة الصغرى (Minimum) في النطاق من الموقع <code className="font-mono">l</code> إلى الموقع <code className="font-mono">r</code> (شاملاً)؟</li>
+                                </ul>
+
+                                <div className="bg-amber-50 border border-amber-200 p-3 rounded text-xs text-amber-900 shadow-sm">
+                                    <strong className="block mb-1">حل متقدم (Segment Tree):</strong>
+                                    استخدمنا سابقاً (Square Root Decomposition) كحل جيد. ولكن هذه المرة سنستخدم <strong>شجرة القطع (Segment Tree)</strong>، وهي هيكل بيانات أكثر تقدماً وتوفر أداءً أسرع بكثير (لوغاريتمي <code className="font-mono text-[10px] mx-1">O(log N)</code> لكل من التحديث والاستعلام).
+                                </div>
+
+                                <div className="flex flex-col md:flex-row gap-4 mt-4">
+                                    <div className="flex-1 bg-[#1e1e1e] text-slate-300 p-3 rounded border border-slate-700 font-mono text-xs" dir="ltr">
+                                        <div className="text-slate-400 mb-2 border-b border-slate-600 pb-1">// Example Input</div>
+                                        <div>8 4 <span className="text-slate-500 text-[10px] ml-2">// Array of 8, 4 Queries</span></div>
+                                        <div>3 2 4 5 1 1 5 3</div>
+                                        <div>2 1 4 <span className="text-slate-500 text-[10px] ml-2">// Min in range [1, 4]</span></div>
+                                        <div>2 5 6 <span className="text-slate-500 text-[10px] ml-2">// Min in range [5, 6]</span></div>
+                                        <div>1 2 3 <span className="text-slate-500 text-[10px] ml-2">// Update index 2 to value 3</span></div>
+                                        <div>2 1 4 <span className="text-slate-500 text-[10px] ml-2">// Min in range [1, 4] again</span></div>
+                                    </div>
+                                    <div className="flex-1 bg-[#1e1e1e] text-slate-300 p-3 rounded border border-slate-700 font-mono text-xs" dir="ltr">
+                                        <div className="text-slate-400 mb-2 border-b border-slate-600 pb-1">// Expected Output</div>
+                                        <div className="text-emerald-400">2</div>
+                                        <div className="text-emerald-400">1</div>
+                                        <div className="text-emerald-400">3</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const renderConcept = () => (
+                <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                    <div className="max-w-4xl mx-auto w-full space-y-4">
+                        <div className="bg-white p-5 rounded border border-slate-200 shadow-sm">
+                            <h2 className="text-lg font-bold mb-4 text-indigo-800 border-b pb-2">فهم شجرة القطع (Segment Tree)</h2>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-3">
+                                    <h3 className="text-sm font-bold text-slate-700 bg-emerald-100 p-2 rounded">الفكرة الأساسية (التلخيص الهرمي)</h3>
+                                    <p className="text-xs text-slate-700 leading-relaxed">
+                                        تخيل أن المصفوفة هي قاعدة لهرم (الأوراق - Leaves). كل عنصرين متجاورين في القاعدة يقومان بتمرير "القيمة الصغرى" بينهما إلى العقدة التي فوقهما (الأب).
+                                        ثم تقوم كل عقدتين بتمرير القيمة للتي فوقهما، وهكذا حتى نصل إلى القمة (الجذر - Root) الذي سيحمل القيمة الصغرى للمصفوفة بأكملها.
+                                    </p>
+                                    <div className="bg-white border border-slate-200 p-3 rounded text-xs shadow-sm font-mono text-center">
+                                        <div className="text-indigo-600 font-bold mb-1">Root: min(left_child, right_child)</div>
+                                        هذا البناء يسمح لنا باستخراج القيمة الصغرى لأي نطاق دون قراءة كل عناصره!
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <h3 className="text-sm font-bold text-slate-700 bg-indigo-100 p-2 rounded">تمثيل الشجرة في مصفوفة أحادية</h3>
+                                    <p className="text-xs text-slate-700 leading-relaxed">
+                                        بدلاً من استخدام المؤشرات (Pointers) المعقدة، نمثل الشجرة كلها في مصفوفة واحدة ضخمة اسمها <code className="font-mono bg-white px-1 rounded border">seg</code>.
+                                        وهناك قواعد رياضية سحرية وسريعة للتحرك فيها:
+                                    </p>
+                                    <ul className="list-disc list-inside text-xs space-y-2 text-slate-600 bg-white border border-slate-200 p-3 rounded">
+                                        <li>إذا كانت العقدة في الفهرس <code className="font-mono text-indigo-700 font-bold">i</code></li>
+                                        <li>ابنها الأيسر سيكون في <code className="font-mono text-emerald-600 font-bold">2 * i</code></li>
+                                        <li>ابنها الأيمن سيكون في <code className="font-mono text-emerald-600 font-bold">2 * i + 1</code></li>
+                                        <li>للوصول للأب نقسم على 2: <code className="font-mono text-rose-600 font-bold">i / 2</code></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const renderStrategy = () => (
+                <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                    <div className="max-w-4xl mx-auto w-full space-y-6">
+                        <div className="bg-white p-6 rounded border border-slate-200 shadow-sm">
+                            <h2 className="text-lg font-bold mb-4 text-indigo-800 border-b pb-2 flex items-center gap-2">
+                                <i className="fa-solid fa-chess-knight"></i> استراتيجية الحل البرمجية
+                            </h2>
+                            <p className="text-sm text-slate-600 mb-4">يعتمد الحل المرفق على طريقة (Bottom-Up) لبناء الشجرة، وهي طريقة أنيقة جداً وقصيرة برمجياً.</p>
+                            
+                            <div className="space-y-5 text-sm text-slate-700 leading-relaxed">
+                                
+                                <div className="bg-blue-50/50 p-4 rounded border border-blue-100">
+                                    <h3 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
+                                        <span className="bg-blue-200 text-blue-800 w-6 h-6 flex items-center justify-center rounded-full text-xs">1</span>
+                                        البناء من الأسفل (Bottom-Up Build)
+                                    </h3>
+                                    <p className="mb-2 text-xs">
+                                        أولاً، نحدد حجم القاعدة <code className="font-mono bg-white px-1 border rounded mx-1">N</code> ليكون قوة للعدد 2.
+                                        ثم نضع المصفوفة الأصلية في النصف الثاني من مصفوفة الشجرة (الأوراق تبدأ من الفهرس <code className="font-mono bg-white px-1 border rounded mx-1">N</code>).
+                                        ثم نملأ النصف الأول (الآباء) بحلقة تكرار عكسية:
+                                        <code className="block mt-2 font-mono text-indigo-700 font-bold bg-white p-2 rounded border" dir="ltr">seg[i] = min(seg[i*2], seg[i*2 + 1]);</code>
+                                    </p>
+                                </div>
+
+                                <div className="bg-rose-50/50 p-4 rounded border border-rose-100">
+                                    <h3 className="font-bold text-rose-900 mb-2 flex items-center gap-2">
+                                        <span className="bg-rose-200 text-rose-800 w-6 h-6 flex items-center justify-center rounded-full text-xs">2</span>
+                                        دالة التحديث (Point Update)
+                                    </h3>
+                                    <p className="mb-2 text-xs">
+                                        عند تحديث عنصر، نحدث الورقة الخاصة به أولاً (<code className="font-mono bg-white px-1 border rounded mx-1">idx = j + N - 1</code>).
+                                        ثم نستخدم حلقة تكرار بسيطة تقسم الفهرس على 2 لتصعد إلى الآباء تباعاً، وتصلح القيمة الصغرى لكل أب حتى نصل للجذر. العملية سريعة جداً.
+                                    </p>
+                                </div>
+
+                                <div className="bg-emerald-50/50 p-4 rounded border border-emerald-100">
+                                    <h3 className="font-bold text-emerald-900 mb-2 flex items-center gap-2">
+                                        <span className="bg-emerald-200 text-emerald-800 w-6 h-6 flex items-center justify-center rounded-full text-xs">3</span>
+                                        دالة البحث المتكررة (Recursive Query)
+                                    </h3>
+                                    <p className="mb-2 text-xs">
+                                        نبدأ من الجذر، ولدينا 3 حالات عند فحص أي عقدة تمثل النطاق [l, r] مقارنة بالنطاق المطلوب [ql, qr]:
+                                    </p>
+                                    <ul className="list-disc list-inside mt-2 space-y-2 text-slate-600 text-xs">
+                                        <li><strong className="text-rose-600">لا يوجد تقاطع (Disjoint):</strong> النطاقان لا يتقاطعان. نعيد قيمة كبيرة جداً (INT_MAX) لنتجاهل هذا المسار.</li>
+                                        <li><strong className="text-emerald-600">احتواء كلي (Total Overlap):</strong> نطاق العقدة يقع بالكامل داخل المطلوب. نعيد قيمة العقدة فوراً! (هذا هو السحر الذي يوفر الوقت).</li>
+                                        <li><strong className="text-indigo-600">تقاطع جزئي (Partial Overlap):</strong> ننقسم إلى مسارين (يسار ويمين) ونجلب القيمة الصغرى منهما.</li>
+                                    </ul>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const renderVisualizer = () => {
+                const s = stepsRef.current[stepIdx].state;
+                const currentStepInfo = stepsRef.current[stepIdx];
+
+                // Coordinates for tree visualization (N=4, so 7 nodes total)
+                const NODE_COORDS = {
+                    1: { x: 200, y: 30 },   // Root
+                    2: { x: 100, y: 100 },  // L Lvl 1
+                    3: { x: 300, y: 100 },  // R Lvl 1
+                    4: { x: 50, y: 180 },   // Leaf 1
+                    5: { x: 150, y: 180 },  // Leaf 2
+                    6: { x: 250, y: 180 },  // Leaf 3
+                    7: { x: 350, y: 180 }   // Leaf 4
+                };
+
+                return (
+                    <div className="flex flex-col lg:flex-row h-full bg-slate-100 fade-in overflow-hidden">
+                        
+                        {/* Control Panel */}
+                        <div className="w-full lg:w-1/3 bg-white border-l border-slate-200 shadow-lg z-20 flex flex-col">
+                            <div className="p-3 bg-slate-800 text-white border-b border-slate-700">
+                                <h2 className="text-sm font-bold">التتبع البصري (Segment Tree)</h2>
+                                <p className="text-[10px] text-slate-400">انقر لمشاهدة بناء وتحديث الشجرة.</p>
+                            </div>
+                            
+                            <div className="p-4 flex-1 overflow-y-auto space-y-4">
+                                <div className="bg-slate-50 border border-slate-200 p-3 rounded relative shadow-sm">
+                                    <h3 className="font-bold text-xs text-slate-800 mb-1 border-b border-slate-200 pb-1 flex items-center gap-2">
+                                        <i className="fa-solid fa-check-circle text-emerald-600"></i> ماذا حدث للتو؟
+                                    </h3>
+                                    <p className="text-xs text-slate-700 leading-relaxed mt-2">{currentStepInfo.happened}</p>
+                                </div>
+
+                                <div className="bg-indigo-50 border border-indigo-200 p-3 rounded relative shadow-sm">
+                                    <h3 className="font-bold text-xs text-indigo-900 mb-1 border-b border-indigo-200 pb-1 flex items-center gap-2">
+                                        <i className="fa-solid fa-arrow-left text-indigo-600"></i> ماذا سيحدث الآن؟
+                                    </h3>
+                                    <p className="text-xs text-indigo-800 leading-relaxed mt-2">{currentStepInfo.next}</p>
+                                </div>
+                            </div>
+
+                            <div className="p-4 bg-slate-50 border-t border-slate-200">
+                                <button 
+                                    onClick={() => setStepIdx(Math.min(stepsRef.current.length - 1, stepIdx + 1))} 
+                                    disabled={stepIdx === stepsRef.current.length - 1}
+                                    className="w-full py-3 rounded bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-bold text-sm shadow transition flex items-center justify-center gap-2"
+                                >
+                                    {stepIdx === stepsRef.current.length - 1 ? 'انتهى التنفيذ' : 'تنفيذ الخطوة التالية'}
+                                    {stepIdx < stepsRef.current.length - 1 && <i className="fa-solid fa-play text-xs"></i>}
+                                </button>
+                                
+                                <div className="flex justify-between mt-3">
+                                    <button onClick={() => setStepIdx(0)} disabled={stepIdx === 0} className="text-xs text-slate-500 hover:text-slate-800 transition disabled:opacity-50 flex items-center gap-1">
+                                        <i className="fa-solid fa-rotate-right"></i> إعادة من البداية
+                                    </button>
+                                    <span className="text-xs font-mono text-slate-400 bg-slate-200 px-2 py-0.5 rounded">
+                                        خطوة {stepIdx + 1} / {stepsRef.current.length}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Visual Area */}
+                        <div className="flex-1 p-4 flex flex-col items-center justify-start bg-slate-100 overflow-y-auto relative" dir="ltr">
+                            
+                            {/* Current Action Indicator */}
+                            {s.info && s.info.type && (
+                                <div className="w-full max-w-lg mb-4 bg-slate-800 text-white p-3 rounded shadow flex items-center gap-3 fade-in">
+                                    <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${s.info.type === 'Update' ? 'bg-rose-500' : s.info.type === 'Query' ? 'bg-emerald-500' : 'bg-indigo-500'}`}>
+                                        {s.info.type}
+                                    </span>
+                                    <span className="font-mono text-sm">{s.info.text}</span>
+                                </div>
+                            )}
+
+                            {/* Tree Visualizer */}
+                            <div className="relative w-full max-w-lg h-64 bg-white rounded shadow border border-slate-200 mb-6 flex justify-center items-center">
+                                <svg className="absolute w-full h-full inset-0 pointer-events-none">
+                                    {/* Draw edges */}
+                                    {[2, 3, 4, 5, 6, 7].map(id => {
+                                        const parent = Math.floor(id / 2);
+                                        const isActiveLine = s.hlLines.some(line => (line[0] === parent && line[1] === id) || (line[1] === parent && line[0] === id));
+                                        
+                                        return (
+                                            <line 
+                                                key={`line-${id}`}
+                                                x1={NODE_COORDS[parent].x} y1={NODE_COORDS[parent].y} 
+                                                x2={NODE_COORDS[id].x} y2={NODE_COORDS[id].y} 
+                                                className={`tree-line ${isActiveLine ? 'active' : ''}`}
+                                            />
+                                        )
+                                    })}
+                                </svg>
+
+                                {/* Draw nodes */}
+                                {Object.keys(NODE_COORDS).map(key => {
+                                    const id = parseInt(key);
+                                    const isLeaf = id >= 4;
+                                    const isHighlighted = s.hlNodes.includes(id);
+                                    const val = s.seg[id];
+                                    
+                                    let bgClasses = "bg-white border-slate-300 text-slate-500";
+                                    if (val !== '∞') bgClasses = isLeaf ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-indigo-50 border-indigo-200 text-indigo-700";
+                                    if (isHighlighted) bgClasses = "bg-yellow-400 border-yellow-500 text-yellow-900 shadow-lg scale-125 z-10 font-bold pop-in";
+
+                                    // Annotations (ranges covered by nodes)
+                                    let rangeTxt = "";
+                                    if(id===1) rangeTxt="[1,4]";
+                                    else if(id===2) rangeTxt="[1,2]";
+                                    else if(id===3) rangeTxt="[3,4]";
+
+                                    return (
+                                        <div 
+                                            key={`node-${id}`} 
+                                            className={`absolute flex flex-col items-center justify-center w-12 h-12 rounded-full border-2 transition-all duration-300 font-mono text-sm ${bgClasses}`}
+                                            style={{ left: NODE_COORDS[id].x - 24, top: NODE_COORDS[id].y - 24 }}
+                                        >
+                                            {val}
+                                            <span className="absolute -top-4 text-[9px] text-slate-400 bg-white/80 px-1 rounded">{id}</span>
+                                            {rangeTxt && <span className="absolute -bottom-4 text-[9px] text-slate-400 bg-white/80 px-1 rounded">{rangeTxt}</span>}
+                                        </div>
+                                    )
+                                })}
+                            </div>
+
+                        </div>
+                    </div>
+                );
+            };
+
+            const renderCode = () => {
+                const codeSegments = [
+                    {
+                        title: "1. الإعدادات وحساب الحجم (N)",
+                        desc: "نعرف MAXN كأقصى عدد للعناصر. ونستخدم دالة مدمجة معمارية لحساب القوة التالية للعدد 2 (هذا يسهل جداً بناء الشجرة من الأسفل). مصفوفة seg حجمها 2*N (نصف للأوراق ونصف للآباء).",
+                        code: `#include <iostream>\n#include <climits>\nusing namespace std;\n\nconst int MAXN = 200000;\n// Calculate the next power of 2\nconst int N = (1 << (32 - __builtin_clz(MAXN - 1)));\nint seg[N * 2];\nint a[MAXN];`
+                    },
+                    {
+                        title: "2. دالة التحديث (Point Update)",
+                        desc: "عند تغيير a[j] إلى v: نحدد فهرس الورقة في الشجرة (idx = j + N - 1). نحدث الورقة. ثم باستخدام حلقة تدور (i /= 2) نصعد للأب، ونحسب قيمته الصغرى من ابنيه (i*2 و i*2+1) حتى نصل للجذر.",
+                        code: `void pointUpdate(int j, int v) {\n    a[j - 1] = v;\n    int idx = j + N - 1;\n    seg[idx] = v;\n    \n    // Ascend to the root\n    for (int i = idx/2; i > 0; i /= 2) {\n        seg[i] = min(seg[i * 2] , seg[i * 2 + 1]);\n    }\n}`
+                    },
+                    {
+                        title: "3. دالة الاستعلام (Range Query)",
+                        desc: "دالة متكررة (Recursive) تبدأ من الجذر. [l, r] هو نطاق العقدة الحالية، و [ql, qr] هو النطاق المطلوب. لدينا 3 حالات:",
+                        code: `int query(int id, int l, int r, int ql, int qr) {`
+                    },
+                    {
+                        title: "أ. خارج النطاق (Disjoint)",
+                        desc: "إذا كان نطاق العقدة خارج النطاق المطلوب تماماً، نرجع قيمة كبيرة لنتجاهلها.",
+                        code: `    if (ql > r || l > qr) {\n        return INT_MAX; \n    }`
+                    },
+                    {
+                        title: "ب. داخل النطاق (Total Overlap)",
+                        desc: "إذا كان نطاق العقدة يقع بالكامل داخل النطاق المطلوب، نرجع قيمة العقدة فوراً دون النزول للأوراق! (السرعة تكمن هنا).",
+                        code: `    if (ql <= l && r <= qr) {\n        return seg[id];\n    }`
+                    },
+                    {
+                        title: "ج. تقاطع جزئي (Partial Overlap)",
+                        desc: "إذا كان هناك تقاطع جزئي، نقسم النطاق نصفين، ونستدعي الدالة يميناً ويساراً، ثم نعيد القيمة الصغرى منهما.",
+                        code: `    int m = (l + r)/2;\n    return min(query(id * 2, l, m, ql, qr) , \n               query(id * 2 + 1, m + 1, r, ql, qr));\n}`
+                    },
+                    {
+                        title: "4. الدالة الرئيسية (البناء الأولي)",
+                        desc: "نقرأ المدخلات. نضع العناصر الأصلية كأوراق للشجرة (بدءاً من الفهرس N). ثم نملأ الأوراق المتبقية الوهمية بـ INT_MAX.",
+                        code: `int main() {\n    int n, q;\n    cin >> n >> q;\n    for (int i = 0; i < n; i++) {\n        cin >> a[i];\n    }\n    \n    // Insert leaves\n    for (int i = 0 ; i < n; i++) {\n        seg[i + N] = a[i];\n    }\n    for (int i = n + N; i < 2*N; i++) {\n        seg[i] = INT_MAX; \n    }`
+                    },
+                    {
+                        title: "5. إكمال بناء الشجرة والتعامل مع الاستعلامات",
+                        desc: "نبني الآباء من الأسفل للأعلى (من N-1 نزولاً إلى 1). ثم نلتقي الاستعلامات: النوع 1 ننادي pointUpdate، والنوع 2 ننادي query بدءاً من الجذر (1) الذي يغطي النطاق [1, N].",
+                        code: `    // Build parents\n    for (int i = N - 1; i > 0; i--) {\n        seg[i] = min(seg[i * 2] , seg[i * 2 + 1]);\n    }\n\n    while (q--) {\n        int type;\n        cin >> type;\n        if (type == 1) {\n            int k, u;\n            cin >> k >> u;\n            pointUpdate(k, u);\n        } else {\n            int ql, qr;\n            cin >> ql >> qr;\n            cout << query(1, 1, N, ql, qr) << "\\n";\n        }\n    }\n}`
+                    }
+                ];
+
+                return (
+                    <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                        <div className="max-w-6xl mx-auto w-full space-y-4">
+                            <div className="bg-white p-4 rounded border border-slate-200 shadow-sm text-center">
+                                <h2 className="text-lg font-bold text-slate-800">تفصيل الكود الأصلي والمجزء</h2>
+                                <p className="text-xs text-slate-600 mt-1">
+                                    الجهة اليسرى تحتوي على الكود الأصلي كما هو. الجهة اليمنى تشرح للطالب وظيفة كل مقطع برمجياً في سياق الخوارزمية.
+                                </p>
+                            </div>
+
+                            <div className="space-y-4">
+                                {codeSegments.map((seg, idx) => (
+                                    <div key={idx} className="flex flex-col md:flex-row bg-white rounded shadow-sm border border-slate-200 overflow-hidden">
+                                        
+                                        <div className="w-full md:w-5/12 bg-slate-50 p-4 border-b md:border-b-0 md:border-l border-slate-200 flex flex-col justify-center">
+                                            <h3 className="font-bold text-indigo-800 mb-2 text-sm">{seg.title}</h3>
+                                            <p className="text-xs text-slate-700 leading-relaxed">{seg.desc}</p>
+                                        </div>
+                                        
+                                        <div className="w-full md:w-7/12 bg-[#1e1e1e] p-4 overflow-x-auto" dir="ltr">
+                                            <pre className="m-0">
+                                                <code className="text-xs font-mono text-[#d4d4d4] whitespace-pre" style={{lineHeight: '1.6'}}>
+                                                    {seg.code}
+                                                </code>
+                                            </pre>
+                                        </div>
+
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div className="flex flex-col h-full bg-slate-200">
+                    <header className="bg-white px-4 py-3 shadow-sm z-30 flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-200">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-indigo-700 rounded flex items-center justify-center text-white text-sm shadow">
+                                <i className="fa-solid fa-sitemap"></i>
+                            </div>
+                            <div>
+                                <h1 className="text-sm font-bold text-slate-800 leading-tight">Dynamic Range Minimum</h1>
+                                <p className="text-slate-500 text-[10px] font-semibold">Segment Tree Technique (O(log N))</p>
+                            </div>
+                        </div>
+                        
+                        <div className="flex bg-slate-100 p-1 rounded border border-slate-200 gap-1 overflow-x-auto text-xs shadow-inner">
+                            {['problem', 'concept', 'strategy', 'visualizer', 'code'].map((tabKey, idx) => {
+                                const labels = ["1. المسألة الأصلية", "2. فهم Segment Tree", "3. استراتيجية الحل", "4. التتبع البصري", "5. تفصيل الكود"];
+                                return (
+                                    <button 
+                                        key={tabKey}
+                                        onClick={() => setActiveTab(tabKey)} 
+                                        className={`px-3 py-1.5 rounded font-bold transition-all whitespace-nowrap ${activeTab === tabKey ? 'bg-white text-indigo-800 shadow border border-slate-200' : 'text-slate-600 hover:bg-slate-200'}`}
+                                    >
+                                        {labels[idx]}
+                                    </button>
+                                )
+                            })}
+                        </div>
+                    </header>
+
+                    <main className="flex-1 overflow-hidden">
+                        {activeTab === 'problem' && renderProblem()}
+                        {activeTab === 'concept' && renderConcept()}
+                        {activeTab === 'strategy' && renderStrategy()}
+                        {activeTab === 'visualizer' && renderVisualizer()}
+                        {activeTab === 'code' && renderCode()}
+                    </main>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
