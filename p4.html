@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شرح خوارزمية AtotheNmodM</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Cairo', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        body { background-color: #f8fafc; margin: 0; height: 100vh; overflow: hidden; font-size: 14px; }
+        #root { height: 100%; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .pop-in { animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useRef } = React;
+
+        function generateSteps() {
+            let steps = [];
+            // Example: A = 50, N = 2, M = 10
+            const A_INIT = 50;
+            const N_VAL = 2;
+            const M_INIT = 10;
+
+            const cloneState = (phase, m, a, p = null, e = 0, v = 0, isPass = null) => ({
+                phase, m, a, p, e, v, isPass
+            });
+
+            // 1. Initial State
+            steps.push({
+                happened: `بدأ البرنامج. لدينا الأساس A = ${A_INIT}، الأس N = ${N_VAL}، والمقسوم عليه M = ${M_INIT}.`,
+                next: `المطلوب معرفة هل ${A_INIT}^${N_VAL} يقبل القسمة على ${M_INIT}؟ سنبدأ بتحليل M إلى عوامله الأولية.`,
+                state: cloneState('start', M_INIT, A_INIT)
+            });
+
+            // 2. Prime factor 2 of M
+            steps.push({
+                happened: `نبدأ البحث عن العوامل الأولية للرقم ${M_INIT}. الرقم يقبل القسمة على (2). إذن العامل الأولي p = 2.`,
+                next: `سنقوم بقسمة M على 2 لمعرفة عدد مرات تكراره (الأس e).`,
+                state: cloneState('factor_m', M_INIT, A_INIT, 2, 0)
+            });
+
+            steps.push({
+                happened: `${M_INIT} ÷ 2 = 5. العداد e أصبح 1. الرقم المتبقي 5 لا يقبل القسمة على 2.`,
+                next: `الآن نبحث عن نفس العامل الأولي (p = 2) في الأساس A (${A_INIT}) لنعرف عدد مرات تكراره (v).`,
+                state: cloneState('factor_a', 5, A_INIT, 2, 1, 0)
+            });
+
+            steps.push({
+                happened: `${A_INIT} ÷ 2 = 25. العداد v أصبح 1. الرقم 25 لا يقبل القسمة على 2. إذن A يمتلك العامل 2 مرة واحدة.`,
+                next: `نطبق قانون الأسس: بما أن A أس N، فإن قوة العامل 2 ستصبح (v * N). سنقارنها بـ e.`,
+                state: cloneState('check', 5, 25, 2, 1, 1)
+            });
+
+            // Check condition for p=2: v*N >= e => 1*2 >= 1 => 2 >= 1
+            steps.push({
+                happened: `المعادلة: (v × N) يجب أن تكون أكبر أو تساوي e. أي (1 × 2) >= 1. النتيجة: 2 >= 1. شرط محقق!`,
+                next: `اجتزنا العامل الأول بنجاح. نعود لـ M المتبقي (5) لنبحث عن عامل أولي جديد.`,
+                state: cloneState('pass', 5, 25, 2, 1, 1, true)
+            });
+
+            // 3. Prime factor 5 of M
+            steps.push({
+                happened: `الرقم المتبقي من M هو 5. وهو أكبر من 1، مما يعني أنه عامل أولي بحد ذاته. إذن p = 5 و e = 1.`,
+                next: `سنبحث عن العامل الأولي (5) في الأساس الأصلي A (${A_INIT}).`,
+                state: cloneState('factor_a2', 1, A_INIT, 5, 1, 0)
+            });
+
+            steps.push({
+                happened: `بقسمة ${A_INIT} على 5 مرتين، نصل إلى 2. إذن العامل 5 يتكرر مرتين في A (العداد v = 2).`,
+                next: `نطبق قانون الأسس مجدداً للمقارنة: هل (v × N) >= e ؟`,
+                state: cloneState('check2', 1, 2, 5, 1, 2)
+            });
+
+            // Check condition for p=5: v*N >= e => 2*2 >= 1 => 4 >= 1
+            steps.push({
+                happened: `المعادلة: (2 × 2) >= 1. النتيجة: 4 >= 1. شرط محقق!`,
+                next: `تم فحص جميع العوامل الأولية لـ M بنجاح، وتوفرت جميعها بكميات كافية في A^N.`,
+                state: cloneState('pass2', 1, 2, 5, 1, 2, true)
+            });
+
+            // 4. Final Result
+            steps.push({
+                happened: `بما أن جميع الشروط تحققت، فهذا يعني رياضياً أن 10 يقسم 2500 بدون باقٍ. البرنامج يطبع YES.`,
+                next: `انتهى التتبع البصري. يمكنك إعادة تشغيله متى شئت.`,
+                state: cloneState('done', 1, 2, null, 0, 0, true)
+            });
+
+            return steps;
+        }
+
+        function App() {
+            const [activeTab, setActiveTab] = useState('problem'); 
+            const stepsRef = useRef(generateSteps());
+            const [stepIdx, setStepIdx] = useState(0);
+
+            const renderProblem = () => (
+                <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                    <div className="max-w-4xl mx-auto w-full space-y-4">
+                        <div className="bg-white p-5 rounded border border-slate-200 shadow-sm">
+                            <h2 className="text-lg font-bold mb-4 text-indigo-800 border-b pb-2">نص المسألة (AtotheNmodM)</h2>
+                            
+                            <div className="text-sm space-y-4 text-slate-700 leading-relaxed">
+                                <p className="font-semibold bg-slate-100 p-4 rounded border border-slate-200 shadow-inner">
+                                    لديك الأعداد الطبيعية <span dir="ltr" className="font-mono font-bold text-indigo-700 mx-1">A, N, M</span>.<br/>
+                                    حدّد ما إذا كان العدد <span dir="ltr" className="font-mono font-bold text-indigo-700 mx-1">A<sup className="text-xs">N</sup></span> يقبل القسمة على <span dir="ltr" className="font-mono font-bold text-indigo-700 mx-1">M</span> بدون باقٍ.<br/><br/>
+                                    <span className="text-rose-600 font-bold"><i className="fa-solid fa-triangle-exclamation mr-1"></i> ملاحظة هامة:</span> 
+                                    انتبه إلى أن العدد <span dir="ltr" className="font-mono mx-1">A<sup className="text-[10px]">N</sup></span> قد يكون ضخماً جداً بشكل فلكي ولا يمكن تخزينه في الذاكرة. يُنصح بتحليل العددين <span dir="ltr" className="font-mono mx-1">A</span> و <span dir="ltr" className="font-mono mx-1">M</span> إلى عواملهما الأولية (Prime Factors).
+                                </p>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                    <div className="bg-slate-50 p-4 rounded border border-slate-200">
+                                        <h3 className="font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">المدخلات (Input)</h3>
+                                        <ul className="list-disc list-inside space-y-1 text-xs">
+                                            <li>سطر واحد يحتوي على الأعداد <code className="font-mono">A</code> ثم <code className="font-mono">N</code> ثم <code className="font-mono">M</code> مفصولة بمسافات.</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div className="bg-slate-50 p-4 rounded border border-slate-200">
+                                        <h3 className="font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">المخرجات (Output)</h3>
+                                        <ul className="list-disc list-inside space-y-1 text-xs">
+                                            <li>اطبع <code className="font-mono">YES</code> إذا كان يقبل القسمة.</li>
+                                            <li>وإلا اطبع <code className="font-mono">NO</code>.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col md:flex-row gap-4 mt-4">
+                                    <div className="flex-1 bg-[#1e1e1e] text-slate-300 p-3 rounded border border-slate-700 font-mono text-xs" dir="ltr">
+                                        <div className="text-slate-400 mb-2 border-b border-slate-600 pb-1">// Example Input</div>
+                                        <div>50 2 10 <span className="text-slate-500 text-[10px] ml-2">// A=50, N=2, M=10</span></div>
+                                    </div>
+                                    <div className="flex-1 bg-[#1e1e1e] text-slate-300 p-3 rounded border border-slate-700 font-mono text-xs" dir="ltr">
+                                        <div className="text-slate-400 mb-2 border-b border-slate-600 pb-1">// Expected Output</div>
+                                        <div className="text-emerald-400 font-bold">YES</div>
+                                        <div className="mt-2 text-slate-500 text-[10px] whitespace-pre-wrap">
+                                            // 50^2 = 2500.
+                                            // 2500 / 10 = 250. (No remainder).
+                                            // Divisible, so YES.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const renderConcept = () => (
+                <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                    <div className="max-w-4xl mx-auto w-full space-y-4">
+                        <div className="bg-white p-5 rounded border border-slate-200 shadow-sm">
+                            <h2 className="text-lg font-bold mb-4 text-indigo-800 border-b pb-2">التفسير الرياضي (لماذا وكيف؟)</h2>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-3">
+                                    <h3 className="text-sm font-bold text-slate-700 bg-rose-100 p-2 rounded">مشكلة الأرقام الفلكية</h3>
+                                    <p className="text-xs text-slate-700 leading-relaxed">
+                                        إذا كان <code dir="ltr" className="font-mono mx-1">A = 1000</code> و <code dir="ltr" className="font-mono mx-1">N = 1000</code>، فإن <code dir="ltr" className="font-mono mx-1">A<sup className="text-[10px]">N</sup></code> هو رقم يتكون من 3000 صفر! مستحيل تخزينه في أي متغير برمجي عادي كـ <code>long long</code>. لذلك، يجب ألا نحسب القيمة النهائية أبداً، بل نعتمد على <strong>التحليل للعوامل الأولية</strong>.
+                                    </p>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <h3 className="text-sm font-bold text-slate-700 bg-emerald-100 p-2 rounded">قاعدة قابلية القسمة (Divisibility Rule)</h3>
+                                    <p className="text-xs text-slate-700 leading-relaxed">
+                                        لكي يقبل عدد ضخم (X) القسمة على عدد أصغر (Y)، يجب أن يحتوي (X) في تركيبته على <strong>كل العوامل الأولية</strong> الموجودة في (Y)، وبكميات (أسس) تساوي أو تزيد عنها.
+                                    </p>
+                                    <div className="bg-white border border-slate-200 p-3 rounded text-xs font-mono shadow-sm" dir="ltr">
+                                        <div className="text-indigo-800 mb-1 font-bold">M = p<sup className="text-emerald-600">e</sup></div>
+                                        <div className="text-indigo-800 font-bold mb-2">A<sup className="text-rose-600">N</sup> = p<sup className="text-emerald-600">v * N</sup></div>
+                                        <div className="text-slate-600 border-t border-slate-100 pt-2">Condition to divide: <span className="font-bold text-slate-800 bg-slate-100 px-1 rounded">v * N &ge; e</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const renderStrategy = () => (
+                <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                    <div className="max-w-4xl mx-auto w-full space-y-6">
+                        <div className="bg-white p-6 rounded border border-slate-200 shadow-sm">
+                            <h2 className="text-lg font-bold mb-4 text-indigo-800 border-b pb-2 flex items-center gap-2">
+                                <i className="fa-solid fa-chess-knight"></i> استراتيجية الحل البرمجية
+                            </h2>
+                            <p className="text-sm text-slate-600 mb-6">الحل ينقسم إلى تفكيك العدد $M$، ثم البحث عن مكوناته داخل $A$.</p>
+                            
+                            <div className="space-y-5 text-sm text-slate-700 leading-relaxed">
+                                
+                                <div className="bg-blue-50/50 p-4 rounded border border-blue-100 relative overflow-hidden">
+                                    <div className="absolute top-0 left-0 w-1 h-full bg-blue-400"></div>
+                                    <h3 className="font-bold text-blue-900 mb-2">1. تحليل المقام (M)</h3>
+                                    <p className="mb-2 text-xs">نبدأ حلقة تكرار تبحث عن العوامل الأولية <code dir="ltr" className="font-mono mx-1">p</code> للعدد <code dir="ltr" className="font-mono mx-1">M</code>. عند إيجاد عامل، نقسم <code dir="ltr" className="font-mono mx-1">M</code> عليه مراراً ونعد مرات القسمة لنجد القوة (الأس) <code dir="ltr" className="font-mono mx-1">e</code>.</p>
+                                </div>
+
+                                <div className="bg-purple-50/50 p-4 rounded border border-purple-100 relative overflow-hidden">
+                                    <div className="absolute top-0 left-0 w-1 h-full bg-purple-400"></div>
+                                    <h3 className="font-bold text-purple-900 mb-2">2. البحث في الأساس (A)</h3>
+                                    <p className="mb-2 text-xs">بنفس اللحظة، نمسك نفس العامل الأولي <code dir="ltr" className="font-mono mx-1">p</code>، ونقسم الأساس <code dir="ltr" className="font-mono mx-1">A</code> عليه لنجد كم مرة يتكرر داخله، ونسمي هذا العداد <code dir="ltr" className="font-mono mx-1">v</code>. إذا كان <code dir="ltr" className="font-mono mx-1">v = 0</code> فهذا يعني أن $M$ يملك عاملاً لا يملكه $A$ أبداً، وبالتالي لا يقبل القسمة (نطبع NO).</p>
+                                </div>
+
+                                <div className="bg-rose-50/50 p-4 rounded border border-rose-100 relative overflow-hidden">
+                                    <div className="absolute top-0 left-0 w-1 h-full bg-rose-400"></div>
+                                    <h3 className="font-bold text-rose-900 mb-2">3. خدعة السعة (Overflow Prevention)</h3>
+                                    <p className="mb-2 text-xs">بدل أن نضرب <code dir="ltr" className="font-mono mx-1">v * N</code> ثم نقارنها بـ <code dir="ltr" className="font-mono mx-1">e</code> (مما قد يسبب Overflow إذا كانت القيم ضخمة)، نقوم بعملية رياضية عكسية: نقسم <code dir="ltr" className="font-mono mx-1">e / v</code> ونجبر الكسر للأعلى (Ceiling). إذا كان <code dir="ltr" className="font-mono mx-1">N &lt; ceil(e / v)</code>، فالقسمة غير ممكنة ونطبع NO.</p>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const renderVisualizer = () => {
+                const s = stepsRef.current[stepIdx].state;
+                const currentStepInfo = stepsRef.current[stepIdx];
+
+                return (
+                    <div className="flex flex-col lg:flex-row h-full bg-slate-100 fade-in overflow-hidden">
+                        
+                        {/* Control Panel */}
+                        <div className="w-full lg:w-1/3 bg-white border-l border-slate-200 shadow-lg z-20 flex flex-col">
+                            <div className="p-3 bg-slate-800 text-white border-b border-slate-700">
+                                <h2 className="text-sm font-bold">التتبع البصري (Factorization)</h2>
+                                <p className="text-[10px] text-slate-400">مثال: A=50, N=2, M=10</p>
+                            </div>
+                            
+                            <div className="p-4 flex-1 overflow-y-auto space-y-4">
+                                <div className="bg-slate-50 border border-slate-200 p-3 rounded relative shadow-sm">
+                                    <h3 className="font-bold text-xs text-slate-800 mb-1 border-b border-slate-200 pb-1 flex items-center gap-2">
+                                        <i className="fa-solid fa-check-circle text-emerald-600"></i> ماذا حدث للتو؟
+                                    </h3>
+                                    <p className="text-xs text-slate-700 leading-relaxed mt-2">{currentStepInfo.happened}</p>
+                                </div>
+
+                                <div className="bg-indigo-50 border border-indigo-200 p-3 rounded relative shadow-sm">
+                                    <h3 className="font-bold text-xs text-indigo-900 mb-1 border-b border-indigo-200 pb-1 flex items-center gap-2">
+                                        <i className="fa-solid fa-arrow-left text-indigo-600"></i> ماذا سيحدث الآن؟
+                                    </h3>
+                                    <p className="text-xs text-indigo-800 leading-relaxed mt-2">{currentStepInfo.next}</p>
+                                </div>
+                            </div>
+
+                            <div className="p-4 bg-slate-50 border-t border-slate-200">
+                                <button 
+                                    onClick={() => setStepIdx(Math.min(stepsRef.current.length - 1, stepIdx + 1))} 
+                                    disabled={stepIdx === stepsRef.current.length - 1}
+                                    className="w-full py-3 rounded bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-bold text-sm shadow transition flex items-center justify-center gap-2"
+                                >
+                                    {stepIdx === stepsRef.current.length - 1 ? 'انتهى التنفيذ' : 'تنفيذ الخطوة التالية'}
+                                    {stepIdx < stepsRef.current.length - 1 && <i className="fa-solid fa-play text-xs"></i>}
+                                </button>
+                                
+                                <div className="flex justify-between mt-3">
+                                    <button onClick={() => setStepIdx(0)} disabled={stepIdx === 0} className="text-xs text-slate-500 hover:text-slate-800 transition disabled:opacity-50 flex items-center gap-1">
+                                        <i className="fa-solid fa-rotate-right"></i> إعادة من البداية
+                                    </button>
+                                    <span className="text-xs font-mono text-slate-400 bg-slate-200 px-2 py-0.5 rounded">
+                                        خطوة {stepIdx + 1} / {stepsRef.current.length}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Visual Area */}
+                        <div className="flex-1 p-4 flex flex-col items-center justify-start bg-slate-100 overflow-y-auto relative" dir="ltr">
+                            
+                            {/* Globals */}
+                            <div className="w-full max-w-lg flex gap-4 mb-6 mt-2">
+                                <div className="flex-1 bg-white p-3 rounded shadow-sm border border-slate-200 text-center">
+                                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Base (A)</div>
+                                    <div className="text-2xl font-mono text-indigo-700 font-black">50</div>
+                                </div>
+                                <div className="flex-1 bg-white p-3 rounded shadow-sm border border-slate-200 text-center">
+                                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Exponent (N)</div>
+                                    <div className="text-2xl font-mono text-indigo-700 font-black">2</div>
+                                </div>
+                                <div className="flex-1 bg-slate-800 p-3 rounded shadow-sm border border-slate-700 text-center">
+                                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Divisor (M)</div>
+                                    <div className="text-2xl font-mono text-emerald-400 font-black">10</div>
+                                </div>
+                            </div>
+
+                            {/* Factorization Laboratory */}
+                            {s.phase !== 'start' && s.phase !== 'done' && (
+                                <div className="w-full max-w-lg bg-white p-5 rounded shadow-lg border border-slate-200 fade-in relative overflow-hidden">
+                                    
+                                    <div className="absolute top-0 right-0 bg-yellow-400 text-yellow-900 text-[10px] font-bold px-3 py-1 rounded-bl shadow-sm">
+                                        Current Prime Factor: p = {s.p}
+                                    </div>
+                                    
+                                    <div className="mt-4 flex gap-6">
+                                        {/* M processing */}
+                                        <div className="flex-1">
+                                            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 border-b pb-1 text-center">M (Denominator)</h4>
+                                            <div className="flex flex-col items-center gap-2">
+                                                <div className="text-sm font-mono bg-slate-50 px-3 py-1 rounded border">Rem M: <span className="font-bold text-rose-600">{s.m}</span></div>
+                                                <div className={`text-sm font-mono px-3 py-1 rounded border transition-colors ${s.phase === 'factor_m' ? 'bg-indigo-100 border-indigo-300 font-bold' : 'bg-slate-50 border-slate-200'}`}>
+                                                    Exponent (e) = <span className="text-indigo-700">{s.e}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* A processing */}
+                                        <div className="flex-1">
+                                            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 border-b pb-1 text-center">A (Numerator Base)</h4>
+                                            <div className="flex flex-col items-center gap-2">
+                                                <div className="text-sm font-mono bg-slate-50 px-3 py-1 rounded border">Rem A: <span className="font-bold text-emerald-600">{s.a}</span></div>
+                                                <div className={`text-sm font-mono px-3 py-1 rounded border transition-colors ${s.phase === 'factor_a' || s.phase === 'factor_a2' ? 'bg-indigo-100 border-indigo-300 font-bold' : 'bg-slate-50 border-slate-200'}`}>
+                                                    Exponent (v) = <span className="text-indigo-700">{s.v}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Equation Check */}
+                                    <div className={`mt-6 p-4 rounded text-center border-2 transition-all ${s.isPass === true ? 'bg-emerald-50 border-emerald-400' : 'bg-slate-50 border-slate-200'}`}>
+                                        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Check Rule: v * N &ge; e</div>
+                                        <div className="text-lg font-mono font-bold text-slate-800">
+                                            {s.v} * 2 &ge; {s.e}
+                                        </div>
+                                        {s.isPass === true && (
+                                            <div className="mt-2 text-xs font-bold text-emerald-600 pop-in"><i className="fa-solid fa-check-circle mr-1"></i> Condition Satisfied!</div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Final Answer */}
+                            {s.phase === 'done' && (
+                                <div className="w-full max-w-lg mt-6 bg-emerald-500 text-white p-6 rounded-lg shadow-xl text-center pop-in">
+                                    <h2 className="text-2xl font-black mb-2"><i className="fa-solid fa-check-double mr-2"></i>YES</h2>
+                                    <p className="text-sm font-medium text-emerald-100">All prime factors of M exist in A^N with sufficient quantities.</p>
+                                </div>
+                            )}
+
+                        </div>
+                    </div>
+                );
+            };
+
+            const renderCode = () => {
+                const codeSegments = [
+                    {
+                        title: "1. الدالة المساعدة (Ceil Div)",
+                        desc: "هذه الدالة مفيدة جداً لتجنب مشاكل الأرقام العشرية والكسور في C++. تقوم بقسمة `a` على `b` وتجبر الناتج للأعلى (Ceiling) باستخدام عمليات صحيحة 100%.",
+                        code: `#include <iostream>\nusing namespace std;\n\nlong long ceil_div(long long a, long long b) {\n    return (a + b - 1) / b;\n}`
+                    },
+                    {
+                        title: "2. نقطة البداية (Main) والحالة السهلة",
+                        desc: "نقرأ الأرقام A و N و M كأرقام ضخمة `long long`. الحالة البديهية الأولى: إذا كان M يساوي 1، فأي رقم في العالم يقبل القسمة على 1، فنطبع YES فوراً.",
+                        code: `int main() {\n    long long A, N, M;\n    cin >> A >> N >> M;\n    if (M == 1) {\n        cout << "YES\\n";\n        return 0;\n    }\n    long long m = M;`
+                    },
+                    {
+                        title: "3. استخراج العوامل الأولية من M",
+                        desc: "نستخدم حلقة تكرار تبدأ من 2 وتقف عند جذر العدد (p*p <= m). عندما نجد عاملاً `p` يقسم `m`، ندخل في حلقة داخلية لنقسم عليه مراراً ونعد التكرارات ونحفظها في `e`.",
+                        code: `    // Factorize M: m = product p^e\n    for (long long p = 2; p * p <= m; ++p) {\n        if (m % p != 0) \n            continue;\n        long long e = 0;\n        while (m % p == 0) {\n            m /= p;\n            e++;\n        }`
+                    },
+                    {
+                        title: "4. البحث عن العامل في الأساس A",
+                        desc: "في نفس اللحظة التي نكتشف فيها عاملاً أولياً لـ M، نختبر كم مرة يتكرر في A (ونحفظه في v). إذا كان v = 0، فهذا يعني أن A يفتقر تماماً لهذا العامل، فنطبع NO ونتوقف.",
+                        code: `        // Compute v_p(A)\n        long long v = 0;\n        long long tempA = A;\n        while (tempA % p == 0) {\n            tempA /= p;\n            v++;\n        }\n        if (v == 0) {\n            cout << "NO\\n";\n            return 0;\n        }`
+                    },
+                    {
+                        title: "5. حماية من تجاوز السعة (Overflow)",
+                        desc: "القاعدة تقول يجب أن يكون (v * N >= e). لكن لأن N قد يكون ضخماً جداً، الضرب قد يسبب Overflow. لذلك نعكس المعادلة ونستخدم القسمة الآمنة: يجب أن يكون N >= ceil(e / v). إذا لم يتحقق الشرط، فالقسمة مستحيلة.",
+                        code: `        // Need N * v >= e  <=>  N >= ceil(e / v)\n        long long need = ceil_div(e, v);\n        if (N < need) {\n            cout << "NO\\n";\n            return 0;\n        }\n    }`
+                    },
+                    {
+                        title: "6. العامل الأولي المتبقي",
+                        desc: "بعد انتهاء الحلقة، إذا بقي من `m` جزء أكبر من 1، فهذا يعني أنه 'عدد أولي' بذاته وأسه يساوي 1. نكرر نفس عملية الفحص له (نبحث عنه في A ونتحقق من الشرط).",
+                        code: `    // If remaining m > 1, it's a prime factor with exponent 1\n    if (m > 1) {\n        long long p = m;\n        long long e = 1;\n        long long v = 0;\n        long long tempA = A;\n        while (tempA % p == 0) {\n            tempA /= p;\n            v++;\n        }\n        if (v == 0 || N < ceil_div(e, v)) {\n            cout << "NO\\n";\n            return 0;\n        }\n    }\n    cout << "YES\\n";\n    return 0;\n}`
+                    }
+                ];
+
+                return (
+                    <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                        <div className="max-w-6xl mx-auto w-full space-y-4">
+                            <div className="bg-white p-4 rounded border border-slate-200 shadow-sm text-center">
+                                <h2 className="text-lg font-bold text-slate-800">تفصيل الكود الأصلي والمجزء</h2>
+                                <p className="text-xs text-slate-600 mt-1">
+                                    الجهة اليسرى تحتوي على الكود الأصلي (دون أي تعديل). الجهة اليمنى تشرح للطالب ما الذي يحلّه هذا الجزء بالتحديد.
+                                </p>
+                            </div>
+
+                            <div className="space-y-4">
+                                {codeSegments.map((seg, idx) => (
+                                    <div key={idx} className="flex flex-col md:flex-row bg-white rounded shadow-sm border border-slate-200 overflow-hidden">
+                                        
+                                        <div className="w-full md:w-5/12 bg-slate-50 p-4 border-b md:border-b-0 md:border-l border-slate-200 flex flex-col justify-center">
+                                            <h3 className="font-bold text-indigo-800 mb-2 text-sm">{seg.title}</h3>
+                                            <p className="text-xs text-slate-700 leading-relaxed">{seg.desc}</p>
+                                        </div>
+                                        
+                                        <div className="w-full md:w-7/12 bg-[#1e1e1e] p-4 overflow-x-auto" dir="ltr">
+                                            <pre className="m-0">
+                                                <code className="text-xs font-mono text-[#d4d4d4] whitespace-pre" style={{lineHeight: '1.6'}}>
+                                                    {seg.code}
+                                                </code>
+                                            </pre>
+                                        </div>
+
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div className="flex flex-col h-full bg-slate-200">
+                    <header className="bg-white px-4 py-3 shadow-sm z-30 flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-200">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-indigo-700 rounded flex items-center justify-center text-white text-sm shadow">
+                                <i className="fa-solid fa-divide"></i>
+                            </div>
+                            <div>
+                                <h1 className="text-sm font-bold text-slate-800 leading-tight">AtotheNmodM</h1>
+                                <p className="text-slate-500 text-[10px] font-semibold">قابلية القسمة باستخدام التحليل للعوامل الأولية</p>
+                            </div>
+                        </div>
+                        
+                        <div className="flex bg-slate-100 p-1 rounded border border-slate-200 gap-1 overflow-x-auto text-xs shadow-inner">
+                            {['problem', 'concept', 'strategy', 'visualizer', 'code'].map((tabKey, idx) => {
+                                const labels = ["1. المسألة الأصلية", "2. المفهوم الرياضي", "3. استراتيجية الحل", "4. التتبع البصري", "5. تفصيل الكود"];
+                                return (
+                                    <button 
+                                        key={tabKey}
+                                        onClick={() => setActiveTab(tabKey)} 
+                                        className={`px-3 py-1.5 rounded font-bold transition-all whitespace-nowrap ${activeTab === tabKey ? 'bg-white text-indigo-800 shadow border border-slate-200' : 'text-slate-600 hover:bg-slate-200'}`}
+                                    >
+                                        {labels[idx]}
+                                    </button>
+                                )
+                            })}
+                        </div>
+                    </header>
+
+                    <main className="flex-1 overflow-hidden">
+                        {activeTab === 'problem' && renderProblem()}
+                        {activeTab === 'concept' && renderConcept()}
+                        {activeTab === 'strategy' && renderStrategy()}
+                        {activeTab === 'visualizer' && renderVisualizer()}
+                        {activeTab === 'code' && renderCode()}
+                    </main>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شرح خوارزمية Tree Matching (DP on Trees)</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Cairo', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        body { background-color: #f8fafc; margin: 0; height: 100vh; overflow: hidden; font-size: 14px; }
+        #root { height: 100%; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .pop-in { animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .graph-node { transition: all 0.3s ease; }
+        .graph-edge { transition: all 0.3s ease; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useRef } = React;
+
+        // Tree structure for visualization (from the problem example)
+        // Edges: 1-2, 1-3, 3-4, 3-5
+        const N = 5;
+        const EDGES = [[1, 2], [1, 3], [3, 4], [3, 5]];
+        const NODE_POS = {
+            1: { x: 200, y: 30 },
+            2: { x: 100, y: 110 },
+            3: { x: 300, y: 110 },
+            4: { x: 220, y: 190 },
+            5: { x: 380, y: 190 }
+        };
+
+        function generateSteps() {
+            let steps = [];
+            
+            // DP state arrays
+            let dp0 = Array(N + 1).fill('-');
+            let dp1 = Array(N + 1).fill('-');
+
+            const cloneState = (curr, happened, next, calc = null, hlEdges = []) => ({
+                c: curr,
+                dp0: [...dp0],
+                dp1: [...dp1],
+                happened,
+                next,
+                calc,
+                hlEdges: [...hlEdges]
+            });
+
+            // Step 0
+            steps.push(cloneState(
+                1, 
+                "بدأ البرنامج. نعتبر العقدة رقم (1) هي جذر الشجرة (Root). مصفوفات DP فارغة.", 
+                "سنقوم باستدعاء دالة dfs(1) للغوص في الشجرة وحساب القيم من الأوراق صعوداً."
+            ));
+
+            // Step 1: In dfs(1), go to 2
+            steps.push(cloneState(
+                1,
+                "نحن داخل dfs(1). ننظر لأبناء الجذر وهما (2 و 3). سننزل أولاً إلى الفرع الأيسر ونستدعي dfs(2).",
+                "ننتقل إلى العقدة 2.",
+                null, [[1, 2]]
+            ));
+
+            // Step 2: In dfs(2)
+            dp0[2] = 0;
+            dp1[2] = 0;
+            steps.push(cloneState(
+                2,
+                "نحن داخل dfs(2). هذه العقدة ورقية (لا أبناء لها). إذن المجاميع (base) تساوي 0.",
+                "سنحسب قيم DP: dp1[2] = 0، و dp0[2] = 0. ثم نعود (Return) للأب.",
+                { text: "Leaf node base = 0. dp1[2]=0, dp0[2]=0" }, [[1, 2]]
+            ));
+
+            // Step 3: Back in 1, go to 3
+            steps.push(cloneState(
+                1,
+                "عدنا إلى dfs(1) بعد إنهاء العقدة 2. الآن ننتقل للفرع الآخر ونستدعي dfs(3).",
+                "ننتقل إلى العقدة 3.",
+                null, [[1, 3]]
+            ));
+
+            // Step 4: In dfs(3), go to 4
+            steps.push(cloneState(
+                3,
+                "نحن داخل dfs(3). لها أبناء (4 و 5). سننزل للفرع 4 باستدعاء dfs(4).",
+                "ننتقل إلى العقدة 4.",
+                null, [[3, 4]]
+            ));
+
+            // Step 5: In dfs(4)
+            dp0[4] = 0;
+            dp1[4] = 0;
+            steps.push(cloneState(
+                4,
+                "نحن في dfs(4). عقدة ورقية. base = 0.",
+                "نحسب dp1[4] = 0 و dp0[4] = 0، ونعود للأب 3.",
+                { text: "Leaf node base = 0. dp1[4]=0, dp0[4]=0" }, [[3, 4]]
+            ));
+
+            // Step 6: Back in 3, go to 5
+            steps.push(cloneState(
+                3,
+                "عدنا إلى dfs(3). ننتقل للابن الأخير ونستدعي dfs(5).",
+                "ننتقل إلى العقدة 5.",
+                null, [[3, 5]]
+            ));
+
+            // Step 7: In dfs(5)
+            dp0[5] = 0;
+            dp1[5] = 0;
+            steps.push(cloneState(
+                5,
+                "نحن في dfs(5). عقدة ورقية. base = 0.",
+                "نحسب dp1[5] = 0 و dp0[5] = 0، ونعود للأب 3.",
+                { text: "Leaf node base = 0. dp1[5]=0, dp0[5]=0" }, [[3, 5]]
+            ));
+
+            // Step 8: Calculate for 3
+            dp1[3] = 0;
+            dp0[3] = 1;
+            steps.push(cloneState(
+                3,
+                "عدنا إلى dfs(3) وجميع أبنائه تم حسابهم. أولاً نجمع أفضل حالة للأبناء وهم أحرار: base = dp0[4] + dp0[5] = 0 + 0 = 0. إذن dp1[3] = 0.",
+                "الآن نحسب dp0[3] بتجربة التطابق مع أحد الأبناء لاختيار الأفضل.",
+                { text: "base = dp0[4]+dp0[5] = 0. dp1[3] = 0" }, []
+            ));
+
+            steps.push(cloneState(
+                3,
+                "لحساب dp0[3]: لو ارتبط مع 4 يعطي (1). لو ارتبط مع 5 يعطي (1). نختار أحدهما، وليكن الارتباط مع 4. إذن dp0[3] = max(0, 1) = 1.",
+                "اكتمل حساب العقدة 3! نعود للجذر 1.",
+                { text: "dp0[3] = max(base, base - dp0[4] + dp1[4] + 1) = max(0, 1) = 1" }, [[3, 4]]
+            ));
+
+            // Step 9: Calculate for 1
+            dp1[1] = 1;
+            steps.push(cloneState(
+                1,
+                "عدنا إلى dfs(1). جميع فروع الشجرة تم حسابها! نجمع الأبناء وهم أحرار: base = dp0[2] + dp0[3] = 0 + 1 = 1. إذن dp1[1] = 1.",
+                "أخيراً، سنحسب dp0[1] للجذر، وهو يمثل الإجابة النهائية للمسألة.",
+                { text: "base = dp0[2]+dp0[3] = 0 + 1 = 1. dp1[1] = 1" }, [[3, 4]]
+            ));
+
+            dp0[1] = 2;
+            steps.push(cloneState(
+                1,
+                "لحساب dp0[1] للجذر (1): إن لم يرتبط بأحد فالنتيجة = 1. إن ارتبط بـ 2 فالنتيجة: (1 - 0 + 0 + 1) = 2. إن ارتبط بـ 3 فالنتيجة: (1 - 1 + 0 + 1) = 1. نختار الأكبر!",
+                "الأكبر هو 2 (ارتباط 1 مع 2، وارتباط 3 مع 4 سابقاً). انتهى الحل وطبعنا 2.",
+                { text: "dp0[1] = max(1, match with 2) = max(1, 2) = 2" }, [[1, 2], [3, 4]]
+            ));
+
+            return steps;
+        }
+
+        function App() {
+            const [activeTab, setActiveTab] = useState('problem'); 
+            const stepsRef = useRef(generateSteps());
+            const [stepIdx, setStepIdx] = useState(0);
+
+            const renderProblem = () => (
+                <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                    <div className="max-w-4xl mx-auto w-full space-y-4">
+                        <div className="bg-white p-5 rounded border border-slate-200 shadow-sm">
+                            <h2 className="text-lg font-bold mb-4 text-indigo-800 border-b pb-2">نص المسألة (Tree Matching)</h2>
+                            
+                            <div className="text-sm space-y-4 text-slate-700 leading-relaxed">
+                                <p className="font-semibold bg-slate-100 p-4 rounded border border-slate-200 shadow-inner">
+                                    أُعطيت شجرة مكوّنة من <span dir="ltr" className="font-mono text-indigo-700 font-bold mx-1">n</span> عقدة.<br/>
+                                    المطابقة (matching) هي مجموعة من الأحرف (Edges) بحيث <strong>تكون كل عقدة طرفاً في حرف واحد على الأكثر</strong>.<br/>
+                                    المطلوب: ما هو أكبر عدد ممكن من الأحرف في مطابقة لهذه الشجرة؟
+                                </p>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                    <div className="bg-slate-50 p-4 rounded border border-slate-200">
+                                        <h3 className="font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">المدخلات (Input)</h3>
+                                        <ul className="list-disc list-inside space-y-1 text-xs">
+                                            <li>السطر الأول: عدد صحيح <code className="font-mono">n</code> (عدد العقد).</li>
+                                            <li>ثم <code className="font-mono">n-1</code> سطراً: أحرف <code className="font-mono">a b</code> تصف حرفاً (طريقاً) غير موجه في الشجرة.</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div className="bg-slate-50 p-4 rounded border border-slate-200">
+                                        <h3 className="font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">المخرجات (Output)</h3>
+                                        <ul className="list-disc list-inside space-y-1 text-xs">
+                                            <li>اطبع عدداً صحيحاً واحداً: أكبر حجم لمطابقة.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col md:flex-row gap-4 mt-4">
+                                    <div className="flex-1 bg-[#1e1e1e] text-slate-300 p-3 rounded border border-slate-700 font-mono text-xs" dir="ltr">
+                                        <div className="text-slate-400 mb-2 border-b border-slate-600 pb-1">// Example Input</div>
+                                        <div>5</div>
+                                        <div>1 2</div>
+                                        <div>1 3</div>
+                                        <div>3 4</div>
+                                        <div>3 5</div>
+                                    </div>
+                                    <div className="flex-1 bg-[#1e1e1e] text-slate-300 p-3 rounded border border-slate-700 font-mono text-xs" dir="ltr">
+                                        <div className="text-slate-400 mb-2 border-b border-slate-600 pb-1">// Expected Output</div>
+                                        <div className="text-emerald-400 font-bold">2</div>
+                                        <div className="mt-2 text-slate-500 text-[10px] whitespace-pre-wrap">
+                                            // Explanation: 
+                                            // One possible matching is picking edges:
+                                            // (1, 2) and (3, 4).
+                                            // No node is shared. Total edges = 2.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const renderDataStructures = () => (
+                <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                    <div className="max-w-4xl mx-auto w-full space-y-4">
+                        <div className="bg-white p-5 rounded border border-slate-200 shadow-sm">
+                            <h2 className="text-lg font-bold mb-4 text-indigo-800 border-b pb-2">هياكل البيانات (كيف نُعرّف الشجرة برمجياً؟)</h2>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-3">
+                                    <h3 className="text-sm font-bold text-slate-700 bg-slate-200 p-2 rounded">تمثيل الشجرة (قائمة التجاور)</h3>
+                                    <p className="text-xs text-slate-700 leading-relaxed">
+                                        مثل أي رسم بياني، الشجرة تُقرأ كقائمة تجاور (Adjacency List). نستخدم <code dir="ltr" className="font-mono mx-1 bg-white border px-1 rounded">vector&lt;vector&lt;int&gt;&gt; g</code>.
+                                        بما أن الشجرة غير موجهة، إذا كان هناك طريق بين 1 و 3، نضيف 3 لقائمة 1، و1 لقائمة 3.
+                                    </p>
+                                    <div className="bg-white border border-slate-200 p-3 rounded text-xs shadow-sm font-mono" dir="ltr">
+                                        g[1] = [2, 3]<br/>
+                                        g[3] = [1, 4, 5]<br/>
+                                        ...
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <h3 className="text-sm font-bold text-slate-700 bg-emerald-100 p-2 rounded">لماذا "نُجذّر" الشجرة (Rooting)؟</h3>
+                                    <p className="text-xs text-slate-700 leading-relaxed">
+                                        الشجرة المعطاة ليس لها بداية أو نهاية محددة، لكن البرمجة الديناميكية (DP) تحتاج إلى <strong>اتجاه</strong> لتتراكم الحلول.
+                                    </p>
+                                    <div className="bg-emerald-50 border border-emerald-200 p-3 rounded text-xs shadow-sm">
+                                        لذلك، نختار العقدة رقم (1) عشوائياً لتكون هي <strong>الجذر (Root)</strong>. 
+                                        هذا يحول الشجرة من شبكة عشوائية إلى هيكل هرمي له (أب) و (أبناء)، مما يسمح لنا بحل المشاكل الصغيرة في الأبناء (الأوراق) ثم دمجها صعوداً لتحديد إجابة الأب!
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const renderStrategy = () => (
+                <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                    <div className="max-w-4xl mx-auto w-full space-y-6">
+                        <div className="bg-white p-6 rounded border border-slate-200 shadow-sm">
+                            <h2 className="text-lg font-bold mb-4 text-indigo-800 border-b pb-2 flex items-center gap-2">
+                                <i className="fa-solid fa-chess-knight"></i> استراتيجية الحل (DP on Trees)
+                            </h2>
+                            <p className="text-sm text-slate-600 mb-6">لكل عقدة <code dir="ltr" className="font-mono">v</code> في الشجرة الموجهة للأسفل، نسأل أنفسنا سؤالاً محورياً: <strong>هل سترتبط هذه العقدة مع أبيها الذي فوقها أم لا؟</strong></p>
+                            
+                            <div className="space-y-5 text-sm text-slate-700 leading-relaxed">
+                                
+                                <div className="bg-blue-50/50 p-4 rounded border border-blue-100">
+                                    <h3 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
+                                        <span className="bg-blue-200 text-blue-800 w-6 h-6 flex items-center justify-center rounded-full text-xs">1</span>
+                                        تعريف الحالات (State Definition)
+                                    </h3>
+                                    <ul className="list-disc list-inside space-y-2 text-xs text-slate-700">
+                                        <li><strong dir="ltr" className="font-mono text-indigo-700 bg-white px-1 border rounded mx-1">dp1[v]</strong>: أكبر عدد من الارتباطات في الشجرة الفرعية تحت <code className="font-mono">v</code>، بشرط أن تكون العقدة <code className="font-mono">v</code> <strong>مرتبطة مع أبيها</strong>.<br/><span className="text-slate-500 mr-5">(بما أنها ارتبطت بأبيها، يُمنع منعاً باتاً أن ترتبط بأي من أبنائها).</span></li>
+                                        <li><strong dir="ltr" className="font-mono text-indigo-700 bg-white px-1 border rounded mx-1">dp0[v]</strong>: أكبر عدد من الارتباطات، بشرط أن تكون العقدة <code className="font-mono">v</code> <strong>حرة (غير مرتبطة بأبيها)</strong>.<br/><span className="text-slate-500 mr-5">(هنا، يحق لها إما ألا ترتبط بأي ابن، أو ترتبط بابن واحد فقط).</span></li>
+                                    </ul>
+                                </div>
+
+                                <div className="bg-purple-50/50 p-4 rounded border border-purple-100">
+                                    <h3 className="font-bold text-purple-900 mb-2 flex items-center gap-2">
+                                        <span className="bg-purple-200 text-purple-800 w-6 h-6 flex items-center justify-center rounded-full text-xs">2</span>
+                                        العلاقة والانتقال (Transitions)
+                                    </h3>
+                                    <div className="space-y-3 mt-3">
+                                        <div className="bg-white p-3 rounded border border-slate-200 shadow-sm text-xs">
+                                            <strong>حساب <code className="font-mono text-indigo-600">dp1[v]</code>:</strong> 
+                                            بما أن <code className="font-mono">v</code> مشغولة مع أبيها، يجب أن نترك جميع الأبناء أحراراً. لذا نجمع أفضل قيمة لكل ابن <code className="font-mono text-emerald-600">u</code> وهو حر <code className="font-mono">(dp0[u])</code>. نسمي هذا المجموع بالـ <code className="font-mono font-bold">base</code>.
+                                        </div>
+                                        <div className="bg-white p-3 rounded border border-slate-200 shadow-sm text-xs">
+                                            <strong>حساب <code className="font-mono text-indigo-600">dp0[v]</code>:</strong> 
+                                            هنا يمكننا تجربة كل ابن <code className="font-mono text-emerald-600">u</code> لنرى ماذا لو ارتبطت <code className="font-mono">v</code> معه؟<br/>
+                                            إذا ارتبطت بـ <code className="font-mono">u</code>، سنكسب ارتباطاً (+1)، لكن <code className="font-mono">u</code> لن يعود حراً بل سيصبح مشغولاً مع أبيه (ينتقل من حالة dp0 إلى dp1). المعادلة للتجربة: <code dir="ltr" className="block mt-1 font-mono text-indigo-700 bg-slate-50 p-1 border rounded text-center">candidate = base - dp0[u] + dp1[u] + 1</code>
+                                            ونختار أكبر نتيجة من بين جميع التجارب.
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-emerald-50/50 p-4 rounded border border-emerald-100">
+                                    <h3 className="font-bold text-emerald-900 mb-2 flex items-center gap-2">
+                                        <span className="bg-emerald-200 text-emerald-800 w-6 h-6 flex items-center justify-center rounded-full text-xs">3</span>
+                                        الجواب النهائي
+                                    </h3>
+                                    <p className="text-xs">بما أن الشجرة مجذرة عند العقدة رقم 1، والجذر ليس له أب ليرتبط به أصلاً، فإن الجواب النهائي هو حالة الجذر عندما يكون حراً: <code dir="ltr" className="font-mono font-bold bg-white px-1 border rounded mx-1 text-emerald-700">dp0[1]</code>.</p>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const renderVisualizer = () => {
+                const s = stepsRef.current[stepIdx];
+
+                return (
+                    <div className="flex flex-col lg:flex-row h-full bg-slate-100 fade-in overflow-hidden">
+                        
+                        {/* Control Panel */}
+                        <div className="w-full lg:w-1/3 bg-white border-l border-slate-200 shadow-lg z-20 flex flex-col">
+                            <div className="p-3 bg-slate-800 text-white border-b border-slate-700">
+                                <h2 className="text-sm font-bold">التتبع البصري (DP on Trees)</h2>
+                                <p className="text-[10px] text-slate-400">انقر لمتابعة مسار الـ DFS وتحديثات المصفوفات.</p>
+                            </div>
+                            
+                            <div className="p-4 flex-1 overflow-y-auto space-y-4">
+                                <div className="bg-slate-50 border border-slate-200 p-3 rounded relative shadow-sm">
+                                    <h3 className="font-bold text-xs text-slate-800 mb-1 border-b border-slate-200 pb-1 flex items-center gap-2">
+                                        <i className="fa-solid fa-check-circle text-emerald-600"></i> ماذا حدث للتو؟
+                                    </h3>
+                                    <p className="text-xs text-slate-700 leading-relaxed mt-2">{s.happened}</p>
+                                </div>
+
+                                <div className="bg-indigo-50 border border-indigo-200 p-3 rounded relative shadow-sm">
+                                    <h3 className="font-bold text-xs text-indigo-900 mb-1 border-b border-indigo-200 pb-1 flex items-center gap-2">
+                                        <i className="fa-solid fa-arrow-left text-indigo-600"></i> ماذا سيحدث الآن؟
+                                    </h3>
+                                    <p className="text-xs text-indigo-800 leading-relaxed mt-2">{s.next}</p>
+                                </div>
+
+                                {s.calc && (
+                                    <div className="bg-emerald-50 border border-emerald-200 p-3 rounded relative shadow-sm font-mono text-xs text-emerald-800 font-bold pop-in" dir="ltr">
+                                        <i className="fa-solid fa-calculator mr-2 text-emerald-600"></i> {s.calc.text}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="p-4 bg-slate-50 border-t border-slate-200">
+                                <button 
+                                    onClick={() => setStepIdx(Math.min(stepsRef.current.length - 1, stepIdx + 1))} 
+                                    disabled={stepIdx === stepsRef.current.length - 1}
+                                    className="w-full py-3 rounded bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-bold text-sm shadow transition flex items-center justify-center gap-2"
+                                >
+                                    {stepIdx === stepsRef.current.length - 1 ? 'انتهى التنفيذ' : 'تنفيذ الخطوة التالية'}
+                                    {stepIdx < stepsRef.current.length - 1 && <i className="fa-solid fa-play text-xs"></i>}
+                                </button>
+                                
+                                <div className="flex justify-between mt-3">
+                                    <button onClick={() => setStepIdx(0)} disabled={stepIdx === 0} className="text-xs text-slate-500 hover:text-slate-800 transition disabled:opacity-50 flex items-center gap-1">
+                                        <i className="fa-solid fa-rotate-right"></i> إعادة من البداية
+                                    </button>
+                                    <span className="text-xs font-mono text-slate-400 bg-slate-200 px-2 py-0.5 rounded">
+                                        خطوة {stepIdx + 1} / {stepsRef.current.length}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Visual Area */}
+                        <div className="flex-1 p-4 flex flex-col items-center justify-start bg-slate-100 overflow-y-auto relative" dir="ltr">
+                            
+                            {/* Tree SVG */}
+                            <div className="relative w-full max-w-md h-64 bg-white rounded shadow border border-slate-200 mb-6 flex justify-center items-center mt-4">
+                                <svg className="absolute w-full h-full inset-0 pointer-events-none">
+                                    {EDGES.map((edge, idx) => {
+                                        const [u, v] = edge;
+                                        const isHl = s.hlEdges.some(e => (e[0]===u && e[1]===v) || (e[0]===v && e[1]===u));
+                                        
+                                        return (
+                                            <line 
+                                                key={`e${idx}`}
+                                                x1={NODE_POS[u].x + 20} y1={NODE_POS[u].y + 20} 
+                                                x2={NODE_POS[v].x + 20} y2={NODE_POS[v].y + 20} 
+                                                stroke={isHl ? "#10b981" : "#cbd5e1"} 
+                                                strokeWidth={isHl ? "5" : "3"}
+                                                className="graph-edge"
+                                            />
+                                        );
+                                    })}
+                                </svg>
+                                
+                                {Object.keys(NODE_POS).map(nodeId => {
+                                    const id = parseInt(nodeId);
+                                    const isCurrent = s.c === id;
+
+                                    let bgClasses = "bg-white border-2 border-slate-300 text-slate-500";
+                                    if (isCurrent) bgClasses = "bg-indigo-500 border-2 border-indigo-700 text-white shadow-lg scale-125 z-10 pop-in";
+
+                                    return (
+                                        <div 
+                                            key={id} 
+                                            className={`absolute flex flex-col items-center justify-center w-10 h-10 rounded-full font-bold text-sm shadow-sm graph-node z-10 ${bgClasses}`}
+                                            style={{ left: NODE_POS[id].x, top: NODE_POS[id].y }}
+                                        >
+                                            {id}
+                                            {id === 1 && <span className="absolute -top-5 text-[9px] text-slate-400 bg-white/80 px-1 rounded border border-slate-200">Root</span>}
+                                        </div>
+                                    )
+                                })}
+                            </div>
+
+                            {/* DP Arrays Tracker */}
+                            <div className="w-full max-w-md bg-white p-4 rounded shadow border border-slate-200">
+                                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 border-b pb-2 text-center">DP State Arrays</h3>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-center text-xs font-mono border-collapse">
+                                        <thead>
+                                            <tr>
+                                                <th className="p-2 border-b-2 border-slate-200 text-slate-400">Node (v)</th>
+                                                {[1, 2, 3, 4, 5].map(v => <th key={`th${v}`} className={`p-2 border-b-2 border-slate-200 ${s.c === v ? 'text-indigo-600 bg-indigo-50' : 'text-slate-600'}`}>{v}</th>)}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td className="p-2 border-b border-r border-slate-200 font-bold text-slate-500 bg-slate-50">dp1[v]</td>
+                                                {[1, 2, 3, 4, 5].map(v => (
+                                                    <td key={`dp1${v}`} className={`p-2 border-b border-slate-100 ${s.dp1[v] !== '-' ? 'text-emerald-700 font-bold' : 'text-slate-300'}`}>
+                                                        {s.dp1[v]}
+                                                    </td>
+                                                ))}
+                                            </tr>
+                                            <tr>
+                                                <td className="p-2 border-b border-r border-slate-200 font-bold text-slate-500 bg-slate-50">dp0[v]</td>
+                                                {[1, 2, 3, 4, 5].map(v => (
+                                                    <td key={`dp0${v}`} className={`p-2 border-b border-slate-100 ${s.dp0[v] !== '-' ? 'text-emerald-700 font-bold' : 'text-slate-300'}`}>
+                                                        {s.dp0[v]}
+                                                    </td>
+                                                ))}
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                );
+            };
+
+            const renderCode = () => {
+                const codeSegments = [
+                    {
+                        title: "1. الإعدادات والمتغيرات",
+                        desc: "تعريف المكاتب، ومصفوفة g لتمثيل الشجرة، ومصفوفتي dp0 و dp1 بحجم يتسع لجميع العقد.",
+                        code: `#include <iostream>\n#include <vector>\n#include <algorithm>\nusing namespace std;\n\nvector<vector<int>> g;\nvector<long long> dp0, dp1;`
+                    },
+                    {
+                        title: "2. استكشاف الأبناء أولاً",
+                        desc: "دالة الـ DFS تبدأ بالنزول للأسفل. نتجاهل العقدة الأب (p) لكي لا نعود للخلف. نستدعي الدالة للأبناء، وبعد عودتهم نقوم بجمع أحسن نتائجهم وهم 'أحرار' في المتغير base.",
+                        code: `void dfs(int v, int p) {\n    long long base = 0;\n    // First: solve children\n    for (int to : g[v]) {\n        if (to == p) continue;\n        dfs(to, v);\n        base += dp0[to];\n    }`
+                    },
+                    {
+                        title: "3. حساب حالة (الارتباط بالأب)",
+                        desc: "إذا افترضنا أن هذه العقدة سترتبط بأبيها لاحقاً، فهي مشغولة ولا يمكنها الارتباط بأي ابن. إذن النتيجة هي مجموع الأبناء الأحرار (base) مباشرة.",
+                        code: `    // If v is matched with parent -> cannot match any child\n    dp1[v] = base;`
+                    },
+                    {
+                        title: "4. حساب حالة (عدم الارتباط بالأب)",
+                        desc: "هنا العقدة 'حرة'. يمكنها ألا ترتبط بأي ابن (فتأخذ base)، أو يمكننا تجربة ربطها مع ابن معين (u). عند ربطها بـ u، نكسب 1، ولكننا نخسر حالة (u وهو حر) ونستبدلها بحالة (u وهو مرتبط). نختار أفضل نتيجة ممكنة للارتباط.",
+                        code: `    // If v is not matched with parent -> either match with no child, or with exactly one child\n    dp0[v] = base;\n    for (int u : g[v]) {\n        if (u == p) continue;\n        long long candidate = base - dp0[u] + dp1[u] + 1; // match (v,u)\n        dp0[v] = max(dp0[v], candidate);\n    }\n}`
+                    },
+                    {
+                        title: "5. الدالة الرئيسية وقراءة الشجرة",
+                        desc: "نقرأ الحواف غير الموجهة ونضيفها لقائمة التجاور g في الاتجاهين. نجهز مصفوفات الـ DP بالقيّم المبدئية.",
+                        code: `int main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    int n;\n    cin >> n;\n    g.assign(n + 1, {});\n    for (int i = 0; i < n - 1; i++) {\n        int a, b;\n        cin >> a >> b;\n        g[a].push_back(b);\n        g[b].push_back(a);\n    }\n    dp0.assign(n + 1, 0);\n    dp1.assign(n + 1, 0);`
+                    },
+                    {
+                        title: "6. إطلاق الـ DFS وطباعة النتيجة",
+                        desc: "نختار العقدة رقم 1 كجذر (بأب قيمته -1 لأنه لا يوجد له أب). ننطلق لجمع القيم، وفي النهاية نطبع dp0[1] لأن الجذر حر بالضرورة.",
+                        code: `    int root = 1;\n    dfs(root, -1);\n    cout << dp0[root] << "\\n";\n    return 0;\n}`
+                    }
+                ];
+
+                return (
+                    <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                        <div className="max-w-6xl mx-auto w-full space-y-4">
+                            <div className="bg-white p-4 rounded border border-slate-200 shadow-sm text-center">
+                                <h2 className="text-lg font-bold text-slate-800">تفصيل الكود الأصلي والمجزء</h2>
+                                <p className="text-xs text-slate-600 mt-1">
+                                    الجهة اليسرى تحتوي على الكود الأصلي كما هو. الجهة اليمنى تشرح للطالب وظيفة كل مقطع برمجياً لارتباطه بالخوارزمية.
+                                </p>
+                            </div>
+
+                            <div className="space-y-4">
+                                {codeSegments.map((seg, idx) => (
+                                    <div key={idx} className="flex flex-col md:flex-row bg-white rounded shadow-sm border border-slate-200 overflow-hidden">
+                                        
+                                        <div className="w-full md:w-5/12 bg-slate-50 p-4 border-b md:border-b-0 md:border-l border-slate-200 flex flex-col justify-center">
+                                            <h3 className="font-bold text-indigo-800 mb-2 text-sm">{seg.title}</h3>
+                                            <p className="text-xs text-slate-700 leading-relaxed">{seg.desc}</p>
+                                        </div>
+                                        
+                                        <div className="w-full md:w-7/12 bg-[#1e1e1e] p-4 overflow-x-auto" dir="ltr">
+                                            <pre className="m-0">
+                                                <code className="text-xs font-mono text-[#d4d4d4] whitespace-pre" style={{lineHeight: '1.6'}}>
+                                                    {seg.code}
+                                                </code>
+                                            </pre>
+                                        </div>
+
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div className="flex flex-col h-full bg-slate-200">
+                    <header className="bg-white px-4 py-3 shadow-sm z-30 flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-200">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-indigo-700 rounded flex items-center justify-center text-white text-sm shadow">
+                                <i className="fa-solid fa-tree"></i>
+                            </div>
+                            <div>
+                                <h1 className="text-sm font-bold text-slate-800 leading-tight">Tree Matching</h1>
+                                <p className="text-slate-500 text-[10px] font-semibold">تطبيق متقدم للبرمجة الديناميكية على الأشجار (DP on Trees)</p>
+                            </div>
+                        </div>
+                        
+                        <div className="flex bg-slate-100 p-1 rounded border border-slate-200 gap-1 overflow-x-auto text-xs shadow-inner">
+                            {['problem', 'data', 'strategy', 'visualizer', 'code'].map((tabKey, idx) => {
+                                const labels = ["1. المسألة الأصلية", "2. هيكلة الشجرة", "3. استراتيجية الحل", "4. التتبع البصري", "5. تفصيل الكود"];
+                                return (
+                                    <button 
+                                        key={tabKey}
+                                        onClick={() => setActiveTab(tabKey)} 
+                                        className={`px-3 py-1.5 rounded font-bold transition-all whitespace-nowrap ${activeTab === tabKey ? 'bg-white text-indigo-800 shadow border border-slate-200' : 'text-slate-600 hover:bg-slate-200'}`}
+                                    >
+                                        {labels[idx]}
+                                    </button>
+                                )
+                            })}
+                        </div>
+                    </header>
+
+                    <main className="flex-1 overflow-hidden">
+                        {activeTab === 'problem' && renderProblem()}
+                        {activeTab === 'data' && renderDataStructures()}
+                        {activeTab === 'strategy' && renderStrategy()}
+                        {activeTab === 'visualizer' && renderVisualizer()}
+                        {activeTab === 'code' && renderCode()}
+                    </main>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

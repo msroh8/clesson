@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شرح خوارزمية Counting Rooms</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Cairo', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        body { background-color: #f8fafc; margin: 0; height: 100vh; overflow: hidden; font-size: 14px; }
+        #root { height: 100%; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .pop-in { animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .grid-cell { transition: all 0.3s ease; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useRef, useEffect } = React;
+
+        const GRID_DATA = [
+            "########",
+            "#..#...#",
+            "####.#.#",
+            "#..#...#",
+            "########"
+        ];
+        const ROWS = 5;
+        const COLS = 8;
+
+        function generateSteps() {
+            let steps = [];
+            let vis = Array(ROWS).fill(0).map(() => Array(COLS).fill(false));
+            let queue = [];
+            let rooms = 0;
+
+            const cloneState = (phase, currScan = null, currBfs = null, added = 0) => ({
+                phase,
+                v: vis.map(row => [...row]),
+                q: [...queue],
+                r: rooms,
+                currScan: currScan ? { ...currScan } : null,
+                currBfs: currBfs ? { ...currBfs } : null,
+                added
+            });
+
+            steps.push({
+                happened: "بدأ البرنامج. لدينا خريطة المتاهة، وعداد الغرف (rooms) يساوي 0.",
+                next: "سيبدأ الكمبيوتر بعملية (مسح) من أعلى اليسار للبحث عن أي خلية أرضية '.' لم يسبق زيارتها.",
+                state: cloneState('init')
+            });
+
+            const dr = [-1, 1, 0, 0];
+            const dc = [0, 0, -1, 1];
+
+            for (let i = 0; i < ROWS; i++) {
+                for (let j = 0; j < COLS; j++) {
+                    
+                    if (GRID_DATA[i][j] === '#') continue; // Skip walls quietly in visualizer to save steps
+                    
+                    if (GRID_DATA[i][j] === '.' && !vis[i][j]) {
+                        rooms++;
+                        steps.push({
+                            happened: `أثناء المسح، وجدنا أرضية غير مُزارة في الإحداثيات (${i}, ${j}). هذا يعني أننا اكتشفنا غرفة جديدة!`,
+                            next: `سنزيد عداد الغرف إلى ${rooms}، ونضيف هذه الخلية إلى الطابور (Queue) لنبدأ استكشاف مساحتها (BFS).`,
+                            state: cloneState('found_room', {r: i, c: j})
+                        });
+
+                        queue.push({r: i, c: j});
+                        vis[i][j] = true;
+
+                        steps.push({
+                            happened: `تمت إضافة الخلية (${i}, ${j}) للطابور وتم تعليمها كمُزارة.`,
+                            next: "سندخل الآن في حلقة الـ BFS لزيارة كل ما يتصل بهذه الخلية.",
+                            state: cloneState('start_bfs', {r: i, c: j})
+                        });
+
+                        while (queue.length > 0) {
+                            let curr = queue.shift();
+                            let added = 0;
+
+                            for (let k = 0; k < 4; k++) {
+                                let nr = curr.r + dr[k];
+                                let nc = curr.c + dc[k];
+
+                                if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
+                                    if (GRID_DATA[nr][nc] === '.' && !vis[nr][nc]) {
+                                        vis[nr][nc] = true;
+                                        queue.push({r: nr, c: nc});
+                                        added++;
+                                    }
+                                }
+                            }
+
+                            steps.push({
+                                happened: `سحبنا الخلية (${curr.r}, ${curr.c}) من الطابور. بحثنا في الاتجاهات الأربعة.`,
+                                next: added > 0 ? `وجدنا ${added} خلية أرضية مجاورة أضفناها للطابور.` : `لم نجد جيران جدد من هذه الخلية. سننتقل للخلية التالية في الطابور إن وجدت.`,
+                                state: cloneState('bfs_step', {r: i, c: j}, curr, added)
+                            });
+                        }
+
+                        steps.push({
+                            happened: "فرغ الطابور! هذا يعني أننا استكشفنا ولونا هذه الغرفة بالكامل.",
+                            next: "سنعود لعملية (المسح) الرئيسية للبحث عن غرف أخرى.",
+                            state: cloneState('end_bfs', {r: i, c: j})
+                        });
+                    }
+                }
+            }
+
+            steps.push({
+                happened: "اكتمل مسح جميع خلايا الشبكة. لم يعد هناك أي أرضية غير مُزارة.",
+                next: "البرنامج انتهى. النتيجة النهائية لعدد الغرف هي 3.",
+                state: cloneState('done')
+            });
+
+            return steps;
+        }
+
+        function App() {
+            const [activeTab, setActiveTab] = useState('problem'); 
+            const stepsRef = useRef(generateSteps());
+            const [stepIdx, setStepIdx] = useState(0);
+
+            const renderProblem = () => (
+                <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                    <div className="max-w-4xl mx-auto w-full space-y-4">
+                        <div className="bg-white p-5 rounded border border-slate-200 shadow-sm">
+                            <h2 className="text-lg font-bold mb-4 text-indigo-800 border-b pb-2">نص المسألة (Counting Rooms)</h2>
+                            
+                            <div className="text-sm space-y-4 text-slate-700 leading-relaxed">
+                                <p className="font-semibold bg-slate-100 p-4 rounded border border-slate-200 shadow-inner">
+                                    أُعطيت خريطة لمبنى، ومهمتك حساب عدد الغرف فيه. حجم الخريطة هو <span dir="ltr" className="font-mono font-bold mx-1">n × m</span> مربعات، وكل مربع إما أرضية أو جدار. يمكنك المشي يساراً ويميناً وأعلى وأسفل عبر مربعات الأرضية.
+                                </p>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                    <div className="bg-slate-50 p-4 rounded border border-slate-200">
+                                        <h3 className="font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">المدخلات (Input)</h3>
+                                        <ul className="list-disc list-inside space-y-1 text-xs">
+                                            <li>السطر الأول: عددان صحيحان <code className="font-mono">n</code> و <code className="font-mono">m</code> (الارتفاع والعرض).</li>
+                                            <li>ثم <code className="font-mono">n</code> أسطر، كل سطر يحتوي <code className="font-mono">m</code> حرفاً:
+                                                <ul className="list-[circle] list-inside ml-4 mt-1 font-mono text-slate-600">
+                                                    <li>. (نقطة): تعني أرضية.</li>
+                                                    <li># (مربع): تعني جدار.</li>
+                                                </ul>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div className="bg-slate-50 p-4 rounded border border-slate-200">
+                                        <h3 className="font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">المخرجات (Output)</h3>
+                                        <ul className="list-disc list-inside space-y-1 text-xs">
+                                            <li>اطبع عدداً صحيحاً واحداً: عدد الغرف (المناطق المتصلة من الأرضيات).</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col md:flex-row gap-4 mt-4">
+                                    <div className="flex-1 bg-[#1e1e1e] text-slate-300 p-3 rounded border border-slate-700 font-mono text-xs" dir="ltr">
+                                        <div className="text-slate-400 mb-2 border-b border-slate-600 pb-1">// Example Input</div>
+                                        <div>5 8</div>
+                                        <div>########</div>
+                                        <div>#..#...#</div>
+                                        <div>####.#.#</div>
+                                        <div>#..#...#</div>
+                                        <div>########</div>
+                                    </div>
+                                    <div className="flex-1 bg-[#1e1e1e] text-slate-300 p-3 rounded border border-slate-700 font-mono text-xs" dir="ltr">
+                                        <div className="text-slate-400 mb-2 border-b border-slate-600 pb-1">// Expected Output</div>
+                                        <div className="text-emerald-400">3</div>
+                                        <div className="mt-2 text-slate-500 text-[10px] whitespace-pre-wrap">
+                                            // The 3 rooms are:
+                                            // 1. Top-left: two dots
+                                            // 2. Right side: large connected shape
+                                            // 3. Bottom-left: two dots
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const renderConcept = () => (
+                <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                    <div className="max-w-4xl mx-auto w-full space-y-4">
+                        <div className="bg-white p-5 rounded border border-slate-200 shadow-sm">
+                            <h2 className="text-lg font-bold mb-4 text-indigo-800 border-b pb-2">فهم المكونات المتصلة للشبكات</h2>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-3">
+                                    <h3 className="text-sm font-bold text-slate-700 bg-slate-200 p-2 rounded">ما هي "الغرفة" برمجياً؟</h3>
+                                    <p className="text-xs text-slate-700 leading-relaxed">
+                                        في الرسم البياني العادي (Graph)، نبحث عن العقد المرتبطة بحواف. في الشبكات (Grids)، كل خلية أرضية <code dir="ltr" className="font-mono mx-1">.</code> تُعتبر عقدة، والحركات الأربعة (أعلى، أسفل، يمين، يسار) هي الحواف التي تربط بينها.
+                                    </p>
+                                    <div className="bg-emerald-50 border border-emerald-200 p-3 rounded text-xs text-emerald-800 shadow-sm">
+                                        إذن، "الغرفة" هي ببساطة <strong>مكون متصل (Connected Component)</strong> واحد من خلايا الأرضية التي يمكن الوصول لبعضها البعض دون عبور الجدران.
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <h3 className="text-sm font-bold text-slate-700 bg-indigo-100 p-2 rounded">كيف نمثلها في الذاكرة؟</h3>
+                                    <p className="text-xs text-slate-700 leading-relaxed">
+                                        بدلاً من بناء قائمة تجاور (Adjacency List) معقدة، نستخدم المصفوفة الثنائية <code dir="ltr" className="font-mono mx-1">grid</code> التي قرأناها كأداة بحث، ومصفوفة مساعدة بنفس الحجم اسمها <code dir="ltr" className="font-mono mx-1">vis</code> لتعقب الزيارات.
+                                    </p>
+                                    <ul className="list-disc list-inside text-xs space-y-2 text-slate-600 bg-white border border-slate-200 p-3 rounded">
+                                        <li>
+                                            <code dir="ltr" className="font-mono text-indigo-700 font-bold bg-slate-50 px-1 border rounded mx-1">grid[i][j]</code> لمعرفة هل هي جدار أم أرضية.
+                                        </li>
+                                        <li>
+                                            <code dir="ltr" className="font-mono text-indigo-700 font-bold bg-slate-50 px-1 border rounded mx-1">vis[i][j]</code> لمعرفة هل زرناها مسبقاً (1) أم لا (0).
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const renderStrategy = () => (
+                <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                    <div className="max-w-4xl mx-auto w-full space-y-6">
+                        <div className="bg-white p-6 rounded border border-slate-200 shadow-sm">
+                            <h2 className="text-lg font-bold mb-4 text-indigo-800 border-b pb-2 flex items-center gap-2">
+                                <i className="fa-solid fa-chess-knight"></i> استراتيجية الحل (Scan & Search)
+                            </h2>
+                            <p className="text-sm text-slate-600 mb-6">الحل يعتمد على عملية مزدوجة: (المسح) للبحث عن بدايات الغرف، و (البحث بالعمق/العرض) لتلوين الغرفة بالكامل.</p>
+                            
+                            <div className="space-y-5 text-sm text-slate-700 leading-relaxed">
+                                
+                                <div className="bg-blue-50/50 p-4 rounded border border-blue-100">
+                                    <h3 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
+                                        <span className="bg-blue-200 text-blue-800 w-6 h-6 flex items-center justify-center rounded-full text-xs">1</span>
+                                        عملية المسح الشامل (Grid Scan)
+                                    </h3>
+                                    <p className="mb-2 text-xs">نستخدم حلقتي تكرار (for loops) للمرور على كل خلية في الشبكة صفاً بصف. إذا وجدنا خلية أرضية <code dir="ltr" className="font-mono mx-1">.</code> <strong>ولم نزرها من قبل</strong>، فهذا إعلان عن اكتشاف غرفة جديدة. نزيد عداد الغرف <code dir="ltr" className="font-mono mx-1">rooms++</code> ونعتبر هذه الخلية "بذرة" لهذه الغرفة.</p>
+                                </div>
+
+                                <div className="bg-purple-50/50 p-4 rounded border border-purple-100">
+                                    <h3 className="font-bold text-purple-900 mb-2 flex items-center gap-2">
+                                        <span className="bg-purple-200 text-purple-800 w-6 h-6 flex items-center justify-center rounded-full text-xs">2</span>
+                                        خوارزمية الانتشار (BFS Flood-fill)
+                                    </h3>
+                                    <p className="mb-2 text-xs">لضمان عدم حساب نفس الغرفة مرة أخرى في عملية المسح القادمة، نطلق خوارزمية BFS من "البذرة" التي وجدناها. تعمل الـ BFS كالمياه المسكوبة، تنتشر في كل الاتجاهات المسموحة (يسار، يمين، أعلى، أسفل) وتعلّم كل خلية أرضية تصادفها بأنها <code dir="ltr" className="font-mono mx-1">vis = 1</code>.</p>
+                                </div>
+
+                                <div className="bg-emerald-50/50 p-4 rounded border border-emerald-100">
+                                    <h3 className="font-bold text-emerald-900 mb-2 flex items-center gap-2">
+                                        <span className="bg-emerald-200 text-emerald-800 w-6 h-6 flex items-center justify-center rounded-full text-xs">3</span>
+                                        مصفوفات الاتجاهات (Direction Arrays)
+                                    </h3>
+                                    <p className="mb-2 text-xs">بدلاً من كتابة 4 شروط (If) منفصلة للتحقق من الجيران الأربعة، نستخدم مصفوفتين صغيرتين <code dir="ltr" className="font-mono mx-1">dr, dc</code> مع حلقة صغيرة للتحرك بذكاء:</p>
+                                    <div className="bg-white p-3 rounded border border-emerald-200 text-xs font-mono shadow-sm" dir="ltr">
+                                        const int dr[4] = &#123;-1, 1, 0, 0&#125;;<br/>
+                                        const int dc[4] = &#123;0, 0, -1, 1&#125;;
+                                    </div>
+                                    <p className="mt-2 text-xs text-emerald-800">هذا يجعل الكود أنظف وأقل عرضة للأخطاء عند جمع الإحداثيات <code dir="ltr" className="font-mono mx-1">r + dr[k]</code>.</p>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const renderVisualizer = () => {
+                const s = stepsRef.current[stepIdx].state;
+                const currentStepInfo = stepsRef.current[stepIdx];
+
+                return (
+                    <div className="flex flex-col lg:flex-row h-full bg-slate-100 fade-in overflow-hidden">
+                        
+                        {/* Control Panel */}
+                        <div className="w-full lg:w-1/3 bg-white border-l border-slate-200 shadow-lg z-20 flex flex-col">
+                            <div className="p-3 bg-slate-800 text-white border-b border-slate-700">
+                                <h2 className="text-sm font-bold">التتبع البصري (Flood Fill BFS)</h2>
+                                <p className="text-[10px] text-slate-400">انقر لمتابعة عملية مسح الشبكة واكتشاف الغرف.</p>
+                            </div>
+                            
+                            <div className="p-4 flex-1 overflow-y-auto space-y-4">
+                                <div className="bg-slate-50 border border-slate-200 p-3 rounded relative shadow-sm">
+                                    <h3 className="font-bold text-xs text-slate-800 mb-1 border-b border-slate-200 pb-1 flex items-center gap-2">
+                                        <i className="fa-solid fa-check-circle text-emerald-600"></i> ماذا حدث للتو؟
+                                    </h3>
+                                    <p className="text-xs text-slate-700 leading-relaxed mt-2">{currentStepInfo.happened}</p>
+                                </div>
+
+                                <div className="bg-indigo-50 border border-indigo-200 p-3 rounded relative shadow-sm">
+                                    <h3 className="font-bold text-xs text-indigo-900 mb-1 border-b border-indigo-200 pb-1 flex items-center gap-2">
+                                        <i className="fa-solid fa-arrow-left text-indigo-600"></i> ماذا سيحدث الآن؟
+                                    </h3>
+                                    <p className="text-xs text-indigo-800 leading-relaxed mt-2">{currentStepInfo.next}</p>
+                                </div>
+
+                                {/* Rooms Counter */}
+                                <div className="bg-white p-3 rounded shadow-sm border border-slate-200 text-center mt-4">
+                                    <h4 className="text-[10px] uppercase font-bold text-slate-400 mb-1">Total Rooms Found</h4>
+                                    <div className="text-3xl font-black font-mono text-indigo-700 pop-in key={s.r}">{s.r}</div>
+                                </div>
+                            </div>
+
+                            <div className="p-4 bg-slate-50 border-t border-slate-200">
+                                <button 
+                                    onClick={() => setStepIdx(Math.min(stepsRef.current.length - 1, stepIdx + 1))} 
+                                    disabled={stepIdx === stepsRef.current.length - 1}
+                                    className="w-full py-3 rounded bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-bold text-sm shadow transition flex items-center justify-center gap-2"
+                                >
+                                    {stepIdx === stepsRef.current.length - 1 ? 'انتهى التنفيذ' : 'تنفيذ الخطوة التالية'}
+                                    {stepIdx < stepsRef.current.length - 1 && <i className="fa-solid fa-play text-xs"></i>}
+                                </button>
+                                
+                                <div className="flex justify-between mt-3">
+                                    <button onClick={() => setStepIdx(0)} disabled={stepIdx === 0} className="text-xs text-slate-500 hover:text-slate-800 transition disabled:opacity-50 flex items-center gap-1">
+                                        <i className="fa-solid fa-rotate-right"></i> إعادة من البداية
+                                    </button>
+                                    <span className="text-xs font-mono text-slate-400 bg-slate-200 px-2 py-0.5 rounded">
+                                        خطوة {stepIdx + 1} / {stepsRef.current.length}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Visual Area */}
+                        <div className="flex-1 p-4 flex flex-col items-center justify-center bg-slate-100 overflow-y-auto relative" dir="ltr">
+                            
+                            {/* Grid View */}
+                            <div className="bg-white p-6 rounded shadow border border-slate-200 mb-6">
+                                {GRID_DATA.map((rowStr, i) => (
+                                    <div key={i} className="flex">
+                                        {rowStr.split('').map((char, j) => {
+                                            const isWall = char === '#';
+                                            const isVisited = s.v[i][j];
+                                            const isScanFocus = s.currScan && s.currScan.r === i && s.currScan.c === j && !s.currBfs;
+                                            const isBfsFocus = s.currBfs && s.currBfs.r === i && s.currBfs.c === j;
+                                            const isInQueue = s.q.some(item => item.r === i && item.c === j);
+
+                                            let classes = "w-10 h-10 m-[1px] rounded flex items-center justify-center font-bold text-lg transition-all duration-300 grid-cell ";
+                                            
+                                            if (isWall) {
+                                                classes += "bg-slate-700 text-slate-500 shadow-inner";
+                                            } else {
+                                                if (isBfsFocus) classes += "bg-yellow-400 text-yellow-900 border-2 border-yellow-500 scale-110 shadow-lg z-10";
+                                                else if (isScanFocus) classes += "bg-indigo-400 text-white border-2 border-indigo-500 scale-110 shadow-lg z-10 pop-in";
+                                                else if (isInQueue) classes += "bg-indigo-100 border border-indigo-300 text-indigo-700";
+                                                else if (isVisited) classes += "bg-emerald-200 text-emerald-800 shadow-inner";
+                                                else classes += "bg-slate-50 border border-slate-200 text-slate-300";
+                                            }
+
+                                            return (
+                                                <div key={`${i}-${j}`} className={classes}>
+                                                    {!isWall && (isBfsFocus || isScanFocus || isInQueue) ? <i className="fa-solid fa-crosshairs text-xs opacity-50"></i> : ''}
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Queue Visualizer */}
+                            <div className="w-full max-w-md bg-white p-3 rounded shadow border border-slate-200" dir="ltr">
+                                <h4 className="text-slate-500 font-bold mb-2 text-[10px] uppercase tracking-wider border-b pb-1">BFS Queue</h4>
+                                <div className="flex gap-2 overflow-x-auto min-h-[36px] items-center p-1">
+                                    {s.q.length === 0 ? (
+                                        <span className="text-slate-400 text-xs italic">Empty</span>
+                                    ) : (
+                                        s.q.map((item, idx) => (
+                                            <div key={idx} className="bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-1 rounded text-xs font-mono font-bold shrink-0 pop-in shadow-sm">
+                                                ({item.r},{item.c})
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                );
+            };
+
+            const renderCode = () => {
+                const codeSegments = [
+                    {
+                        title: "1. الإعدادات وقراءة الشبكة",
+                        desc: "نستدعي المكتبات ونقرأ الأبعاد n و m. نستخدم vector of strings لقراءة الشبكة بكفاءة لأن كل سطر هو نص. كما نجهز مصفوفة الزيارات vis بالقيم 0 (غير مُزار).",
+                        code: `#include <iostream>\n#include <vector>\n#include <string>\n#include <queue>\n#include <utility>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    int n, m;\n    cin >> n >> m;\n    vector<string> grid(n);\n    for (int i = 0; i < n; i++) cin >> grid[i];\n    vector<vector<char>> vis(n, vector<char>(m, 0));`
+                    },
+                    {
+                        title: "2. مصفوفات الاتجاهات",
+                        desc: "نعرف عداد الغرف، ونعرف المصفوفتين dr و dc اللتين تمثلان التحرك (أعلى، أسفل، يسار، يمين) لتسهيل فحص الجيران لاحقاً.",
+                        code: `    int rooms = 0;\n    const int dr[4] = {-1, 1, 0, 0};\n    const int dc[4] = {0, 0, -1, 1};`
+                    },
+                    {
+                        title: "3. حلقة المسح الشامل (Scanning)",
+                        desc: "ندور على كل خلايا الشبكة. إذا كانت الخلية ليست أرضية (أي أنها جدار #) أو تمت زيارتها مسبقاً، نتجاهلها. إذا تخطت هذا الشرط، فهي بداية لغرفة جديدة! نزيد العداد ونهيئ طابوراً لهذه الغرفة.",
+                        code: `    for (int i = 0; i < n; i++) {\n        for (int j = 0; j < m; j++) {\n            if (grid[i][j] != '.' || vis[i][j]) continue;\n            rooms++;\n            queue<pair<int,int>> q;\n            q.push({i, j});\n            vis[i][j] = 1;`
+                    },
+                    {
+                        title: "4. خوارزمية BFS لتلوين الغرفة",
+                        desc: "طالما الطابور غير فارغ، نسحب الخلية الحالية ونبحث في اتجاهاتها الأربعة. إذا كان الجار داخل حدود الشبكة، وهو أرضية، ولم يزر، نعلمه كمُزار (vis=1) ونضيفه للطابور ليكتشف جيرانه بدوره.",
+                        code: `            while (!q.empty()) {\n                auto [r, c] = q.front(); q.pop();\n                for (int k = 0; k < 4; k++) {\n                    int nr = r + dr[k];\n                    int nc = c + dc[k];\n                    if (nr < 0 || nr >= n || nc < 0 || nc >= m) continue;\n                    if (grid[nr][nc] != '.' || vis[nr][nc]) continue;\n                    vis[nr][nc] = 1;\n                    q.push({nr, nc});\n                }\n            }\n        }\n    }`
+                    },
+                    {
+                        title: "5. طباعة النتيجة",
+                        desc: "بعد انتهاء حلقتي المسح، يكون عداد الغرف قد أحصى جميع المكونات المتصلة. نقوم بطباعته وينتهي البرنامج.",
+                        code: `    cout << rooms << "\\n";\n    return 0;\n}`
+                    }
+                ];
+
+                return (
+                    <div className="flex flex-col h-full bg-slate-50 fade-in overflow-y-auto p-4 text-slate-800">
+                        <div className="max-w-6xl mx-auto w-full space-y-4">
+                            <div className="bg-white p-4 rounded border border-slate-200 shadow-sm text-center">
+                                <h2 className="text-lg font-bold text-slate-800">تفصيل الكود الأصلي والمجزء</h2>
+                                <p className="text-xs text-slate-600 mt-1">
+                                    الجهة اليسرى تحتوي على الكود الأصلي كما هو. الجهة اليمنى تشرح للطالب وظيفة كل مقطع برمجياً في سياق الخوارزمية.
+                                </p>
+                            </div>
+
+                            <div className="space-y-4">
+                                {codeSegments.map((seg, idx) => (
+                                    <div key={idx} className="flex flex-col md:flex-row bg-white rounded shadow-sm border border-slate-200 overflow-hidden">
+                                        
+                                        <div className="w-full md:w-5/12 bg-slate-50 p-4 border-b md:border-b-0 md:border-l border-slate-200 flex flex-col justify-center">
+                                            <h3 className="font-bold text-indigo-800 mb-2 text-sm">{seg.title}</h3>
+                                            <p className="text-xs text-slate-700 leading-relaxed">{seg.desc}</p>
+                                        </div>
+                                        
+                                        <div className="w-full md:w-7/12 bg-[#1e1e1e] p-4 overflow-x-auto" dir="ltr">
+                                            <pre className="m-0">
+                                                <code className="text-xs font-mono text-[#d4d4d4] whitespace-pre" style={{lineHeight: '1.6'}}>
+                                                    {seg.code}
+                                                </code>
+                                            </pre>
+                                        </div>
+
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div className="flex flex-col h-full bg-slate-200">
+                    <header className="bg-white px-4 py-3 shadow-sm z-30 flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-200">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-indigo-700 rounded flex items-center justify-center text-white text-sm shadow">
+                                <i className="fa-solid fa-border-all"></i>
+                            </div>
+                            <div>
+                                <h1 className="text-sm font-bold text-slate-800 leading-tight">Counting Rooms</h1>
+                                <p className="text-slate-500 text-[10px] font-semibold">المكونات المتصلة باستخدام الشبكات (Grid BFS)</p>
+                            </div>
+                        </div>
+                        
+                        <div className="flex bg-slate-100 p-1 rounded border border-slate-200 gap-1 overflow-x-auto text-xs shadow-inner">
+                            {['problem', 'concept', 'strategy', 'visualizer', 'code'].map((tabKey, idx) => {
+                                const labels = ["1. المسألة الأصلية", "2. فهم الشبكات", "3. استراتيجية الحل", "4. التتبع البصري", "5. تفصيل الكود"];
+                                return (
+                                    <button 
+                                        key={tabKey}
+                                        onClick={() => setActiveTab(tabKey)} 
+                                        className={`px-3 py-1.5 rounded font-bold transition-all whitespace-nowrap ${activeTab === tabKey ? 'bg-white text-indigo-800 shadow border border-slate-200' : 'text-slate-600 hover:bg-slate-200'}`}
+                                    >
+                                        {labels[idx]}
+                                    </button>
+                                )
+                            })}
+                        </div>
+                    </header>
+
+                    <main className="flex-1 overflow-hidden">
+                        {activeTab === 'problem' && renderProblem()}
+                        {activeTab === 'concept' && renderConcept()}
+                        {activeTab === 'strategy' && renderStrategy()}
+                        {activeTab === 'visualizer' && renderVisualizer()}
+                        {activeTab === 'code' && renderCode()}
+                    </main>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
